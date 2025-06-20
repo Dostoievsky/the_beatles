@@ -558,7 +558,7 @@ if mainchoose in dct_variants['check_works']:
     for k, v in puples_dct:
          print(k, v.__dict__)
 
-
+    print('Проверка закончена')
 
 
 
