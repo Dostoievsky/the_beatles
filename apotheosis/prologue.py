@@ -531,8 +531,11 @@ if mainchoose in dct_variants['check_works']:
 
 
     if stat_flag:
-        filenamestat = f"statistics4_{main_dct['klass'].lower().strip()}_{main_dct['name_work'].lower().strip()}_{main_dct['date']}.json"
-        with open(filenamestat, 'w', encoding='utf-8') as f:
+        halfpath = f'archive/{main_dct["klass"]}'
+        fullpath = os.path.join(os.getcwd(), halfpath)
+        filenamestat = f"sysfile_{main_dct['klass'].lower().strip()}_{main_dct['name_work'].lower().strip()}_{main_dct['date']}.json"
+        fullfilepath = os.path.join(fullpath, filenamestat)
+        with open(fullfilepath, 'w', encoding='utf-8') as f:
             json.dump(puples_dct, f, cls=StudentJSONEncoder, ensure_ascii=False, indent=4)
 
     qst2 = input('Выберите режим сортировки:\n'
@@ -555,10 +558,7 @@ if mainchoose in dct_variants['check_works']:
         sys.exit()
 
     print(f'Все готово, проверка прошла успешно. Результаты записаны в файл {1}.')
-    for k, v in puples_dct:
-         print(k, v.__dict__)
 
-    print('Проверка закончена')
 
 
 
