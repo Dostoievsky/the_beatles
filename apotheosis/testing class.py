@@ -96,6 +96,108 @@
 #     print(f'{k}: {v.__dict__}')
 
 import os
+import json
+class Student:
+    def __init__(self, name, surname):
+        self._name = name
+        self._surname = surname
+        self._file = None
+        self._list_answers = None
+        self._correct_answers = None
+        self._mark = None
+        self._missings = False
+        self._flag_not_all = False
+
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        self._name = new_name
+
+    @property
+    def surname(self):
+        return self._surname
+
+    @surname.setter
+    def surname(self, new_surname):
+        self._surname = new_surname
+
+    @property
+    def file(self):
+        return self._file
+
+    @file.setter
+    def file(self, new_file):
+        self._file = new_file
+
+    @property
+    def list_answers(self):
+        return self._list_answers
+
+    @list_answers.setter
+    def list_answers(self, new_list_answers):
+        self._list_answers = new_list_answers
+
+    @property
+    def correct_answers(self):
+        return self._correct_answers
+
+    @correct_answers.setter
+    def correct_answers(self, new_correct_answers):
+        self._correct_answers = new_correct_answers
+
+    @property
+    def mark(self):
+        return self._mark
+
+    @mark.setter
+    def mark(self, new_mark):
+        self._mark = new_mark
+
+    @property
+    def flag_not_all(self):
+        return self._flag_not_all
+
+    @flag_not_all.setter
+    def flag_not_all(self, value):
+        self._flag_not_all = value
+
+    @property
+    def missings(self):
+        return self._missings
+
+    @missings.setter
+    def missings(self, value):
+        self._missings = value
+
+    def to_json(self):
+        return {
+            "__class__": "Student",
+            "_name": self._name,
+            "_surname": self._surname,
+            "_file": self._file,
+            "_list_answers": self._list_answers,
+            "_correct_answers": self._correct_answers,
+            "_mark": self._mark,
+            "_missings": self._missings,
+            "_flag_not_all": self._flag_not_all
+        }
+
+class StudentJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Student):
+            return {'__student__': True,
+                   'name': obj.name,
+                   'surname': obj.surname,
+                   'file': obj.file,
+                   'list_answers': obj.list_answers,
+                   'correct_answers': obj.correct_answers,
+                   'mark': obj.mark}
+        return super().default(obj)
+
 
 main_dct ={'klass': '11в',
       'name_work': 'Работа',
@@ -106,22 +208,70 @@ main_dct ={'klass': '11в',
       'missings': 'auto',
       'students_folder': 'D:/pythonProject/apotheosis/Каторжная работа 3'}
 
-halfpath = f'archive/{main_dct["klass"]}'
-fullpath = os.path.join(os.getcwd(), halfpath)
-
-os.makedirs(fullpath, exist_ok=True)
-
-fullnamework = f'{main_dct["klass"]}_{main_dct["name_work"].lower().strip()}_{main_dct["date"]}.txt'
-fullfilepath = os.path.join(fullpath, fullnamework)
-with open(fullfilepath, 'w', encoding='utf-8') as file:
-      file.write('Работа')
-
-# class WriterFile:
-#     def __init__(self, file):
-#         self.file = file
 
 
 
+# class FileManager:
+#       def __init__(self, dct):
+#             self.dct = dct
+#
+#       def create_json_filename(self):
+#             fullpath = os.path.join(os.getcwd(), f'archive/{self.dct["klass"]}')
+#             filenamestat = f"sysfile_{self.dct['klass'].lower().strip()}_{self.dct['name_work'].lower().strip()}_{self.dct['date']}.json"
+#             fullfilepath = os.path.join(fullpath, filenamestat)
+#             return fullfilepath
+#
+#       def create_directory(self):
+#             halfpath = os.path.join('archive', self.dct["klass"])
+#             fullpath = os.path.join(os.getcwd(), halfpath)
+#
+#             os.makedirs(fullpath, exist_ok=True)
+#
+#             fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.txt'
+#             return os.path.join(fullpath, fullnamework)
+#
+#
+# stat = FileManager(main_dct)
+# fullfilepath = stat.create_json_filename()
+# with open(fullfilepath, 'w', encoding='utf-8') as f:
+#       json.dump(main_dct, f, cls=StudentJSONEncoder, ensure_ascii=False, indent=4)
+#
+# filee = FileManager(main_dct)
+# g = filee.create_directory()
+# with open(g, 'w', encoding='utf-8') as file:
+#       file.write('Работа')
+#
 
+# class FileManager:
+#     def __init__(self, dct):
+#         self.dct = dct
+#
+#     def create_json_filename(self):
+#         fullpath = os.path.join(os.getcwd(), f'archive/{self.dct["klass"]}')
+#         os.makedirs(fullpath, exist_ok=True)
+#         filenamestat = f"sysfile_{self.dct['klass'].lower().strip()}_{self.dct['name_work'].lower().strip()}_{self.dct['date']}.json"
+#         fullfilepath = os.path.join(fullpath, filenamestat)
+#         return fullfilepath
+#
+#     def create_text_file_path(self):
+#         halfpath = os.path.join('archive', self.dct["klass"])
+#         fullpath = os.path.join(os.getcwd(), halfpath)
+#         os.makedirs(fullpath, exist_ok=True)
+#         fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.txt'
+#         return os.path.join(fullpath, fullnamework)
+#
+# fm = FileManager(main_dct)
+#
+# json_filepath = fm.create_json_filename()
+# with open(json_filepath, 'w', encoding='utf-8') as f:
+#     json.dump(main_dct, f, cls=StudentJSONEncoder, ensure_ascii=False, indent=4)
+#
+# text_filepath = fm.create_text_file_path()
+# with open(text_filepath, 'w', encoding='utf-8') as file:
+#     file.write('Работа')
 
+class Finding:
+
+    def __init__(self, name):
+        self.name = name
 

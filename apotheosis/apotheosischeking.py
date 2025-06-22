@@ -269,7 +269,7 @@ if mainchoose in variants_of_check:
 
         statflag = False
         marksflag = False
-        if make_question("Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системны json-файл."):
+        if make_question("Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системный json-файл."):
             statflag = True
 
         if make_question("В файле marks.txt записаны в форме баллов?"):

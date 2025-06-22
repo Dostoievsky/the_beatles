@@ -9,18 +9,6 @@ from tkinter import filedialog
 import json
 import re
 
-class StudentJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Student):
-            return {'__student__': True,
-                   'name': obj.name,
-                   'surname': obj.surname,
-                   'file': obj.file,
-                   'list_answers': obj.list_answers,
-                   'correct_answers': obj.correct_answers,
-                   'mark': obj.mark}
-        return super().default(obj)
-
 
 def on_submit():
     global result
@@ -44,6 +32,39 @@ def browse_folder(entry):
     folder_path = filedialog.askdirectory()
     entry.delete(0, tk.END)
     entry.insert(0, folder_path)
+
+
+class StudentJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Student):
+            return {'__student__': True,
+                   'name': obj.name,
+                   'surname': obj.surname,
+                   'file': obj.file,
+                   'list_answers': obj.list_answers,
+                   'correct_answers': obj.correct_answers,
+                   'mark': obj.mark}
+        return super().default(obj)
+
+
+class FileManager:
+    def __init__(self, dct):
+        self.dct = dct
+
+    def create_json_filename(self):
+        fullpath = os.path.join(os.getcwd(), f'archive/{self.dct["klass"]}')
+        os.makedirs(fullpath, exist_ok=True)
+        filenamestat = f"sysfile_{self.dct['klass'].lower().strip()}_{self.dct['name_work'].lower().strip()}_{self.dct['date']}.json"
+        fullfilepath = os.path.join(fullpath, filenamestat)
+        return fullfilepath
+
+    def create_text_file_path(self):
+        halfpath = os.path.join('archive', self.dct["klass"])
+        fullpath = os.path.join(os.getcwd(), halfpath)
+        os.makedirs(fullpath, exist_ok=True)
+        fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.txt'
+        return os.path.join(fullpath, fullnamework)
+
 
 class Answers:
 
@@ -172,7 +193,7 @@ class Sorted:
         self.dct = dct
 
     def sort_by_default(self):
-        return self.dct
+        return self.dct.items()
 
     def sort_by_name(self):
         sort_dct_items = sorted(self.dct.items(), key=lambda x: x[0])
@@ -183,6 +204,7 @@ class Sorted:
 
     def sort_by_mark_worst(self):
         return sorted(self.dct.items(), key=lambda item: float('+inf') if item[1].mark is None else item[1].mark)
+
 
 class Student:
     def __init__(self, name, surname):
@@ -294,7 +316,6 @@ def student_decoder(dct):
     return dct
 
 
-
 class Marks:
 
     def __init__(self, file, marks_flag):
@@ -347,12 +368,13 @@ class Marks:
             else:
                 return 'Непредвиденная ошибка в процессе компиляции оценок. Сверьтесь с инструкцией.'
 
+#начало программы
 
 
 if os.path.isfile('sys.json') and len(json.load(open('sys.json'))) == 8:
         with open('sys.json', 'r', encoding='utf-8') as sys_file:
             main_dct = json.load(sys_file)
-
+#форма заполнения данных через tkinter
 else:
     root = tk.Tk()
     root.title("Форма заполнения данных")
@@ -420,6 +442,8 @@ else:
     Results = namedtuple('Results', ['klass', 'name_work', 'date', 'answer', 'marks', 'students', 'missings', 'students_folder'])
     results = Results(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7])
 
+#проверка формата данных и формирование sys.json
+
     if all(results._asdict().values()):
         formatting = FormatChecking(results)
         if isinstance(formatting.check_all(), list):
@@ -429,23 +453,26 @@ else:
         elif isinstance(formatting.check_all(), bool):
             with open('sys.json', 'w', encoding='utf-8') as sys_json_file:
                 json.dump(results._asdict(), sys_json_file, ensure_ascii=False, indent=4)
+                print('Данные сохранены, перезапустите программу.')
+                sys.exit()
         else:
             print('Непредвиденная ошибка при проверке формата данных.')
+            sys.exit()
     else:
         print('Вы оставили какое-то поле не заполненным. Программа остановлена.')
-    sys.exit()
-    print('Данные сохранены, перезапустите программу.')
+
+
 
 
 dct_variants = {
-    'check_works': ('1',),
-    'redact_data': ('2',)
+    'check_works': ('1', 'проверка', 'проверка работ'),
+    'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных')
 }
 mainchoose = input('Выберите режим работы:\n'
                    '1. Проверка работ[1]\n'
                    '2. Перезапись данных[2]\n')
 
-if mainchoose in dct_variants['check_works']:
+if mainchoose in dct_variants['check_works']: #проверка работ
     print('Программа работает со следующими данными, если вы хотите измеенить их, то выберите режим измения данных:')
     for k, v in main_dct.items():
         print(f'{k}: {v}')
@@ -455,11 +482,11 @@ if mainchoose in dct_variants['check_works']:
     stat_flag = False
     marks_flag = False
 
-    qst = Questions('Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системны json-файл.\n')
+    qst = Questions('Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системный json-файл.\n')
     if qst.make_question():
         stat_flag = True
 
-    qst1 = Questions('В файле marks.txt записаны в форме баллов?\n')
+    qst1 = Questions('В файле с оценками критерии оценивания записаны в форме баллов?\n')
     if qst1.make_question():
         marks_flag = True
 
@@ -472,14 +499,14 @@ if mainchoose in dct_variants['check_works']:
         full_path = os.path.join(main_dct['students_folder'], puple_file)
         dct_of_puple_files[full_name] = full_path
 
-    #print(dct_of_puple_files)
+
     puples_dct = {}
-    for k, v in dct_of_puple_files.items():
+    for k, v in dct_of_puple_files.items(): #создание экземпляров класса Student
         puples_dct[k] = Student(*k.split())
         puples_dct[k].file = v
 
 
-    for k, v in puples_dct.items():
+    for k, v in puples_dct.items(): #заполнение экземпляров класса Student списком ответов
         lst_of_answers = []
         with open(v.file, 'r', encoding='utf-8') as puple_file:
             for line in puple_file:
@@ -488,31 +515,31 @@ if mainchoose in dct_variants['check_works']:
                 except ValueError:
                     continue
                 lst_of_answers.append(answer.strip())
-            v.list_answers = lst_of_answers #здесь уже есть список ответов каждого из учеников
+            v.list_answers = lst_of_answers
 
 
-    right_answers = Answers(main_dct['answer'])
+    right_answers = Answers(main_dct['answer']) #создание экземпляра класса Answers
     lst_of_right_answers = right_answers.get_right_answers()
 
 
-    for k, v in puples_dct.items():
+    for k, v in puples_dct.items(): #заполнение экземпляров класса Student количеством правильных ответов
         counter_right = 0
         if len(v.list_answers) != len(lst_of_right_answers):
             v.flag_not_all = True
         for pup, right in zip(v.list_answers, lst_of_right_answers):
             if pup == right:
                 counter_right += 1
-        v.correct_answers = counter_right #здесь количество правильных ответов каждого из учеников
+        v.correct_answers = counter_right
 
-    m = Marks(main_dct['marks'], marks_flag)
+    m = Marks(main_dct['marks'], marks_flag) #создание экземпляра класса Marks
 
-    try:
+    try: #проверка корректности файла marks.txt
         marks_dct = m.get_marks()
     except ValueError as e:
         print(e)
         sys.exit()
 
-    for k, v in puples_dct.items():
+    for k, v in puples_dct.items(): #заполнение экземпляров класса Student оценками
         try:
             mark = marks_dct[v.correct_answers]
             v.mark = mark
@@ -521,16 +548,19 @@ if mainchoose in dct_variants['check_works']:
             sys.exit()
 
 
-    string, puple_file = main_dct['missings'], main_dct['students']
+    string, puple_file = main_dct['missings'], main_dct['students'] #создание экземпляра класса Missings
     missings_puple = Missings(string, puple_file, puples_dct)
     print()
 
-    for miss in missings_puple.get_missings():
+    for miss in missings_puple.get_missings(): #заполнение экземпляров класса Student отсутствующими учениками
         puples_dct[miss] = Student(*miss.split())
         puples_dct[miss].missings = True
 
+    fm = FileManager(main_dct)
 
-    if stat_flag:
+    text_filepath = fm.create_text_file_path()
+
+    if stat_flag: #создание системного json-файла для статистики по флагу stat_flag
         halfpath = f'archive/{main_dct["klass"]}'
         fullpath = os.path.join(os.getcwd(), halfpath)
         filenamestat = f"sysfile_{main_dct['klass'].lower().strip()}_{main_dct['name_work'].lower().strip()}_{main_dct['date']}.json"
@@ -541,10 +571,10 @@ if mainchoose in dct_variants['check_works']:
     qst2 = input('Выберите режим сортировки:\n'
                      'По умолчанию[0]\n'
                      'По именам[1]\n'
-                     'По оценкам(сначала лучшие))[2]\n'
-                     'По оценкам(сначала худшие))[3]\n').lower().strip()
+                     'По оценкам(сначала лучшие)[2]\n'
+                     'По оценкам(сначала худшие)[3]\n').lower().strip()
 
-    sort = Sorted(puples_dct)
+    sort = Sorted(puples_dct) #сортировка
     if qst2 in ('по умолчанию', '0'):
         puples_dct = sort.sort_by_default()
     elif qst2 in ('по именам', '1'):
@@ -557,8 +587,23 @@ if mainchoose in dct_variants['check_works']:
         print('Неизвестный режим сортировки.')
         sys.exit()
 
-    print(f'Все готово, проверка прошла успешно. Результаты записаны в файл {1}.')
 
+    with open(text_filepath, 'w', encoding='utf-8') as file: #запись в итоговый файл
+        print(f"Класс: {main_dct['klass']}", file=file)
+        print(f"Название работы: {main_dct['name_work']}", file=file)
+        print(f"Дата работы: {main_dct['date']}", file=file)
+        print(file=file)
+        for k, v in puples_dct:
+            if v.missings:
+                print(f'{k}  -  отсутствовал(а)', file=file)
+                continue
+            star = ('*' if v.flag_not_all else '')
+            print(f'{k}:    {v.mark}{star}', file=file)
+
+    print(f'Проверка прошла успешно. Результаты проверки записаны в файл {text_filepath}.') #конец работы
+    qst3 = Questions('Открыть файл?\n')
+    if qst3.make_question():
+        os.startfile(text_filepath)
 
 
 
