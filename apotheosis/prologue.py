@@ -66,6 +66,7 @@ class FileManager:
         return os.path.join(fullpath, fullnamework)
 
 
+
 class Answers:
 
     def __init__(self, file):
@@ -372,8 +373,8 @@ class Marks:
 
 
 if os.path.isfile('sys.json') and len(json.load(open('sys.json'))) == 8:
-        with open('sys.json', 'r', encoding='utf-8') as sys_file:
-            main_dct = json.load(sys_file)
+    with open('sys.json', 'r', encoding='utf-8') as sys_file:
+        main_dct = json.load(sys_file)
 #форма заполнения данных через tkinter
 else:
     root = tk.Tk()
@@ -466,11 +467,13 @@ else:
 
 dct_variants = {
     'check_works': ('1', 'проверка', 'проверка работ'),
-    'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных')
+    'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных'),
+    'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск')
 }
 mainchoose = input('Выберите режим работы:\n'
                    '1. Проверка работ[1]\n'
-                   '2. Перезапись данных[2]\n')
+                   '2. Перезапись данных[2]\n'
+                   '3. Поиск по работам[3]\n')
 
 if mainchoose in dct_variants['check_works']: #проверка работ
     print('Программа работает со следующими данными, если вы хотите измеенить их, то выберите режим измения данных:')
@@ -615,16 +618,6 @@ if mainchoose in dct_variants['check_works']: #проверка работ
 
 
 
-
-
-
-
-
-
-
-
-
-
 elif mainchoose in dct_variants['redact_data']:
     qst = Questions('Вы хотите перезаписать данные?\n')
     if qst.make_question():
@@ -632,22 +625,51 @@ elif mainchoose in dct_variants['redact_data']:
         print('Файл данных удален. Перезапустите программу.')
 
 
+elif mainchoose in dct_variants['find_puple']:
+    print('Вы можете ввести имя интересующего вас файла или папки и имя ученика. Программа найдет оценки ученика в указанной папке или файле.')
+    pupname = input('Введите имя ученика: ')
+    archivepath = os.path.join(os.getcwd(), 'archive')
+    dct_find_dirs = {}
+    for index, dir in enumerate(os.listdir(archivepath), 1):
+        print(f'{dir}[{index}]')
+        dct_find_dirs[index] = dir
+    try:
+        input_dir = int(input('Введите номер папки, в которой хотите произвести поиск:\n'))
+    except Exception:
+        print('Введите номер папки, а не название папки.')
+        sys.exit()
+    try:
+        hghg = dct_find_dirs[int(input_dir)]
+    except KeyError:
+        print('Нет папки с таким номером.')
+        sys.exit()
+
+    dct_find_files = {}
+    fullpathfind = os.path.join(archivepath, hghg)
+    qst4 = input(f'Искать по папке {hghg}[1] или конкретному файлу?[0]\n')
+    if qst4 in ('1', 'по папке'):
+        pass   #реализовать класс поиска по папке
 
 
+    elif qst4 in ('0', 'по файлу'):
+        filtered_list_dir = filter(lambda file: os.path.isfile(os.path.join(fullpathfind, file)) and file.endswith('.txt'), os.listdir(fullpathfind))
+        for index, file in enumerate(filtered_list_dir, 1):
+            dct_find_files[index] = file
+            print(f'{file}[{index}]')
 
+    try:
+        input_file = int(input('Введите номер файла, в которой хотите произвести поиск:\n'))
+    except Exception:
+        print('Введите номер файла, а не название файла')
+        sys.exit()
+    try:
+        fgfg = dct_find_files[int(input_file)]
+    except KeyError:
+        print('Нет файла с таким номером')
+        sys.exit()
 
-
-
-
-
-
-
-
-
-
-
-
-
+    print(fgfg)
+    print('Условная реализация класса поиска по файлу')
 
 
 

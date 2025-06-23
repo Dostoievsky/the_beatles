@@ -272,6 +272,20 @@ main_dct ={'klass': '11в',
 
 class Finding:
 
-    def __init__(self, name):
+    def __init__(self, name, dirname='archive'):
         self.name = name
 
+
+import tkinter as tk
+from tkinter import filedialog
+
+root = tk.Tk()
+root.withdraw()
+folder_selected = filedialog.askdirectory(title="Выберите папку")
+
+if folder_selected:
+    print(f"Выполнено! Папка выбрана: {folder_selected}")
+else:
+    print("Отмена выбора.")
+
+root.destroy()
