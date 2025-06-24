@@ -66,6 +66,39 @@ class FileManager:
         return os.path.join(fullpath, fullnamework)
 
 
+class Finding:
+
+    def __init__(self, name):
+        self.name = name
+        self.lst_found = []
+
+    def find_from_dir(self, dirpath):
+        for root, dirs, files in os.walk(dirpath):
+            for file in files:
+                if file.endswith('.json'):
+                    continue
+                filepath = os.path.join(root, file)
+                with open(filepath, 'r', encoding='utf-8') as filefind:
+                    for line in filefind:
+                        if line.strip().lower().startswith(self.name.lower()):
+                            name, surname, mark = line.split()
+                            fullname = f'{name} {surname}'
+                            self.lst_found.append((fullname, mark, os.path.basename(filepath)))
+                            continue
+        if self.lst_found:
+            return self.lst_found
+        return 0
+
+
+    def find_from_file(self, filepath):
+        with open(filepath, 'r', encoding='utf-8') as filefind:
+            for line in filefind:
+                if line.strip().lower().startswith(self.name.lower()):
+                    name, surname, mark = line.split()
+                    fullname = f'{name} {surname}'
+                    return fullname, mark, os.path.basename(filepath)
+        return 0
+
 
 class Answers:
 
@@ -468,12 +501,16 @@ else:
 dct_variants = {
     'check_works': ('1', 'проверка', 'проверка работ'),
     'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных'),
-    'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск')
+    'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск'),
+    'quick_start': ('4', 'быстрый старт'),
+    'generate': ('5', 'генерация', 'генерация директорий и файлов')
 }
 mainchoose = input('Выберите режим работы:\n'
                    '1. Проверка работ[1]\n'
                    '2. Перезапись данных[2]\n'
-                   '3. Поиск по работам[3]\n')
+                   '3. Поиск по работам[3]\n'
+                   '4. Быстрый старт[4]\n'
+                   '5. Генерация директорий и файлов[5]\n')
 
 if mainchoose in dct_variants['check_works']: #проверка работ
     print('Программа работает со следующими данными, если вы хотите измеенить их, то выберите режим измения данных:')
@@ -628,6 +665,8 @@ elif mainchoose in dct_variants['redact_data']:
 elif mainchoose in dct_variants['find_puple']:
     print('Вы можете ввести имя интересующего вас файла или папки и имя ученика. Программа найдет оценки ученика в указанной папке или файле.')
     pupname = input('Введите имя ученика: ')
+
+
     archivepath = os.path.join(os.getcwd(), 'archive')
     dct_find_dirs = {}
     for index, dir in enumerate(os.listdir(archivepath), 1):
@@ -647,30 +686,49 @@ elif mainchoose in dct_variants['find_puple']:
     dct_find_files = {}
     fullpathfind = os.path.join(archivepath, hghg)
     qst4 = input(f'Искать по папке {hghg}[1] или конкретному файлу?[0]\n')
+
+    #основной блок с инициализацией экземпляров классов (директории)
     if qst4 in ('1', 'по папке'):
-        pass   #реализовать класс поиска по папке
+        fnd = Finding(pupname)
+        found = fnd.find_from_dir(fullpathfind)
+        if not found:
+            print(f'Ученик {pupname} не найден в папке {hghg}')
+            sys.exit()
+        else:
+             for name, mark, filename in found:
+                 print(f'{filename.strip()} - {name.strip()} {mark.strip()}')
 
 
-    elif qst4 in ('0', 'по файлу'):
+    elif qst4 in ('0', 'по файлу'): #проверка корректности файл
         filtered_list_dir = filter(lambda file: os.path.isfile(os.path.join(fullpathfind, file)) and file.endswith('.txt'), os.listdir(fullpathfind))
         for index, file in enumerate(filtered_list_dir, 1):
             dct_find_files[index] = file
             print(f'{file}[{index}]')
+        try:
+            input_file = int(input('Введите номер файла, в которой хотите произвести поиск:\n'))
+        except Exception:
+            print('Введите номер файла, а не название файла')
+            sys.exit()
+        try:
+            fgfg = dct_find_files[int(input_file)]
+        except KeyError:
+            print('Нет файла с таким номером')
+            sys.exit()
 
-    try:
-        input_file = int(input('Введите номер файла, в которой хотите произвести поиск:\n'))
-    except Exception:
-        print('Введите номер файла, а не название файла')
+
+        #основной блок с инициализацией экземпляров классов (файлы)
+        found_file = Finding(pupname)
+        found = found_file.find_from_file(os.path.join(fullpathfind, fgfg))
+        if not found:
+            print(f'Ученик {pupname} не найден в файле {fgfg}')
+            sys.exit()
+        print(found[2]+':')
+        print(f'{found[0].strip()}: {found[1].strip()}')
         sys.exit()
-    try:
-        fgfg = dct_find_files[int(input_file)]
-    except KeyError:
-        print('Нет файла с таким номером')
-        sys.exit()
-
-    print(fgfg)
-    print('Условная реализация класса поиска по файлу')
 
 
+elif mainchoose in dct_variants['quickstart']:
+    pass
 
-
+elif mainchoose in dct_variants['generate']:
+    pass

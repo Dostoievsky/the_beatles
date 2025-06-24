@@ -97,6 +97,8 @@
 
 import os
 import json
+
+
 class Student:
     def __init__(self, name, surname):
         self._name = name
@@ -107,7 +109,6 @@ class Student:
         self._mark = None
         self._missings = False
         self._flag_not_all = False
-
 
     @property
     def name(self):
@@ -186,29 +187,28 @@ class Student:
             "_flag_not_all": self._flag_not_all
         }
 
+
 class StudentJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Student):
             return {'__student__': True,
-                   'name': obj.name,
-                   'surname': obj.surname,
-                   'file': obj.file,
-                   'list_answers': obj.list_answers,
-                   'correct_answers': obj.correct_answers,
-                   'mark': obj.mark}
+                    'name': obj.name,
+                    'surname': obj.surname,
+                    'file': obj.file,
+                    'list_answers': obj.list_answers,
+                    'correct_answers': obj.correct_answers,
+                    'mark': obj.mark}
         return super().default(obj)
 
 
-main_dct ={'klass': '11в',
-      'name_work': 'Работа',
-      'date': '16.06.2025',
-      'answer': 'D:/pythonProject/apotheosis/answers.txt',
-      'marks': 'D:/pythonProject/apotheosis/marks.txt',
-      'students': 'D:/pythonProject/apotheosis/puples8v.txt',
-      'missings': 'auto',
-      'students_folder': 'D:/pythonProject/apotheosis/Каторжная работа 3'}
-
-
+main_dct = {'klass': '11в',
+            'name_work': 'Работа',
+            'date': '16.06.2025',
+            'answer': 'D:/pythonProject/apotheosis/answers.txt',
+            'marks': 'D:/pythonProject/apotheosis/marks.txt',
+            'students': 'D:/pythonProject/apotheosis/puples8v.txt',
+            'missings': 'auto',
+            'students_folder': 'D:/pythonProject/apotheosis/Каторжная работа 3'}
 
 
 # class FileManager:
@@ -270,22 +270,48 @@ main_dct ={'klass': '11в',
 # with open(text_filepath, 'w', encoding='utf-8') as file:
 #     file.write('Работа')
 
-class Finding:
+# class Finding:
+#
+#     def __init__(self, name):
+#         self.name = name
+#         self.lst_found = []
+#
+#     def find_from_dir(self, dirpath):
+#         for root, dirs, files in os.walk(dirpath):
+#             for file in files:
+#                 if file.endswith('.json'):
+#                     continue
+#                 filepath = os.path.join(root, file)
+#                 with open(filepath, 'r', encoding='utf-8') as filefind:
+#                     for line in filefind:
+#                         if line.strip().lower().startswith(self.name.lower()):
+#                             self.lst_found.append((line, os.path.basename(filepath)))
+#                             continue
+#         if self.lst_found:
+#             return self.lst_found
+#         return -1
+#
+#
+#     def find_from_file(self, filepath):
+#         with open(filepath, 'r', encoding='utf-8') as filefind:
+#             for line in filefind:
+#                 if line.strip().lower().startswith(self.name.lower()):
+#                     return line, os.path.basename(filepath)
+#         return -1
+#
+#
+#
+# f = Finding('аиша Муратова')
+# print(f.find_from_dir(r'D:\pythonProject\apotheosis\archive\8в'))
+# g = Finding('АИша МУРАТОВА')
+# print(g.find_from_file(r'D:\pythonProject\apotheosis\archive\8в\каторжная работа 3 за 03.05.25.txt'))
 
-    def __init__(self, name, dirname='archive'):
-        self.name = name
+
+class Generator:
+    def __init__(self, puples_file):
+        self.puples_file = puples_file
+
+    def generate_dir_students(self):
+        pass
 
 
-import tkinter as tk
-from tkinter import filedialog
-
-root = tk.Tk()
-root.withdraw()
-folder_selected = filedialog.askdirectory(title="Выберите папку")
-
-if folder_selected:
-    print(f"Выполнено! Папка выбрана: {folder_selected}")
-else:
-    print("Отмена выбора.")
-
-root.destroy()
