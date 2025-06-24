@@ -312,6 +312,6 @@ class Generator:
         self.puples_file = puples_file
 
     def generate_dir_students(self):
+        print()
         pass
-
 
