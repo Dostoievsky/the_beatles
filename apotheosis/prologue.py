@@ -98,7 +98,7 @@ class Finding:
                     fullname = f'{name} {surname}'
                     return fullname, mark, os.path.basename(filepath)
         return 0
-
+#dd
 
 class Answers:
 
