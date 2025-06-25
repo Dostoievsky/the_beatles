@@ -727,8 +727,8 @@ elif mainchoose in dct_variants['find_puple']:
         sys.exit()
 
 
-elif mainchoose in dct_variants['quickstart']:
-    pass
+# elif mainchoose in dct_variants['quickstart']:
+#     pass
 
 elif mainchoose in dct_variants['generate']:
     print()

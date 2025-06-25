@@ -308,10 +308,55 @@ main_dct = {'klass': '11в',
 
 
 class Generator:
-    def __init__(self, puples_file):
+    def __init__(self, puples_file, name_work):
         self.puples_file = puples_file
+        self.name_work = name_work
+        self.lst_files = []
 
     def generate_dir_students(self):
-        print()
-        pass
+        path = os.path.join(os.getcwd(), self.name_work)
+        os.makedirs(path, exist_ok=True)
+        self.lst_files = os.listdir(path)
 
+
+    def generate_file_students(self):
+        with open(self.puples_file, 'r', encoding='utf-8') as kfile:
+            for fullname in kfile:
+                name, surname = fullname.lower().strip().split()
+                filename = f'{name}_{surname}.txt'
+                with open(os.path.join(self.name_work, filename), 'w', encoding='utf-8') as f:
+                    pass
+
+
+    def fill_files_students(self, count_strings):
+        for file in self.lst_files:
+            fullpath = os.path.join(self.name_work, file)
+            with open(fullpath, 'w', encoding='utf-8') as filepuple:
+                for i in range(1, count_strings + 1):
+                    print(f'{i}) ', file=filepuple)
+
+    @staticmethod
+    def create_answers_file(count_strings, filename='answers.txt', flag=True):
+        with open(filename, 'w', encoding='utf-8') as fileansw:
+            if flag:
+                for i in range(1, count_strings + 1):
+                    print(f'{i}) ', file=fileansw)
+
+
+    @staticmethod
+    def create_marks_file(filename='marks.txt', grade=5, flag=True):
+        with open(filename, 'w', encoding='utf-8') as filemarks:
+            if flag:
+                for _ in range(grade-1):
+                    print('оценка _ от _ до _ баллов', file=filemarks)
+
+
+
+
+
+g = Generator('puples8v.txt', 'Полукаторжная работа 3')
+g.generate_dir_students()
+g.generate_file_students()
+g.fill_files_students(10)
+g.create_answers_file(10)
+g.create_marks_file()
