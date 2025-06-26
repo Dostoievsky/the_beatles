@@ -227,31 +227,75 @@ m = Marks('marks.txt', 0)
 # оценка 2 от 0 до 4 баллов
 
 
-class Missings:
-    def __init__(self, string, puple_file, puples_dict):
-        self.string = string
-        self.puple_file = puple_file
-        self.puples_dict = puples_dict
-
-    def get_missings(self):
-        lst = []
-        if self.string.lower().strip() == 'auto':
-            with open(self.puple_file, 'r', encoding='utf-8') as pup_file:
-                puples = map(lambda x: x.strip(), pup_file.readlines())
-                for puple in puples:
-                    if puple not in self.puples_dict.keys():
-                        lst.append(puple)
-                return lst
-        else:
-            with open(self.string, 'r', encoding='utf-8') as miss_file:
-                for line in miss_file.readlines():
-                    lst.append(line.strip())
-                return lst
-
-
-
-rep = Missings('auto', 'puples8v.txt', {'Вася Пупкин': 5, 'Петя Сидоров': 4, 'Маша Иванова': 3, 'Саша Петров': 2, 'Даша Сидорова': 3, 'Ваня Петров': 3, 'Аиша Муратова': 5})
-print(rep.get_missings())
-
+# class Missings:
+#     def __init__(self, string, puple_file, puples_dict):
+#         self.string = string
+#         self.puple_file = puple_file
+#         self.puples_dict = puples_dict
+#
+#     def get_missings(self):
+#         lst = []
+#         if self.string.lower().strip() == 'auto':
+#             with open(self.puple_file, 'r', encoding='utf-8') as pup_file:
+#                 puples = map(lambda x: x.strip(), pup_file.readlines())
+#                 for puple in puples:
+#                     if puple not in self.puples_dict.keys():
+#                         lst.append(puple)
+#                 return lst
+#         else:
+#             with open(self.string, 'r', encoding='utf-8') as miss_file:
+#                 for line in miss_file.readlines():
+#                     lst.append(line.strip())
+#                 return lst
+#
+#
+#
+# rep = Missings('auto', 'puples8v.txt', {'Вася Пупкин': 5, 'Петя Сидоров': 4, 'Маша Иванова': 3, 'Саша Петров': 2, 'Даша Сидорова': 3, 'Ваня Петров': 3, 'Аиша Муратова': 5})
+# print(rep.get_missings())
+#
 
 #D:/pythonProject/apotheosis/missings.txt
+
+
+def step_get_name_of_work(inputs):
+    inputs["name_of_work"] = input("Введите название работы: ").strip()
+
+def step_get_pupe_file(inputs):
+    if inputs.get("need_pupe_files"):
+        inputs["pupe_file"] = input("Введите название файла учеников: ").strip()
+
+def step_get_count_strings_pup(inputs):
+    if inputs.get("need_count_strings"):
+        inputs["count_strings_pup"] = int(input("Введите количество строк для ответов: "))
+
+def step_ask_for_pupe_files(inputs):
+    response = input("Нужны ли файлы учеников? (да/нет): ").lower().strip()
+    inputs["need_pupe_files"] = response in ['да', 'yes', 'y']
+
+def step_ask_for_count_strings(inputs):
+    if inputs.get("need_pupe_files"):  # если файлы учеников нужны
+        response = input("Нужны ли строки для ответов в файлах учеников? (да/нет): ").lower().strip()
+        inputs["need_count_strings"] = response in ['да', 'yes', 'y']
+
+# Функции-шаги
+steps = [
+    step_get_name_of_work,
+    step_ask_for_pupe_files,
+    step_get_pupe_file,
+    step_ask_for_count_strings,
+    step_get_count_strings_pup
+]
+
+# Главная функция для сбора данных
+def collect_user_inputs():
+    inputs = {}
+    for step in steps:
+        step(inputs)
+    return inputs
+
+# Тестируем сбор данных
+inputs = collect_user_inputs()
+
+# Выводим результаты
+for variable, value in inputs.items():
+    print(f"{variable}: {value}")

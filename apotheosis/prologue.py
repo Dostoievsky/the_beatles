@@ -330,6 +330,65 @@ class Student:
         }
 
 
+class Generator:
+    def __init__(self, puples_file, name_work):
+        self.puples_file = puples_file
+        self.name_work = name_work
+        self.lst_files = []
+
+    def generate_dir_students(self):
+        path = os.path.join(os.getcwd(), self.name_work)
+        os.makedirs(path, exist_ok=True)
+
+    def generate_file_students(self):
+        with open(self.puples_file, 'r', encoding='utf-8') as kfile:
+            for fullname in kfile:
+                name, surname = fullname.lower().strip().split()
+                filename = f'{name}_{surname}.txt'
+                with open(os.path.join(self.name_work, filename), 'a', encoding='utf-8') as f:
+                    pass
+        path = os.path.join(os.getcwd(), self.name_work)
+        self.lst_files = os.listdir(path)
+
+    def fill_files_students(self, count_strings):
+        for file in self.lst_files:
+            fullpath = os.path.join(self.name_work, file)
+            with open(fullpath, 'w', encoding='utf-8') as filepuple:
+                for i in range(1, count_strings + 1):
+                    print(f'{i}) ', file=filepuple)
+
+    @staticmethod
+    def create_answers_file(count_strings, filename='answers.txt', flag=True):
+        with open(filename, 'w', encoding='utf-8') as fileansw:
+            if flag:
+                for i in range(1, count_strings + 1):
+                    print(f'{i}) ', file=fileansw)
+
+
+    @staticmethod
+    def create_marks_file(filename='marks.txt', grade=5, flag=True):
+        with open(filename, 'w', encoding='utf-8') as filemarks:
+            if flag:
+                for _ in range(grade-1):
+                    print('оценка _ от _ до _ баллов', file=filemarks)
+
+    @staticmethod
+    def checking_setings(puples_file, count_strings):
+        lst_errors = []
+        if not os.path.exists(os.path.join(os.getcwd(), puples_file)):
+            lst_errors.append(f'Файл {puples_file} не найден.')
+        if not count_strings.isdigit():
+            lst_errors.append(f'Количество строк должно быть целым числом.')
+        if lst_errors:
+            return lst_errors
+        return False
+
+    @staticmethod
+    def create_missings_file(filename='missing.txt'):
+        with open(filename, 'w', encoding='utf-8') as filemiss:
+            pass
+
+
 class StudentJSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Student):
@@ -731,5 +790,49 @@ elif mainchoose in dct_variants['find_puple']:
 #     pass
 
 elif mainchoose in dct_variants['generate']:
-    print()
-    pass
+    genchoose = input('Выберите режим генерации:\n'
+          'Генерация по умолчанию(без точной настройки)[0]\n'
+          'Генерация с ручной настройкой[1]\n').lower().strip()
+
+    if genchoose in ('0', 'генерация по умолчанию'):
+        name_of_work = input('Введите название работы: ')
+        file_puples = input('Введите имя файла с именами учеников: ')
+        count_strings = input('Введите количество необходимых полей для ответов: ')
+
+        ch = Generator.checking_setings(file_puples, count_strings)
+        if ch:
+            print('Ошибки при введении данных:')
+            for error in ch:
+                print(error)
+            sys.exit()
+        else:
+            g = Generator(file_puples, name_of_work)
+            g.generate_dir_students()
+            g.generate_file_students()
+            g.fill_files_students(int(count_strings))
+            g.create_answers_file(int(count_strings))
+            g.create_marks_file()
+            g.create_missings_file()
+
+
+        print(f'Генерация файлов прошла успешно. Создана папка {name_of_work} с файлами учеников, файлы marks.txt, missings.txt и answers.txt с шаблонами.')
+
+    elif genchoose in ('1', 'генерация с ручной настройкой'):
+        print('Вы находитесь в режиме ручной настройки генерации. ')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

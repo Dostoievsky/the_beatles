@@ -316,7 +316,7 @@ class Generator:
     def generate_dir_students(self):
         path = os.path.join(os.getcwd(), self.name_work)
         os.makedirs(path, exist_ok=True)
-        self.lst_files = os.listdir(path)
+
 
 
     def generate_file_students(self):
@@ -324,9 +324,10 @@ class Generator:
             for fullname in kfile:
                 name, surname = fullname.lower().strip().split()
                 filename = f'{name}_{surname}.txt'
-                with open(os.path.join(self.name_work, filename), 'w', encoding='utf-8') as f:
+                with open(os.path.join(self.name_work, filename), 'a', encoding='utf-8') as f:
                     pass
-
+        path = os.path.join(os.getcwd(), self.name_work)
+        self.lst_files = os.listdir(path)
 
     def fill_files_students(self, count_strings):
         for file in self.lst_files:
@@ -350,14 +351,30 @@ class Generator:
                 for _ in range(grade-1):
                     print('оценка _ от _ до _ баллов', file=filemarks)
 
+    @staticmethod
+    def checking_setings(puples_file, count_strings):
+        lst_errors = []
+        if not os.path.exists(os.path.join(os.getcwd(), puples_file)):
+            lst_errors.append(f'Файл {puples_file} не найден.')
+        if not count_strings.isdigit():
+            lst_errors.append(f'Количество строк должно быть целым числом.')
+        if lst_errors:
+            return lst_errors
+        return False
 
+name_of_work = input('Введите название работы: ')
+file_puples = input('Введите имя файла с именами учеников: ')
+count_strings = input('Введите количество необходимых полей для ответов: ')
 
-
-
-g = Generator('puples8v.txt', 'Полукаторжная работа 3')
-g.generate_dir_students()
-g.generate_file_students()
-g.fill_files_students(10)
-g.create_answers_file(10)
-g.create_marks_file()
-#dd
+ch = Generator.checking_setings(file_puples, count_strings)
+if ch:
+    print('Ошибки при введении данных:')
+    for error in ch:
+        print(error)
+else:
+    g = Generator(file_puples, name_of_work)
+    g.generate_dir_students()
+    g.generate_file_students()
+    g.fill_files_students(int(count_strings))
+    g.create_answers_file(int(count_strings))
+    g.create_marks_file()
