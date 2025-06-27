@@ -250,52 +250,102 @@ m = Marks('marks.txt', 0)
 #
 #
 #
-# rep = Missings('auto', 'puples8v.txt', {'Вася Пупкин': 5, 'Петя Сидоров': 4, 'Маша Иванова': 3, 'Саша Петров': 2, 'Даша Сидорова': 3, 'Ваня Петров': 3, 'Аиша Муратова': 5})
+# rep = Missings('auto', '.txt', {'Вася Пупкин': 5, 'Петя Сидоров': 4, 'Маша Иванова': 3, 'Саша Петров': 2, 'Даша Сидорова': 3, 'Ваня Петров': 3, 'Аиша Муратова': 5})
 # print(rep.get_missings())
 #
 
 #D:/pythonProject/apotheosis/missings.txt
 
 
-def step_get_name_of_work(inputs):
-    inputs["name_of_work"] = input("Введите название работы: ").strip()
+import os
+import sys
 
-def step_get_pupe_file(inputs):
-    if inputs.get("need_pupe_files"):
-        inputs["pupe_file"] = input("Введите название файла учеников: ").strip()
 
-def step_get_count_strings_pup(inputs):
-    if inputs.get("need_count_strings"):
-        inputs["count_strings_pup"] = int(input("Введите количество строк для ответов: "))
+# noinspection PyTypedDict
+class SettingsGeneration:
+    def __init__(self):
+        self.inputs = {
+            "name_of_work": None,
+            "pupe_file": None,
+            "count_strings_pup": None,
+            "answers_file": None,
+            "template_lines": None,
+            "criteria_file": None,
+            "grading_scale": None,
+            "absentees_file": None
+        }
 
-def step_ask_for_pupe_files(inputs):
-    response = input("Нужны ли файлы учеников? (да/нет): ").lower().strip()
-    inputs["need_pupe_files"] = response in ['да', 'yes', 'y']
+    class Questions:
+        def __init__(self, question, tuple_of_variants=('1', 'lf', 'да')):
+            self.question = question
+            self.tuple_of_variants = tuple_of_variants
 
-def step_ask_for_count_strings(inputs):
-    if inputs.get("need_pupe_files"):  # если файлы учеников нужны
-        response = input("Нужны ли строки для ответов в файлах учеников? (да/нет): ").lower().strip()
-        inputs["need_count_strings"] = response in ['да', 'yes', 'y']
+        def make_question(self):
+            if input(self.question).strip().lower() in self.tuple_of_variants:
+                return True
+            else:
+                return False
 
-# Функции-шаги
-steps = [
-    step_get_name_of_work,
-    step_ask_for_pupe_files,
-    step_get_pupe_file,
-    step_ask_for_count_strings,
-    step_get_count_strings_pup
-]
+    @staticmethod
+    def validate_integer(prompt):
+        while True:
+            try:
+                return abs(int(input(prompt)))
+            except ValueError:
+                print("Введите корректное целое число.")
 
-# Главная функция для сбора данных
-def collect_user_inputs():
-    inputs = {}
-    for step in steps:
-        step(inputs)
-    return inputs
+    def step_get_name_of_work(self):
+        self.inputs["name_of_work"] = input("Введите название работы: ").strip()
 
-# Тестируем сбор данных
-inputs = collect_user_inputs()
+    def step_get_pupe_file(self):
+        sm = self.Questions("Нужны ли файлы учеников? ")
+        if sm.make_question():
+            pupe_file = input("Введите название файла учеников: ").strip()
+            if not os.path.exists(pupe_file):
+                print(f"Файл {pupe_file} не найден.")
+                sys.exit()
+            self.inputs["pupe_file"] = pupe_file
 
-# Выводим результаты
-for variable, value in inputs.items():
+            sm = self.Questions("Нужны ли строки для ответов в файлах учеников? ")
+            if sm.make_question():
+                self.inputs["count_strings_pup"] = self.validate_integer("Введите количество строк для ответов: ")
+
+    def step_get_answers_file(self):
+        sm = self.Questions("Нужен ли файл с ответами? ")
+        if sm.make_question():
+            self.inputs["answers_file"] = input("Введите название файла с ответами: ").strip()
+
+            sm = self.Questions("Создать файл по шаблону? ")
+            if sm.make_question():
+                self.inputs["template_lines"] = self.validate_integer("Введите количество строк для шаблона: ")
+
+    def step_get_criteria_file(self):
+        sm = self.Questions("Нужен ли файл с критериями оценивания? ")
+        if sm.make_question():
+            self.inputs["criteria_file"] = input("Введите название файла с критериями: ").strip()
+
+            sm = self.Questions("Создать файл по шаблону? ")
+            if sm.make_question():
+                self.inputs["grading_scale"] = self.validate_integer("Введите шкалу оценивания: ")
+
+    def step_get_absentees_file(self):
+        sm = self.Questions("Нужен ли файл с отсутствующими? ")
+        if sm.make_question():
+            self.inputs["absentees_file"] = input("Введите название файла с отсутствующими: ").strip()
+
+    def run_survey(self):
+        self.step_get_name_of_work()
+        self.step_get_pupe_file()
+        self.step_get_answers_file()
+        self.step_get_criteria_file()
+        self.step_get_absentees_file()
+        return self.inputs
+
+
+
+settings = SettingsGeneration()
+results = settings.run_survey()
+
+
+for variable, value in results.items():
     print(f"{variable}: {value}")

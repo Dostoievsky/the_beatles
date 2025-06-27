@@ -10,6 +10,7 @@ import json
 import re
 
 
+# noinspection PyGlobalUndefined
 def on_submit():
     global result
     class_value = class_entry.get()
@@ -329,7 +330,6 @@ class Student:
             "_flag_not_all": self._flag_not_all
         }
 
-
 class Generator:
     def __init__(self, puples_file, name_work):
         self.puples_file = puples_file
@@ -341,12 +341,15 @@ class Generator:
         os.makedirs(path, exist_ok=True)
 
     def generate_file_students(self):
-        with open(self.puples_file, 'r', encoding='utf-8') as kfile:
-            for fullname in kfile:
-                name, surname = fullname.lower().strip().split()
-                filename = f'{name}_{surname}.txt'
-                with open(os.path.join(self.name_work, filename), 'a', encoding='utf-8') as f:
-                    pass
+        if self.puples_file is not None:
+            with open(self.puples_file, 'r', encoding='utf-8') as kfile:
+                for fullname in kfile:
+                    name, surname = fullname.lower().strip().split()
+                    filename = f'{name}_{surname}.txt'
+                    with open(os.path.join(self.name_work, filename), 'a', encoding='utf-8') as f:
+                        pass
+        else:
+            pass
         path = os.path.join(os.getcwd(), self.name_work)
         self.lst_files = os.listdir(path)
 
@@ -354,23 +357,27 @@ class Generator:
         for file in self.lst_files:
             fullpath = os.path.join(self.name_work, file)
             with open(fullpath, 'w', encoding='utf-8') as filepuple:
-                for i in range(1, count_strings + 1):
-                    print(f'{i}) ', file=filepuple)
+                if count_strings is not None:
+                    for i in range(1, count_strings + 1):
+                        print(f'{i}) ', file=filepuple)
+                else:
+                    pass
 
     @staticmethod
-    def create_answers_file(count_strings, filename='answers.txt', flag=True):
-        with open(filename, 'w', encoding='utf-8') as fileansw:
-            if flag:
-                for i in range(1, count_strings + 1):
-                    print(f'{i}) ', file=fileansw)
-
+    def create_answers_file(count_strings, filename='answers.txt'):
+        if filename is not None:
+            with open(filename, 'w', encoding='utf-8') as fileansw:
+                if count_strings is not None:
+                    for i in range(1, count_strings + 1):
+                        print(f'{i}) ', file=fileansw)
 
     @staticmethod
-    def create_marks_file(filename='marks.txt', grade=5, flag=True):
-        with open(filename, 'w', encoding='utf-8') as filemarks:
-            if flag:
-                for _ in range(grade-1):
-                    print('оценка _ от _ до _ баллов', file=filemarks)
+    def create_marks_file(filename='marks.txt', grade=5):
+        if filename is not None:
+            with open(filename, 'w', encoding='utf-8') as filemarks:
+                if grade is not None:
+                    for _ in range(grade - 1):
+                        print('оценка _ от _ до _ баллов', file=filemarks)
 
     @staticmethod
     def checking_setings(puples_file, count_strings):
@@ -385,8 +392,98 @@ class Generator:
 
     @staticmethod
     def create_missings_file(filename='missing.txt'):
+        if filename is not None:
+            with open(filename, 'w', encoding='utf-8') as filemiss:
+                pass
+
+
+
+@staticmethod
+def create_missings_file(filename='missing.txt'):
+    if filename is None:
         with open(filename, 'w', encoding='utf-8') as filemiss:
             pass
+
+
+# noinspection PyTypedDict
+class SettingsGeneration:
+    def __init__(self):
+        self.inputs = {
+            "name_of_work": None,
+            "pupe_file": None,
+            "count_strings_pup": None,
+            "answers_file": None,
+            "template_lines": None,
+            "criteria_file": None,
+            "grading_scale": None,
+            "absentees_file": None
+        }
+
+    class Questions:
+        def __init__(self, question, tuple_of_variants=('1', 'lf', 'да')):
+            self.question = question
+            self.tuple_of_variants = tuple_of_variants
+
+        def make_question(self):
+            if input(self.question).strip().lower() in self.tuple_of_variants:
+                return True
+            else:
+                return False
+
+    @staticmethod
+    def validate_integer(prompt):
+        while True:
+            try:
+                return abs(int(input(prompt)))
+            except ValueError:
+                print("Введите корректное целое число.")
+
+    def step_get_name_of_work(self):
+        self.inputs["name_of_work"] = input("Введите название работы: ").strip()
+
+    def step_get_pupe_file(self):
+        sm = self.Questions("Нужны ли файлы учеников? ")
+        if sm.make_question():
+            pupe_file = input("Введите название файла учеников: ").strip()
+            if not os.path.exists(pupe_file):
+                print(f"Файл {pupe_file} не найден.")
+                sys.exit()
+            self.inputs["pupe_file"] = pupe_file
+
+            sm = self.Questions("Нужны ли строки для ответов в файлах учеников? ")
+            if sm.make_question():
+                self.inputs["count_strings_pup"] = self.validate_integer("Введите количество строк для ответов: ")
+
+    def step_get_answers_file(self):
+        sm = self.Questions("Нужен ли файл с ответами? ")
+        if sm.make_question():
+            self.inputs["answers_file"] = input("Введите название файла с ответами: ").strip()
+
+            sm = self.Questions("Создать файл по шаблону? ")
+            if sm.make_question():
+                self.inputs["template_lines"] = self.validate_integer("Введите количество строк для шаблона: ")
+
+    def step_get_criteria_file(self):
+        sm = self.Questions("Нужен ли файл с критериями оценивания? ")
+        if sm.make_question():
+            self.inputs["criteria_file"] = input("Введите название файла с критериями: ").strip()
+
+            sm = self.Questions("Создать файл по шаблону? ")
+            if sm.make_question():
+                self.inputs["grading_scale"] = self.validate_integer("Введите шкалу оценивания: ")
+
+    def step_get_absentees_file(self):
+        sm = self.Questions("Нужен ли файл с отсутствующими? ")
+        if sm.make_question():
+            self.inputs["absentees_file"] = input("Введите название файла с отсутствующими: ").strip()
+
+    def run_survey(self):
+        self.step_get_name_of_work()
+        self.step_get_pupe_file()
+        self.step_get_answers_file()
+        self.step_get_criteria_file()
+        self.step_get_absentees_file()
+        return self.inputs
 
 
 class StudentJSONEncoder(json.JSONEncoder):
@@ -820,10 +917,20 @@ elif mainchoose in dct_variants['generate']:
     elif genchoose in ('1', 'генерация с ручной настройкой'):
         print('Вы находитесь в режиме ручной настройки генерации. ')
 
+        settings = SettingsGeneration()
+        results = settings.run_survey()
 
+        print('Настройки сохранены. Дождитесь завершения генерации.')
 
+        manset = Generator(name_work=results['name_of_work'], puples_file=results['pupe_file'])
+        manset.generate_dir_students()
+        manset.generate_file_students()
+        manset.fill_files_students(results['count_strings_pup'])
+        manset.create_answers_file(results['template_lines'], results['answers_file'])
+        manset.create_marks_file(results['criteria_file'], results['grading_scale'])
+        manset.create_missings_file(results['absentees_file'])
 
-
+        print('Генерация прошла успешно.')
 
 
 
