@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from datetime import datetime
 import json
@@ -51,6 +52,17 @@ class StudentJSONEncoder(json.JSONEncoder):
 class FileManager:
     def __init__(self, dct):
         self.dct = dct
+
+    def copy_directory(self, source_path, destination_path):
+        try:
+            shutil.copytree(source_path, destination_path)
+            print(f"Папка успешно скопирована из {source_path} в {destination_path}.")
+        except FileExistsError:
+            pass
+        except OSError as err:
+            print(f"Ошибка при копировании: {err}")
+            sys.exit()
+
 
     def create_json_filename(self):
         fullpath = os.path.join(os.getcwd(), f'archive/{self.dct["klass"]}')
@@ -330,6 +342,7 @@ class Student:
             "_flag_not_all": self._flag_not_all
         }
 
+
 class Generator:
     def __init__(self, puples_file, name_work):
         self.puples_file = puples_file
@@ -398,11 +411,11 @@ class Generator:
 
 
 
-@staticmethod
-def create_missings_file(filename='missing.txt'):
-    if filename is None:
-        with open(filename, 'w', encoding='utf-8') as filemiss:
-            pass
+    @staticmethod
+    def create_missings_file(filename='missing.txt'):
+        if filename is None:
+            with open(filename, 'w', encoding='utf-8') as filemiss:
+                pass
 
 
 # noinspection PyTypedDict
@@ -753,7 +766,8 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         puples_dct[miss].missings = True
 
     fm = FileManager(main_dct)
-
+    smthpath = os.path.join(os.getcwd(), 'archive', main_dct['klass'], main_dct['name_work'])
+    fm.copy_directory(main_dct['students_folder'], smthpath)
     text_filepath = fm.create_text_file_path()
 
     if stat_flag: #создание системного json-файла для статистики по флагу stat_flag
@@ -883,8 +897,17 @@ elif mainchoose in dct_variants['find_puple']:
         sys.exit()
 
 
-# elif mainchoose in dct_variants['quickstart']:
-#     pass
+elif mainchoose in dct_variants['quick_start']:
+    print('В режиме быстрого старта программа сделает почти все за вас, однако без точной настройки, большиство значений будут заданы по умолчниаю. Для ознакомления настоятельно рекомендуется ознакомиться с инструкцией')
+    name_of_work = input('Введите название работы: ')
+    klass = input('Введите класс: ')
+    fullpath = os.path.join(os.getcwd(), name_of_work)
+    os.makedirs(fullpath, exist_ok=True)
+    if os.listdir(fullpath):
+        print('В папке уже есть файлы.')
+    else:
+        print('Папка была создана и пуста.  ')
+
 
 elif mainchoose in dct_variants['generate']:
     genchoose = input('Выберите режим генерации:\n'
