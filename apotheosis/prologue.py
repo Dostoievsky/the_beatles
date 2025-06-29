@@ -50,7 +50,7 @@ class StudentJSONEncoder(json.JSONEncoder):
 
 
 class FileManager:
-    def __init__(self, dct):
+    def __init__(self, dct=None):
         self.dct = dct
 
     def copy_directory(self, source_path, destination_path):
@@ -78,6 +78,24 @@ class FileManager:
         fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.txt'
         return os.path.join(fullpath, fullnamework)
 
+
+    @staticmethod
+    def write_sysfile_for_qs_true():
+        sysdict = {"first_start": True}
+        with open('sysfileqs.json', 'w', encoding='utf-8') as file:
+            json.dump(sysdict, file, indent=4, ensure_ascii=False)
+
+    @staticmethod
+    def read_sysfile_for_qs():
+        with open('sysfileqs.json', 'r', encoding='utf-8') as file:
+            sd = json.load(file)
+            return sd['first_start']
+
+    @staticmethod
+    def write_sysfile_for_qs_false():
+        sysdict = {"first_start": False}
+        with open('sysfileqs.json', 'w', encoding='utf-8') as file:
+            json.dump(sysdict, file, indent=4, ensure_ascii=False)
 
 class Finding:
 
@@ -111,7 +129,7 @@ class Finding:
                     fullname = f'{name} {surname}'
                     return fullname, mark, os.path.basename(filepath)
         return 0
-#dd
+
 
 class Answers:
 
@@ -411,11 +429,6 @@ class Generator:
 
 
 
-    @staticmethod
-    def create_missings_file(filename='missing.txt'):
-        if filename is None:
-            with open(filename, 'w', encoding='utf-8') as filemiss:
-                pass
 
 
 # noinspection PyTypedDict
@@ -896,17 +909,27 @@ elif mainchoose in dct_variants['find_puple']:
         print(f'{found[0].strip()}: {found[1].strip()}')
         sys.exit()
 
+#заморожено до лучших времен
+# elif mainchoose in dct_variants['quick_start']:
+#     fm_qs = FileManager()
+#     fm_qs.write_sysfile_for_qs_true()
+#
+#     print('В режиме быстрого старта программа сделает почти все за вас, однако без точной настройки, большиство значений будут заданы по умолчниаю. Для ознакомления настоятельно рекомендуется ознакомиться с инструкцией')
+#     name_of_work = input('Введите название работы: ')
+#     klass = input('Введите класс: ')
+#     puples_file = input('Введите имя файла с именами учеников: ')
+#
+#     qgen = Generator(name_of_work, puples_file)
+#     qgen.generate_dir_students()
+#     qgen.generate_file_students()
+#     qgen.create_answers_file(None)
+#     qgen.create_marks_file()
+#     qgen.create_missings_file()
+#
+#     print('Папка была создана и пуста. Заполните ее работами учеников.')
 
-elif mainchoose in dct_variants['quick_start']:
-    print('В режиме быстрого старта программа сделает почти все за вас, однако без точной настройки, большиство значений будут заданы по умолчниаю. Для ознакомления настоятельно рекомендуется ознакомиться с инструкцией')
-    name_of_work = input('Введите название работы: ')
-    klass = input('Введите класс: ')
-    fullpath = os.path.join(os.getcwd(), name_of_work)
-    os.makedirs(fullpath, exist_ok=True)
-    if os.listdir(fullpath):
-        print('В папке уже есть файлы.')
-    else:
-        print('Папка была создана и пуста.  ')
+
+
 
 
 elif mainchoose in dct_variants['generate']:

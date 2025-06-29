@@ -352,15 +352,16 @@ m = Marks('marks.txt', 0)
 
 
 def generate_grading_scale(num_tasks):
-    """Генерация шкалы оценок на основе количества заданий."""
-    if num_tasks <= 10:
-        boundaries = [(10, 10), (7, 9), (5, 6), (0, 4)]
-    elif num_tasks <= 20:
-        boundaries = [(num_tasks - 1, num_tasks), (num_tasks - 3, num_tasks - 1), (num_tasks - 6, num_tasks - 4), (0, num_tasks - 7)]
-    elif num_tasks <= 30:
-        boundaries = [(num_tasks - 2, num_tasks), (num_tasks - 5, num_tasks - 3), (num_tasks - 9, num_tasks - 6), (0, num_tasks - 10)]
-    else:
-        boundaries = [(num_tasks - 3, num_tasks), (num_tasks - 7, num_tasks - 4), (num_tasks - 12, num_tasks - 8), (0, num_tasks - 13)]
+    boundaries = []
+
+    percent_boundaries = [(90, 100), (75, 89), (60, 74), (0, 59)]
+
+    for lower_percent, upper_percent in percent_boundaries:
+        min_correct = int((lower_percent / 100) * num_tasks)
+        max_correct = int((upper_percent / 100) * num_tasks)
+        if max_correct >= num_tasks:
+            max_correct = num_tasks
+        boundaries.append((min_correct, max_correct))
 
     with open('grading_scale.txt', 'w', encoding='utf-8') as gs_file:
         for i, boundary in enumerate(boundaries):
@@ -368,8 +369,7 @@ def generate_grading_scale(num_tasks):
             grade = 5 - i
             gs_file.write(f"оценка {grade} от {low} до {high} баллов\n")
 
-# Пример использования
-num_tasks = 100 # количество заданий
+
+num_tasks = 20
 generate_grading_scale(num_tasks)
-print()
 
