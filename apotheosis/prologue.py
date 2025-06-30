@@ -1,3 +1,4 @@
+import csv
 import os
 import shutil
 import sys
@@ -53,6 +54,24 @@ class FileManager:
     def __init__(self, dct=None):
         self.dct = dct
 
+    def write_to_csv(self, filename, puples_dct, main_dct):
+        with open(filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
+            writer = csv.writer(csvfile)
+
+            # Запись заголовков
+            writer.writerow([f"Класс: {main_dct['klass']}"])
+            writer.writerow([f"Название работы: {main_dct['name_work']}"])
+            writer.writerow([f"Дата работы: {main_dct['date']}"])
+            writer.writerow([])  # Пустой ряд для красоты
+
+            # Запись данных учеников
+            for k, v in puples_dct:
+                if v.missings:
+                    writer.writerow([f'{k}  -  отсутствовал(а)'])
+                else:
+                    star = '*' if v.flag_not_all else ''
+                    writer.writerow([f'{k}:    {v.mark}{star}'])
+
     def copy_directory(self, source_path, destination_path):
         try:
             shutil.copytree(source_path, destination_path)
@@ -78,6 +97,12 @@ class FileManager:
         fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.txt'
         return os.path.join(fullpath, fullnamework)
 
+    def create_csv_file_path(self):
+        halfpath = os.path.join('archive', self.dct["klass"])
+        fullpath = os.path.join(os.getcwd(), halfpath)
+        os.makedirs(fullpath, exist_ok=True)
+        fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.csv'
+        return os.path.join(fullpath, fullnamework)
 
     @staticmethod
     def write_sysfile_for_qs_true():
@@ -703,6 +728,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
 
     stat_flag = False
     marks_flag = False
+    csv_flag = False
 
     qst = Questions('Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системный json-файл.\n')
     if qst.make_question():
@@ -711,6 +737,10 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     qst1 = Questions('В файле с оценками критерии оценивания записаны в форме баллов?\n')
     if qst1.make_question():
         marks_flag = True
+
+    qst0 = Questions('Записать результаты проверки в csv-файл? (при отрицательном ответе результаты будут записаны в txt-файл)\n')
+    if qst0.make_question():
+        csv_flag = True
 
     files_of_puple = os.listdir(main_dct['students_folder']) #формирование словаря имя_ученика: путь_к_файлу
     dct_of_puple_files = {}
@@ -781,7 +811,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     fm = FileManager(main_dct)
     smthpath = os.path.join(os.getcwd(), 'archive', main_dct['klass'], main_dct['name_work'])
     fm.copy_directory(main_dct['students_folder'], smthpath)
-    text_filepath = fm.create_text_file_path()
+    filepath = fm.create_text_file_path()
 
     if stat_flag: #создание системного json-файла для статистики по флагу stat_flag
         halfpath = f'archive/{main_dct["klass"]}'
@@ -810,23 +840,28 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         print('Неизвестный режим сортировки.')
         sys.exit()
 
+    if not csv_flag:
+        with open(filepath, 'w', encoding='utf-8') as file: #запись в итоговый файл
+            print(f"Класс: {main_dct['klass']}", file=file)
+            print(f"Название работы: {main_dct['name_work']}", file=file)
+            print(f"Дата работы: {main_dct['date']}", file=file)
+            print(file=file)
+            for k, v in puples_dct:
+                if v.missings:
+                    print(f'{k}  -  отсутствовал(а)', file=file)
+                    continue
+                star = ('*' if v.flag_not_all else '')
+                print(f'{k}:    {v.mark}{star}', file=file)
+    else:
 
-    with open(text_filepath, 'w', encoding='utf-8') as file: #запись в итоговый файл
-        print(f"Класс: {main_dct['klass']}", file=file)
-        print(f"Название работы: {main_dct['name_work']}", file=file)
-        print(f"Дата работы: {main_dct['date']}", file=file)
-        print(file=file)
-        for k, v in puples_dct:
-            if v.missings:
-                print(f'{k}  -  отсутствовал(а)', file=file)
-                continue
-            star = ('*' if v.flag_not_all else '')
-            print(f'{k}:    {v.mark}{star}', file=file)
+        fm = FileManager(main_dct)
+        filepath = fm.create_csv_file_path()
+        fm.write_to_csv(filepath, puples_dct, main_dct)
 
-    print(f'Проверка прошла успешно. Результаты проверки записаны в файл {text_filepath}.') #конец работы
+    print(f'Проверка прошла успешно. Результаты проверки записаны в файл {filepath}.') #конец работы
     qst3 = Questions('Открыть файл?\n')
     if qst3.make_question():
-        os.startfile(text_filepath)
+        os.startfile(filepath)
 
 
 

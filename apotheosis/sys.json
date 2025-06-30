@@ -1,10 +1,10 @@
 {
     "klass": "8в",
-    "name_work": "Каторжная работа 3",
-    "date": "28.06.2025",
+    "name_work": "Контрольная работа 5",
+    "date": "30.06.2025",
     "answer": "D:/pythonProject/apotheosis/answers.txt",
     "marks": "D:/pythonProject/apotheosis/marks.txt",
     "students": "D:/pythonProject/apotheosis/puples8v.txt",
-    "missings": "auto",
-    "students_folder": "D:/pythonProject/apotheosis/Каторжная работа 3"
+    "missings": "D:/pythonProject/apotheosis/missings.txt",
+    "students_folder": "D:/pythonProject/apotheosis/Контрольная работа 5"
 }
