@@ -58,13 +58,13 @@ class FileManager:
         with open(filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
             writer = csv.writer(csvfile)
 
-            # Запись заголовков
+
             writer.writerow([f"Класс: {main_dct['klass']}"])
             writer.writerow([f"Название работы: {main_dct['name_work']}"])
             writer.writerow([f"Дата работы: {main_dct['date']}"])
-            writer.writerow([])  # Пустой ряд для красоты
+            writer.writerow([])
 
-            # Запись данных учеников
+
             for k, v in puples_dct:
                 if v.missings:
                     writer.writerow([f'{k}  -  отсутствовал(а)'])
@@ -128,6 +128,16 @@ class Finding:
         self.name = name
         self.lst_found = []
 
+    @staticmethod
+    def csv_to_columns(file_path):
+        plain_list = []
+        with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+            for _ in range(4):
+                next(csvfile)
+            for line in csvfile:
+                plain_list.append(line.strip())
+        return plain_list
+
     def find_from_dir(self, dirpath):
         for root, dirs, files in os.walk(dirpath):
             for file in files:
@@ -135,12 +145,19 @@ class Finding:
                     continue
                 filepath = os.path.join(root, file)
                 with open(filepath, 'r', encoding='utf-8') as filefind:
+
+                    # if filepath.endswith('.csv'):
+                    #     print('csv')
+                        # filefind = self.csv_to_columns(filepath)
+
+
                     for line in filefind:
                         if line.strip().lower().startswith(self.name.lower()):
                             name, surname, mark = line.split()
                             fullname = f'{name} {surname}'
                             self.lst_found.append((fullname, mark, os.path.basename(filepath)))
                             continue
+
         if self.lst_found:
             return self.lst_found
         return 0
@@ -848,7 +865,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
             print(file=file)
             for k, v in puples_dct:
                 if v.missings:
-                    print(f'{k}  -  отсутствовал(а)', file=file)
+                    print(f'{k}:    отсутствовал(а)', file=file)
                     continue
                 star = ('*' if v.flag_not_all else '')
                 print(f'{k}:    {v.mark}{star}', file=file)
@@ -918,7 +935,7 @@ elif mainchoose in dct_variants['find_puple']:
 
 
     elif qst4 in ('0', 'по файлу'): #проверка корректности файл
-        filtered_list_dir = filter(lambda file: os.path.isfile(os.path.join(fullpathfind, file)) and file.endswith('.txt'), os.listdir(fullpathfind))
+        filtered_list_dir = filter(lambda file: os.path.isfile(os.path.join(fullpathfind, file)) and (file.endswith('.txt') or file.endswith('.csv')) , os.listdir(fullpathfind))
         for index, file in enumerate(filtered_list_dir, 1):
             dct_find_files[index] = file
             print(f'{file}[{index}]')
