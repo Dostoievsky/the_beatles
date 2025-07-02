@@ -96,120 +96,120 @@
 #     print(f'{k}: {v.__dict__}')
 
 import os
-import json
-
-
-class Student:
-    def __init__(self, name, surname):
-        self._name = name
-        self._surname = surname
-        self._file = None
-        self._list_answers = None
-        self._correct_answers = None
-        self._mark = None
-        self._missings = False
-        self._flag_not_all = False
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, new_name):
-        self._name = new_name
-
-    @property
-    def surname(self):
-        return self._surname
-
-    @surname.setter
-    def surname(self, new_surname):
-        self._surname = new_surname
-
-    @property
-    def file(self):
-        return self._file
-
-    @file.setter
-    def file(self, new_file):
-        self._file = new_file
-
-    @property
-    def list_answers(self):
-        return self._list_answers
-
-    @list_answers.setter
-    def list_answers(self, new_list_answers):
-        self._list_answers = new_list_answers
-
-    @property
-    def correct_answers(self):
-        return self._correct_answers
-
-    @correct_answers.setter
-    def correct_answers(self, new_correct_answers):
-        self._correct_answers = new_correct_answers
-
-    @property
-    def mark(self):
-        return self._mark
-
-    @mark.setter
-    def mark(self, new_mark):
-        self._mark = new_mark
-
-    @property
-    def flag_not_all(self):
-        return self._flag_not_all
-
-    @flag_not_all.setter
-    def flag_not_all(self, value):
-        self._flag_not_all = value
-
-    @property
-    def missings(self):
-        return self._missings
-
-    @missings.setter
-    def missings(self, value):
-        self._missings = value
-
-    def to_json(self):
-        return {
-            "__class__": "Student",
-            "_name": self._name,
-            "_surname": self._surname,
-            "_file": self._file,
-            "_list_answers": self._list_answers,
-            "_correct_answers": self._correct_answers,
-            "_mark": self._mark,
-            "_missings": self._missings,
-            "_flag_not_all": self._flag_not_all
-        }
-
-
-class StudentJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Student):
-            return {'__student__': True,
-                    'name': obj.name,
-                    'surname': obj.surname,
-                    'file': obj.file,
-                    'list_answers': obj.list_answers,
-                    'correct_answers': obj.correct_answers,
-                    'mark': obj.mark}
-        return super().default(obj)
-
-
-main_dct = {'klass': '11в',
-            'name_work': 'Работа',
-            'date': '16.06.2025',
-            'answer': 'D:/pythonProject/apotheosis/answers.txt',
-            'marks': 'D:/pythonProject/apotheosis/marks.txt',
-            'students': 'D:/pythonProject/apotheosis/puples8v.txt',
-            'missings': 'auto',
-            'students_folder': 'D:/pythonProject/apotheosis/Каторжная работа 3'}
-
+# import json
+#
+#
+# class Student:
+#     def __init__(self, name, surname):
+#         self._name = name
+#         self._surname = surname
+#         self._file = None
+#         self._list_answers = None
+#         self._correct_answers = None
+#         self._mark = None
+#         self._missings = False
+#         self._flag_not_all = False
+#
+#     @property
+#     def name(self):
+#         return self._name
+#
+#     @name.setter
+#     def name(self, new_name):
+#         self._name = new_name
+#
+#     @property
+#     def surname(self):
+#         return self._surname
+#
+#     @surname.setter
+#     def surname(self, new_surname):
+#         self._surname = new_surname
+#
+#     @property
+#     def file(self):
+#         return self._file
+#
+#     @file.setter
+#     def file(self, new_file):
+#         self._file = new_file
+#
+#     @property
+#     def list_answers(self):
+#         return self._list_answers
+#
+#     @list_answers.setter
+#     def list_answers(self, new_list_answers):
+#         self._list_answers = new_list_answers
+#
+#     @property
+#     def correct_answers(self):
+#         return self._correct_answers
+#
+#     @correct_answers.setter
+#     def correct_answers(self, new_correct_answers):
+#         self._correct_answers = new_correct_answers
+#
+#     @property
+#     def mark(self):
+#         return self._mark
+#
+#     @mark.setter
+#     def mark(self, new_mark):
+#         self._mark = new_mark
+#
+#     @property
+#     def flag_not_all(self):
+#         return self._flag_not_all
+#
+#     @flag_not_all.setter
+#     def flag_not_all(self, value):
+#         self._flag_not_all = value
+#
+#     @property
+#     def missings(self):
+#         return self._missings
+#
+#     @missings.setter
+#     def missings(self, value):
+#         self._missings = value
+#
+#     def to_json(self):
+#         return {
+#             "__class__": "Student",
+#             "_name": self._name,
+#             "_surname": self._surname,
+#             "_file": self._file,
+#             "_list_answers": self._list_answers,
+#             "_correct_answers": self._correct_answers,
+#             "_mark": self._mark,
+#             "_missings": self._missings,
+#             "_flag_not_all": self._flag_not_all
+#         }
+#
+#
+# class StudentJSONEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, Student):
+#             return {'__student__': True,
+#                     'name': obj.name,
+#                     'surname': obj.surname,
+#                     'file': obj.file,
+#                     'list_answers': obj.list_answers,
+#                     'correct_answers': obj.correct_answers,
+#                     'mark': obj.mark}
+#         return super().default(obj)
+#
+#
+# main_dct = {'klass': '11в',
+#             'name_work': 'Работа',
+#             'date': '16.06.2025',
+#             'answer': 'D:/pythonProject/apotheosis/answers.txt',
+#             'marks': 'D:/pythonProject/apotheosis/marks.txt',
+#             'students': 'D:/pythonProject/apotheosis/puples8v.txt',
+#             'missings': 'auto',
+#             'students_folder': 'D:/pythonProject/apotheosis/Каторжная работа 3'}
+#
 
 # class FileManager:
 #       def __init__(self, dct):
@@ -388,5 +388,21 @@ main_dct = {'klass': '11в',
 #     g.create_answers_file(int(count_strings))
 #     g.create_marks_file()
 
-class Statistics:
-    pass
+
+
+
+
+import signal
+
+
+def handle_stop_signal(signum, frame):
+    print("\nПрограмма остановлена.")
+    exit(0)
+
+# Установка обработчика сигналов
+signal.signal(signal.SIGINT, handle_stop_signal)  # Ctrl+C
+signal.signal(signal.SIGTERM, handle_stop_signal)
+
+f = input('Введите что-нибудь и нажмите Enter: ')
+f1 = input('Введите что-нибудь еще раз и нажмите Enter: ')
+print(f+f1)

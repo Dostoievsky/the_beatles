@@ -49,11 +49,13 @@
 #             plain_list.append(line.strip())
 #     return plain_list
 #
-# print(csv_to_columns(r'D:\pythonProject\apotheosis\archive\8в\8в_контрольная работа 5_30.06.2025.csv'))
+
 
 import os
-import csv
 
+
+
+# noinspection PyShadowingNames
 class Finding:
 
     def __init__(self, name):
@@ -94,9 +96,23 @@ class Finding:
             return self.lst_found
         return 0
 
+
+    def find_from_file(self, filepath):
+        with open(filepath, 'r', encoding='utf-8') as filefind:
+            for line in filefind:
+                if line.strip().lower().startswith(self.name.lower()):
+                    name, surname, mark = line.split()
+                    fullname = f'{name} {surname}'
+                    return fullname, mark, os.path.basename(filepath)
+        return 0
+
+
 fd = Finding('Аиша Муратова')
 
 dirpath = r'D:\pythonProject\apotheosis\archive\8в'
 found_lst = fd.find_from_dir(dirpath)
 for line, filepath in found_lst:
     print(f"В работе '{os.path.basename(filepath)}' - {line}")
+
+found_file_list = fd.find_from_file(r'D:\pythonProject\apotheosis\archive\8в\8в_контрольная работа 5_30.06.2025.csv')
+print(found_file_list)

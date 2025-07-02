@@ -10,6 +10,11 @@ import tkinter as tk
 from tkinter import filedialog
 import json
 import re
+import signal
+
+
+
+
 
 
 # noinspection PyGlobalUndefined
@@ -50,6 +55,7 @@ class StudentJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+# noinspection PyShadowingNames
 class FileManager:
     def __init__(self, dct=None):
         self.dct = dct
@@ -72,7 +78,8 @@ class FileManager:
                     star = '*' if v.flag_not_all else ''
                     writer.writerow([f'{k}:    {v.mark}{star}'])
 
-    def copy_directory(self, source_path, destination_path):
+    @staticmethod
+    def copy_directory(source_path, destination_path):
         try:
             shutil.copytree(source_path, destination_path)
             print(f"Папка успешно скопирована из {source_path} в {destination_path}.")
@@ -122,11 +129,20 @@ class FileManager:
         with open('sysfileqs.json', 'w', encoding='utf-8') as file:
             json.dump(sysdict, file, indent=4, ensure_ascii=False)
 
+
 class Finding:
 
     def __init__(self, name):
         self.name = name
         self.lst_found = []
+
+    @staticmethod
+    def txt_to_columns(file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for _ in range(4):
+                next(file)
+            return map(lambda x: x.strip(), file.readlines())
+
 
     @staticmethod
     def csv_to_columns(file_path):
@@ -139,25 +155,17 @@ class Finding:
         return plain_list
 
     def find_from_dir(self, dirpath):
-        for root, dirs, files in os.walk(dirpath):
-            for file in files:
-                if file.endswith('.json'):
-                    continue
-                filepath = os.path.join(root, file)
-                with open(filepath, 'r', encoding='utf-8') as filefind:
-
-                    # if filepath.endswith('.csv'):
-                    #     print('csv')
-                        # filefind = self.csv_to_columns(filepath)
-
-
-                    for line in filefind:
-                        if line.strip().lower().startswith(self.name.lower()):
-                            name, surname, mark = line.split()
-                            fullname = f'{name} {surname}'
-                            self.lst_found.append((fullname, mark, os.path.basename(filepath)))
-                            continue
-
+        for file in os.listdir(dirpath):
+            filepath = os.path.join(dirpath, file)
+            if os.path.isfile(filepath) and not file.endswith('.json'):
+                if file.endswith('.csv'):
+                    lines = Finding.csv_to_columns(filepath)
+                else:
+                    lines = Finding.txt_to_columns(filepath)
+                for line in lines:
+                    if line.strip().lower().startswith(self.name.lower()):
+                        self.lst_found.append((line, filepath))
+                        continue
         if self.lst_found:
             return self.lst_found
         return 0
@@ -469,8 +477,19 @@ class Generator:
             with open(filename, 'w', encoding='utf-8') as filemiss:
                 pass
 
+class DebugMode:
+    def __init__(self, debug):
+        self.debug = debug
 
+    def write_to_file(self, attr, value):
+        if self.debug:
+            with open('syslog.json', 'r', encoding='utf-8') as file:
+                data = json.load(file)
 
+            data[attr] = value
+
+            with open('syslog.json', 'w', encoding='utf-8') as file:
+                json.dump(data, file, indent=4, ensure_ascii=False)
 
 
 # noinspection PyTypedDict
@@ -573,6 +592,13 @@ def student_decoder(dct):
         return instance
     return dct
 
+def handle_stop_signal(signum, frame):
+    print("\nПрограмма остановлена.")
+    dev.write_to_file('KeyboardInterrapt', True)
+    dev.write_to_file('datetime_kill', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    exit(0)
+
+
 
 class Marks:
 
@@ -628,6 +654,19 @@ class Marks:
 
 #начало программы
 
+debug = False
+
+
+if os.path.exists('syslog.json'):
+    with open('syslog.json', 'r', encoding='utf-8') as sys_file:
+        logdct = json.load(sys_file)
+        if logdct['debug']:
+            debug = True
+
+with open('syslog.json', 'w', encoding='utf-8') as sys_file:
+    json.dump({'debug': False}, sys_file, indent=4, ensure_ascii=False)
+
+dev = DebugMode(debug)
 
 if os.path.isfile('sys.json') and len(json.load(open('sys.json'))) == 8:
     with open('sys.json', 'r', encoding='utf-8') as sys_file:
@@ -706,18 +745,23 @@ else:
         formatting = FormatChecking(results)
         if isinstance(formatting.check_all(), list):
             print('Возникли ошибки при проверке формата данных:')
+            dev.write_to_file('errors', formatting.errors)
             for error in formatting.errors:
                 print(error)
         elif isinstance(formatting.check_all(), bool):
             with open('sys.json', 'w', encoding='utf-8') as sys_json_file:
                 json.dump(results._asdict(), sys_json_file, ensure_ascii=False, indent=4)
                 print('Данные сохранены, перезапустите программу.')
+                dev.write_to_file('data_saved', True)
                 sys.exit()
         else:
             print('Непредвиденная ошибка при проверке формата данных.')
+            dev.write_to_file('unknown_error', 'Непредвиденная ошибка при проверке формата данных.')
             sys.exit()
     else:
         print('Вы оставили какое-то поле не заполненным. Программа остановлена.')
+        dev.write_to_file('empty_field', True)
+        sys.exit()
 
 
 
@@ -729,12 +773,28 @@ dct_variants = {
     'quick_start': ('4', 'быстрый старт'),
     'generate': ('5', 'генерация', 'генерация директорий и файлов')
 }
+
+if debug:
+    print('Вы вошли в режим разработчика. Включен режим отладки.')
+    print()
+
+
+dev.write_to_file('datetime_start', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+
+signal.signal(signal.SIGINT, handle_stop_signal)
+signal.signal(signal.SIGTERM, handle_stop_signal)
+
+
 mainchoose = input('Выберите режим работы:\n'
                    '1. Проверка работ[1]\n'
                    '2. Перезапись данных[2]\n'
                    '3. Поиск по работам[3]\n'
                    '4. Быстрый старт[4]\n'
                    '5. Генерация директорий и файлов[5]\n')
+
+
+dev.write_to_file('mainchoose', mainchoose)
 
 if mainchoose in dct_variants['check_works']: #проверка работ
     print('Программа работает со следующими данными, если вы хотите измеенить их, то выберите режим измения данных:')
@@ -759,6 +819,10 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     if qst0.make_question():
         csv_flag = True
 
+    dev.write_to_file('stat_flag', stat_flag)
+    dev.write_to_file('marks_flag', marks_flag)
+    dev.write_to_file('csv_flag', csv_flag)
+
     files_of_puple = os.listdir(main_dct['students_folder']) #формирование словаря имя_ученика: путь_к_файлу
     dct_of_puple_files = {}
     for puple_file in files_of_puple:
@@ -773,7 +837,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     for k, v in dct_of_puple_files.items(): #создание экземпляров класса Student
         puples_dct[k] = Student(*k.split())
         puples_dct[k].file = v
-
+        dev.write_to_file(k+'0', puples_dct[k].__dict__)
 
     for k, v in puples_dct.items(): #заполнение экземпляров класса Student списком ответов
         lst_of_answers = []
@@ -785,7 +849,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
                     continue
                 lst_of_answers.append(answer.strip())
             v.list_answers = lst_of_answers
-
+        dev.write_to_file(k+'1', puples_dct[k].__dict__)
 
     right_answers = Answers(main_dct['answer']) #создание экземпляра класса Answers
     lst_of_right_answers = right_answers.get_right_answers()
@@ -799,6 +863,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
             if pup == right:
                 counter_right += 1
         v.correct_answers = counter_right
+        dev.write_to_file(k + '2', puples_dct[k].__dict__)
 
     m = Marks(main_dct['marks'], marks_flag) #создание экземпляра класса Marks
 
@@ -812,8 +877,10 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         try:
             mark = marks_dct[v.correct_answers]
             v.mark = mark
+            dev.write_to_file(k + '3', puples_dct[k].__dict__)
         except KeyError:
             print('Возникла ошибка при получении оценки ученика. Проверьте файл с оценками.')
+            dev.write_to_file('error_mark', True)
             sys.exit()
 
 
@@ -837,12 +904,15 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         fullfilepath = os.path.join(fullpath, filenamestat)
         with open(fullfilepath, 'w', encoding='utf-8') as f:
             json.dump(puples_dct, f, cls=StudentJSONEncoder, ensure_ascii=False, indent=4)
+        dev.write_to_file('happy_end_stat', True)
 
     qst2 = input('Выберите режим сортировки:\n'
                      'По умолчанию[0]\n'
                      'По именам[1]\n'
                      'По оценкам(сначала лучшие)[2]\n'
                      'По оценкам(сначала худшие)[3]\n').lower().strip()
+
+    dev.write_to_file('sorted_mode', qst2)
 
     sort = Sorted(puples_dct) #сортировка
     if qst2 in ('по умолчанию', '0'):
@@ -855,6 +925,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         puples_dct = sort.sort_by_mark_worst()
     else:
         print('Неизвестный режим сортировки.')
+        dev.write_to_file('unknown_sort_mode', True)
         sys.exit()
 
     if not csv_flag:
@@ -866,6 +937,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
             for k, v in puples_dct:
                 if v.missings:
                     print(f'{k}:    отсутствовал(а)', file=file)
+                    dev.write_to_file(k+'4', 'miss')
                     continue
                 star = ('*' if v.flag_not_all else '')
                 print(f'{k}:    {v.mark}{star}', file=file)
@@ -876,9 +948,15 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         fm.write_to_csv(filepath, puples_dct, main_dct)
 
     print(f'Проверка прошла успешно. Результаты проверки записаны в файл {filepath}.') #конец работы
+
+    dev.write_to_file('happy_end', True)
+
     qst3 = Questions('Открыть файл?\n')
+    dev.write_to_file('open_file', True)
     if qst3.make_question():
         os.startfile(filepath)
+
+
 
 
 
@@ -930,8 +1008,9 @@ elif mainchoose in dct_variants['find_puple']:
             print(f'Ученик {pupname} не найден в папке {hghg}')
             sys.exit()
         else:
-             for name, mark, filename in found:
-                 print(f'{filename.strip()} - {name.strip()} {mark.strip()}')
+            for line, filepath in found:
+                print(f"В работе '{os.path.basename(filepath)}' - {line}")
+
 
 
     elif qst4 in ('0', 'по файлу'): #проверка корректности файл
@@ -1032,7 +1111,7 @@ elif mainchoose in dct_variants['generate']:
 
 
 
-
+dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 

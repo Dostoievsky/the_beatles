@@ -62,6 +62,7 @@
 #             print(puple.get_correct_answers(), file=f)
 #             print(f'----------------------------------------------', file=f)
 # '''
+import json
 
 
 class Questions:
@@ -351,25 +352,60 @@ m = Marks('marks.txt', 0)
 #     print(f"{variable}: {value}")
 
 
-def generate_grading_scale(num_tasks):
-    boundaries = []
+# def generate_grading_scale(num_tasks):
+#     boundaries = []
+#
+#     percent_boundaries = [(90, 100), (75, 89), (60, 74), (0, 59)]
+#
+#     for lower_percent, upper_percent in percent_boundaries:
+#         min_correct = int((lower_percent / 100) * num_tasks)
+#         max_correct = int((upper_percent / 100) * num_tasks)
+#         if max_correct >= num_tasks:
+#             max_correct = num_tasks
+#         boundaries.append((min_correct, max_correct))
+#
+#     with open('grading_scale.txt', 'w', encoding='utf-8') as gs_file:
+#         for i, boundary in enumerate(boundaries):
+#             low, high = boundary
+#             grade = 5 - i
+#             gs_file.write(f"оценка {grade} от {low} до {high} баллов\n")
+#
+#
+# num_tasks = 20
+# generate_grading_scale(num_tasks)
+#
 
-    percent_boundaries = [(90, 100), (75, 89), (60, 74), (0, 59)]
+import json
 
-    for lower_percent, upper_percent in percent_boundaries:
-        min_correct = int((lower_percent / 100) * num_tasks)
-        max_correct = int((upper_percent / 100) * num_tasks)
-        if max_correct >= num_tasks:
-            max_correct = num_tasks
-        boundaries.append((min_correct, max_correct))
+class DebugMode:
+    def __init__(self, debug):
+        self.debug = debug
 
-    with open('grading_scale.txt', 'w', encoding='utf-8') as gs_file:
-        for i, boundary in enumerate(boundaries):
-            low, high = boundary
-            grade = 5 - i
-            gs_file.write(f"оценка {grade} от {low} до {high} баллов\n")
+    def write_to_file(self, attr, value):
+        if self.debug:
+            with open('syslog.json', 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            data[attr] = value
+
+            with open('syslog.json', 'w', encoding='utf-8') as file:
+                json.dump(data, file, indent=4, ensure_ascii=False)
 
 
-num_tasks = 20
-generate_grading_scale(num_tasks)
+debug_mode = DebugMode(debug=True)
+debug_mode.write_to_file('test_attr', 'test_value')
+debug_mode.write_to_file('test_attr2', 'test_value2')
+debug_mode.write_to_file('test_attr3', 'test_value3')
+debug_mode.write_to_file('debug', False)
+
+
+
+
+
+
+
+
+
+
+
 
