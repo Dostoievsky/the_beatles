@@ -11,8 +11,8 @@ from tkinter import filedialog
 import json
 import re
 import signal
-
-
+from pathlib import Path
+import random
 
 
 
@@ -64,12 +64,10 @@ class FileManager:
         with open(filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
             writer = csv.writer(csvfile)
 
-
             writer.writerow([f"Класс: {main_dct['klass']}"])
             writer.writerow([f"Название работы: {main_dct['name_work']}"])
             writer.writerow([f"Дата работы: {main_dct['date']}"])
             writer.writerow([])
-
 
             for k, v in puples_dct:
                 if v.missings:
@@ -173,11 +171,15 @@ class Finding:
 
     def find_from_file(self, filepath):
         with open(filepath, 'r', encoding='utf-8') as filefind:
-            for line in filefind:
+            if file.endswith('.csv'):
+                lines = Finding.csv_to_columns(filepath)
+            else:
+                lines = Finding.txt_to_columns(filepath)
+            for line in lines:
                 if line.strip().lower().startswith(self.name.lower()):
-                    name, surname, mark = line.split()
-                    fullname = f'{name} {surname}'
-                    return fullname, mark, os.path.basename(filepath)
+                    self.lst_found.append((line, filepath))
+                    return self.lst_found
+
         return 0
 
 
@@ -477,6 +479,7 @@ class Generator:
             with open(filename, 'w', encoding='utf-8') as filemiss:
                 pass
 
+
 class DebugMode:
     def __init__(self, debug):
         self.debug = debug
@@ -491,6 +494,95 @@ class DebugMode:
             with open('syslog.json', 'w', encoding='utf-8') as file:
                 json.dump(data, file, indent=4, ensure_ascii=False)
 
+
+class RandomCall:
+    @staticmethod
+    def process_path(value):
+        with open(value, 'r', encoding='utf-8') as file:
+            return map(lambda x: x.strip(), file.readlines())
+
+    @staticmethod
+    def process_miss():
+        with open('sys.json', 'r', encoding='utf-8') as sys_file_perf:
+            dct_perf = json.load(sys_file_perf)
+            try:
+                trex = dct_perf['students']
+            except KeyError:
+                print('Файл sys.json не содержит информации о списке учеников. Только ручной ввод')
+                sys.exit()
+            with open(trex, 'r', encoding='utf-8') as file:
+                return map(lambda x: x.strip(), file.readlines())
+
+    @staticmethod
+    def process_number(value):
+        return range(1, value + 1)
+
+    @staticmethod
+    def process_input(user_input):
+        path = Path(user_input)
+        if path.is_file() and path.suffix == '.txt':
+            return RandomCall.process_path(user_input)
+        else:
+            if user_input == '':
+                return RandomCall.process_miss()
+            try:
+                number = int(user_input)
+                return RandomCall.process_number(number)
+            except ValueError:
+                return False
+
+
+class Marks:
+
+    def __init__(self, file, marks_flag):
+        self.file = file
+        self.marks_flag = marks_flag
+
+    def check_marks(self):
+        parser_b = lambda x: re.fullmatch(r'\d+\t\d+', x.strip())
+        parser_m = lambda x: re.fullmatch(r'\w{6}\W\d+\W\w{2}\W\d+\W\w{2}\W\d+\W\w{6}', x.strip())
+
+        with open(self.file, 'r', encoding='utf-8') as file:
+            content = file.read().strip()
+
+            if not content:
+                raise ValueError(f"Файл {self.file} пустой. Проверьте файл.")
+
+            lines = content.splitlines()
+
+            if self.marks_flag and all(map(parser_b, lines)):
+                return 'points'
+            elif not self.marks_flag and all(map(parser_m, lines)):
+                return 'marks'
+            elif self.marks_flag and any(map(parser_m, lines)):
+                raise ValueError("Указано, что формат файла в баллах, но найдены записи в формате оценок!")
+            elif not self.marks_flag and any(map(parser_b, lines)):
+                raise ValueError("Указано, что формат файла в оценках, но найдены записи в формате баллов!")
+            else:
+                raise ValueError(f"Формат файла {self.file} не соответствует ожидаемым критериям.")
+
+    def get_marks(self):
+        marks_dict = {}
+
+        try:
+            format_type = self.check_marks()
+        except ValueError as err:
+            raise ValueError(str(err))
+
+        with open(self.file, 'r', encoding='utf-8') as file_marks:
+            if format_type == 'points':
+                for line in file_marks.readlines():
+                    primary, secondary = line.strip().split('\t')
+                    marks_dict[primary] = int(secondary)
+                return marks_dict
+            elif format_type == 'marks':
+                for line in file_marks.readlines():
+                    _, mark, _, down, _, up, _ = line.strip().split()
+                    for i in range(int(down), int(up) + 1):
+                        marks_dict[i] = int(mark)
+                return marks_dict
+            else:
+                return 'Непредвиденная ошибка в процессе компиляции оценок. Сверьтесь с инструкцией.'
 
 # noinspection PyTypedDict
 class SettingsGeneration:
@@ -600,57 +692,7 @@ def handle_stop_signal(signum, frame):
 
 
 
-class Marks:
 
-    def __init__(self, file, marks_flag):
-        self.file = file
-        self.marks_flag = marks_flag
-
-    def check_marks(self):
-        parser_b = lambda x: re.fullmatch(r'\d+\t\d+', x.strip())
-        parser_m = lambda x: re.fullmatch(r'\w{6}\W\d+\W\w{2}\W\d+\W\w{2}\W\d+\W\w{6}', x.strip())
-
-        with open(self.file, 'r', encoding='utf-8') as file:
-            content = file.read().strip()
-
-            if not content:
-                raise ValueError(f"Файл {self.file} пустой. Проверьте файл.")
-
-            lines = content.splitlines()
-
-            if self.marks_flag and all(map(parser_b, lines)):
-                return 'points'
-            elif not self.marks_flag and all(map(parser_m, lines)):
-                return 'marks'
-            elif self.marks_flag and any(map(parser_m, lines)):
-                raise ValueError("Указано, что формат файла в баллах, но найдены записи в формате оценок!")
-            elif not self.marks_flag and any(map(parser_b, lines)):
-                raise ValueError("Указано, что формат файла в оценках, но найдены записи в формате баллов!")
-            else:
-                raise ValueError(f"Формат файла {self.file} не соответствует ожидаемым критериям.")
-
-    def get_marks(self):
-        marks_dict = {}
-
-        try:
-            format_type = self.check_marks()
-        except ValueError as err:
-            raise ValueError(str(err))
-
-        with open(self.file, 'r', encoding='utf-8') as file_marks:
-            if format_type == 'points':
-                for line in file_marks.readlines():
-                    primary, secondary = line.strip().split('\t')
-                    marks_dict[primary] = int(secondary)
-                return marks_dict
-            elif format_type == 'marks':
-                for line in file_marks.readlines():
-                    _, mark, _, down, _, up, _ = line.strip().split()
-                    for i in range(int(down), int(up) + 1):
-                        marks_dict[i] = int(mark)
-                return marks_dict
-            else:
-                return 'Непредвиденная ошибка в процессе компиляции оценок. Сверьтесь с инструкцией.'
 
 #начало программы
 
@@ -771,7 +813,8 @@ dct_variants = {
     'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных'),
     'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск'),
     'quick_start': ('4', 'быстрый старт'),
-    'generate': ('5', 'генерация', 'генерация директорий и файлов')
+    'generate': ('5', 'генерация', 'генерация директорий и файлов'),
+    'performance': ('6', 'случайный вызов')
 }
 
 if debug:
@@ -791,8 +834,8 @@ mainchoose = input('Выберите режим работы:\n'
                    '2. Перезапись данных[2]\n'
                    '3. Поиск по работам[3]\n'
                    '4. Быстрый старт[4]\n'
-                   '5. Генерация директорий и файлов[5]\n')
-
+                   '5. Генерация директорий и файлов[5]\n'
+                   '6. Случайный вызов[6]\n')
 
 dev.write_to_file('mainchoose', mainchoose)
 
@@ -955,17 +998,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     dev.write_to_file('open_file', True)
     if qst3.make_question():
         os.startfile(filepath)
-
-
-
-
-
-# with open('students.json', 'r', encoding='utf-8') as f:
-    #     restored_students = json.load(f, object_hook=student_decoder)
-    #
-    # for key, student in restored_students.items():
-    #     print(key, student.__dict__)
-
+    dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 elif mainchoose in dct_variants['redact_data']:
@@ -973,27 +1006,32 @@ elif mainchoose in dct_variants['redact_data']:
     if qst.make_question():
         os.remove('sys.json')
         print('Файл данных удален. Перезапустите программу.')
+        dev.write_to_file('happy_end', True)
 
 
 elif mainchoose in dct_variants['find_puple']:
     print('Вы можете ввести имя интересующего вас файла или папки и имя ученика. Программа найдет оценки ученика в указанной папке или файле.')
     pupname = input('Введите имя ученика: ')
-
+    dev.write_to_file('pupname', pupname)
 
     archivepath = os.path.join(os.getcwd(), 'archive')
     dct_find_dirs = {}
     for index, dir in enumerate(os.listdir(archivepath), 1):
         print(f'{dir}[{index}]')
         dct_find_dirs[index] = dir
+        dev.write_to_file(dct_find_dirs[index], dir)
     try:
         input_dir = int(input('Введите номер папки, в которой хотите произвести поиск:\n'))
+        dev.write_to_file('input_dir', input_dir)
     except Exception:
         print('Введите номер папки, а не название папки.')
+        dev.write_to_file('error_input_dir', True)
         sys.exit()
     try:
         hghg = dct_find_dirs[int(input_dir)]
     except KeyError:
         print('Нет папки с таким номером.')
+        dev.write_to_file('error_number_dir', True)
         sys.exit()
 
     dct_find_files = {}
@@ -1002,31 +1040,38 @@ elif mainchoose in dct_variants['find_puple']:
 
     #основной блок с инициализацией экземпляров классов (директории)
     if qst4 in ('1', 'по папке'):
+        dev.write_to_file('from_dir', True)
         fnd = Finding(pupname)
         found = fnd.find_from_dir(fullpathfind)
         if not found:
             print(f'Ученик {pupname} не найден в папке {hghg}')
+            dev.write_to_file('pupname_not_found', True)
             sys.exit()
         else:
+            dev.write_to_file('found', found)
             for line, filepath in found:
                 print(f"В работе '{os.path.basename(filepath)}' - {line}")
 
 
-
-    elif qst4 in ('0', 'по файлу'): #проверка корректности файл
+    elif qst4 in ('0', 'по файлу'):#проверка корректности файла
+        dev.write_to_file('from_file', True)
         filtered_list_dir = filter(lambda file: os.path.isfile(os.path.join(fullpathfind, file)) and (file.endswith('.txt') or file.endswith('.csv')) , os.listdir(fullpathfind))
         for index, file in enumerate(filtered_list_dir, 1):
             dct_find_files[index] = file
             print(f'{file}[{index}]')
         try:
             input_file = int(input('Введите номер файла, в которой хотите произвести поиск:\n'))
+            dev.write_to_file('input_file', input_file)
         except Exception:
             print('Введите номер файла, а не название файла')
+            dev.write_to_file('error_input_file', True)
             sys.exit()
         try:
             fgfg = dct_find_files[int(input_file)]
         except KeyError:
             print('Нет файла с таким номером')
+            dev.write_to_file('error_number_file', True)
+            dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             sys.exit()
 
 
@@ -1034,11 +1079,17 @@ elif mainchoose in dct_variants['find_puple']:
         found_file = Finding(pupname)
         found = found_file.find_from_file(os.path.join(fullpathfind, fgfg))
         if not found:
-            print(f'Ученик {pupname} не найден в файле {fgfg}')
+            print(f'Ученик {pupname} не найден в папке {hghg}')
+            dev.write_to_file('pupname_not_found', True)
             sys.exit()
-        print(found[2]+':')
-        print(f'{found[0].strip()}: {found[1].strip()}')
+        else:
+            dev.write_to_file('found', found)
+            for line, filepath in found:
+                print(f"В работе '{os.path.basename(filepath)}' - {line}")
+        dev.write_to_file('happy_end', True)
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         sys.exit()
+
 
 #заморожено до лучших времен
 # elif mainchoose in dct_variants['quick_start']:
@@ -1058,9 +1109,6 @@ elif mainchoose in dct_variants['find_puple']:
 #     qgen.create_missings_file()
 #
 #     print('Папка была создана и пуста. Заполните ее работами учеников.')
-
-
-
 
 
 elif mainchoose in dct_variants['generate']:
@@ -1110,13 +1158,41 @@ elif mainchoose in dct_variants['generate']:
         print('Генерация прошла успешно.')
 
 
+elif mainchoose in dct_variants['performance']:
+    print('Это режим, который вызывает учеников к доске в случайном порядке. ("stop" для остановки цикла) Подробнее см. инструкцию')
+    user_input = input("Введите файл, число, или пропустите ввод: ")
+    dev.write_to_file('user_input', user_input)
+    iterable = RandomCall.process_input(user_input)
 
-dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    if not iterable:
+        print("Введённое значение не является числом или путём к файлу, или файл не существует")
+        dev.write_to_file('error_input', True)
+    else:
+        ind = 0
+        items = list(iterable)
+        dev.write_to_file('items', items)
+        random.shuffle(items)
+
+        print(f'Ученик {items[ind]} идет первый:( ', end='')
+        inputting = input().lower().strip()
+
+        while inputting != 'stop':
+            if ind == len(items) - 1:
+                print('Вы всех спросили!')
+                dev.write_to_file('happy_end', True)
+                sys.exit()
+            ind += 1
+            print(f'Ученик {items[ind]} идет к доске ', end='')
+            inputting = input().lower().strip()
+            dev.write_to_file(f'inputting{ind}', inputting)
+    dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 
-
-
-
+# with open('students.json', 'r', encoding='utf-8') as f:
+    #     restored_students = json.load(f, object_hook=student_decoder)
+    #
+    # for key, student in restored_students.items():
+    #     print(key, student.__dict__)
 
 

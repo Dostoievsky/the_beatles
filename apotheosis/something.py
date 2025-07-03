@@ -63,6 +63,8 @@
 #             print(f'----------------------------------------------', file=f)
 # '''
 import json
+import random
+import sys
 
 
 class Questions:
@@ -375,37 +377,108 @@ m = Marks('marks.txt', 0)
 # generate_grading_scale(num_tasks)
 #
 
-import json
-
-class DebugMode:
-    def __init__(self, debug):
-        self.debug = debug
-
-    def write_to_file(self, attr, value):
-        if self.debug:
-            with open('syslog.json', 'r', encoding='utf-8') as file:
-                data = json.load(file)
-
-            data[attr] = value
-
-            with open('syslog.json', 'w', encoding='utf-8') as file:
-                json.dump(data, file, indent=4, ensure_ascii=False)
-
-
-debug_mode = DebugMode(debug=True)
-debug_mode.write_to_file('test_attr', 'test_value')
-debug_mode.write_to_file('test_attr2', 'test_value2')
-debug_mode.write_to_file('test_attr3', 'test_value3')
-debug_mode.write_to_file('debug', False)
-
-
+# import json
+#
+# class DebugMode:
+#     def __init__(self, debug):
+#         self.debug = debug
+#
+#     def write_to_file(self, attr, value):
+#         if self.debug:
+#             with open('syslog.json', 'r', encoding='utf-8') as file:
+#                 data = json.load(file)
+#
+#             data[attr] = value
+#
+#             with open('syslog.json', 'w', encoding='utf-8') as file:
+#                 json.dump(data, file, indent=4, ensure_ascii=False)
+#
+#
+# debug_mode = DebugMode(debug=True)
+# debug_mode.write_to_file('test_attr', 'test_value')
+# debug_mode.write_to_file('test_attr2', 'test_value2')
+# debug_mode.write_to_file('test_attr3', 'test_value3')
+# debug_mode.write_to_file('debug', False)
 
 
 
+import functools
+
+# class RandomCall:
+#     def __init__(self, arg):
+#         if isinstance()
+#
+# rc = RandomCall()
+# t0 = input('Введите что-нибудь: ')
+#
+#
+#
+# r1 = rc.random_call(t0)
+# print(r1)
+#
+#
+
+from pathlib import Path
+import random
+
+class RandomCall:
+    @staticmethod
+    def process_path(value):
+        with open(value, 'r', encoding='utf-8') as file:
+            return map(lambda x: x.strip(), file.readlines())
+
+    @staticmethod
+    def process_miss():
+        with open('sys.json', 'r', encoding='utf-8') as sys_file_perf:
+            dct_perf = json.load(sys_file_perf)
+            try:
+                trex = dct_perf['students']
+            except KeyError:
+                print('Файл sys.json не содержит информации о списке учеников. Только ручной ввод')
+                sys.exit()
+            with open(trex, 'r', encoding='utf-8') as file:
+                return map(lambda x: x.strip(), file.readlines())
+
+    @staticmethod
+    def process_number(value):
+        return range(1, value + 1)
+
+    @staticmethod
+    def process_input(user_input):
+        path = Path(user_input)
+        if path.is_file() and path.suffix == '.txt':
+            return RandomCall.process_path(user_input)
+        else:
+            if user_input == '':
+                return RandomCall.process_miss()
+            try:
+                number = int(user_input)
+                return RandomCall.process_number(number)
+            except ValueError:
+                return False
 
 
 
 
+user_input = input("Введите значение: ")
+iterable = RandomCall.process_input(user_input)
 
+if not iterable:
+   print("Введённое значение не является числом или путём к файлу, или файл не существует")
+else:
+    ind = 0
+    items = list(iterable)
+    random.shuffle(items)
+
+    print(f'Ученик {items[ind]} идет первый:(', end='')
+    inputting = input()
+
+    while inputting != 'stop':
+        if ind == len(items) - 1:
+            print('Вы всех спросили!')
+            sys.exit()
+        ind += 1
+        print(f'Ученик {items[ind]} идет к доске', end='')
+        inputting = input()
 
 
