@@ -392,17 +392,65 @@ import os
 
 
 
-import signal
+# import signal
+#
+#
+# def handle_stop_signal(signum, frame):
+#     print("\nПрограмма остановлена.")
+#     exit(0)
+#
+# # Установка обработчика сигналов
+# signal.signal(signal.SIGINT, handle_stop_signal)  # Ctrl+C
+# signal.signal(signal.SIGTERM, handle_stop_signal)
+#
+# f = input('Введите что-нибудь и нажмите Enter: ')
+# f1 = input('Введите что-нибудь еще раз и нажмите Enter: ')
+# print(f+f1)
 
 
-def handle_stop_signal(signum, frame):
-    print("\nПрограмма остановлена.")
-    exit(0)
+import pickle
+import sys
 
-# Установка обработчика сигналов
-signal.signal(signal.SIGINT, handle_stop_signal)  # Ctrl+C
-signal.signal(signal.SIGTERM, handle_stop_signal)
 
-f = input('Введите что-нибудь и нажмите Enter: ')
-f1 = input('Введите что-нибудь еще раз и нажмите Enter: ')
-print(f+f1)
+class PickleHandler:
+    def __init__(self, filepath):
+        self.filepath = filepath
+
+    def load_data(self):
+        try:
+            with open(self.filepath, 'rb') as file:
+                return pickle.load(file)
+        except FileNotFoundError:
+            print(f"Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
+            sys.exit()
+        except pickle.UnpicklingError:
+            print(f"Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
+            sys.exit()
+
+    def save_data(self, data):
+        try:
+            with open(self.filepath, 'wb') as file:
+                pickle.dump(data, file)
+        except IOError:
+            print("Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
+            sys.exit()
+
+pickle_handler = PickleHandler('sysdev.pkl')
+
+data_to_save = {1: 1821}
+pickle_handler.save_data(data_to_save)
+
+
+loaded_data = pickle_handler.load_data()
+print(loaded_data)
+
+
+
+
+
+
+
+
+
+
+

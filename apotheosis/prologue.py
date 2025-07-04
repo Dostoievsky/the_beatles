@@ -532,6 +532,61 @@ class RandomCall:
                 return False
 
 
+class DeleteManager:
+    def __init__(self, list_of_elements):
+        self.list_of_elements = list_of_elements
+
+    def delete_files(self):
+        for filename in self.list_of_elements:
+            file_path = os.path.join(os.getcwd(), filename)
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"Файл {filename} успешно удалён.")
+                else:
+                    pass
+            except Exception as e:
+                print(f"Ошибка при удалении файла {filename}: {e}")
+
+    def delete_files_and_folders(self):
+        for entry in self.list_of_elements:
+            entry_path = os.path.join(os.getcwd(), entry)
+            try:
+                if os.path.isfile(entry_path):
+                    os.remove(entry_path)
+                    print(f"Файл {entry} успешно удалён.")
+                elif os.path.isdir(entry_path):
+                    shutil.rmtree(entry_path)
+                    print(f"Папка {entry} успешно удалена.")
+                else:
+                    pass
+            except Exception as e:
+                print(f"Ошибка при удалении {entry}: {e}")
+
+    @staticmethod
+    def deep_delete():
+        current_dir = os.getcwd()
+        for entry in os.listdir(current_dir):
+            entry_path = os.path.join(current_dir, entry)
+            try:
+                if os.path.isfile(entry_path) and not entry.endswith(".py"):
+                    os.remove(entry_path)
+                    print(f"Файл {entry} успешно удалён.")
+                elif os.path.isdir(entry_path):
+                    shutil.rmtree(entry_path)
+                    print(f"Папка {entry} успешно удалена.")
+            except Exception as e:
+                print(f"Ошибка при удалении {entry}: {e}")
+
+    def create_elements_test(self, dirs):
+        for dir in dirs:
+            os.makedirs(dir, exist_ok=True)
+            print(f"Папка {dir} успешно создана.")
+        for file in self.list_of_elements:
+            with open(file, 'w') as f:
+                print(f"Файл {file} успешно создан.")
+
+
 class Marks:
 
     def __init__(self, file, marks_flag):
@@ -790,6 +845,7 @@ else:
             dev.write_to_file('errors', formatting.errors)
             for error in formatting.errors:
                 print(error)
+            sys.exit()
         elif isinstance(formatting.check_all(), bool):
             with open('sys.json', 'w', encoding='utf-8') as sys_json_file:
                 json.dump(results._asdict(), sys_json_file, ensure_ascii=False, indent=4)
@@ -814,7 +870,8 @@ dct_variants = {
     'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск'),
     'quick_start': ('4', 'быстрый старт'),
     'generate': ('5', 'генерация', 'генерация директорий и файлов'),
-    'performance': ('6', 'случайный вызов')
+    'performance': ('6', 'случайный вызов'),
+    'clear': ('7', 'сброс', 'сбросить', 'сбросить данные')
 }
 
 if debug:
@@ -835,7 +892,8 @@ mainchoose = input('Выберите режим работы:\n'
                    '3. Поиск по работам[3]\n'
                    '4. Быстрый старт[4]\n'
                    '5. Генерация директорий и файлов[5]\n'
-                   '6. Случайный вызов[6]\n')
+                   '6. Случайный вызов[6]\n'
+                   '7. Сброс данных[7]\n').strip().lower()
 
 dev.write_to_file('mainchoose', mainchoose)
 
@@ -1188,11 +1246,56 @@ elif mainchoose in dct_variants['performance']:
     dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
+elif mainchoose in dct_variants['clear']:
+    clearchoose = input('Выберите режим для сброса:\n'
+                        'Сброс файлов[0]\n'
+                        'Сброс файлов и папок[1]\n'
+                        'Сброс до начальной конфигурации[2]\n').lower().strip()
+    dev.write_to_file('clearchoose', clearchoose)
+
+    with open('sys.json', 'r', encoding='utf-8') as f:
+        smdct = json.load(f)
+        files_to_delete_custom = {Path(smdct['answer']), Path(smdct['marks']), Path(smdct['missings'])}
+    lst_of_files = ['answers.txt', 'marks.txt', 'missings.txt', 'sys.json', 'syslog.json']
+    mapped_list_of_files = list(map(lambda x: Path(os.path.join(os.getcwd(), x)), lst_of_files))
+    files_to_delete_default = set(mapped_list_of_files)
+    files_to_delete = files_to_delete_default.union(files_to_delete_custom)
+
+
+    if clearchoose in ('0', 'сброс файлов'):
+        qst_sure = Questions('Вы уверены, что хотите удалить файлы? (если вы понятия не имеете, какие файлы будут удалены, рекомендуется прочесть инструкцию)\n')
+        if qst_sure.make_question():
+            sure2 = input('Для проверки на миссклик, введите любое натуральное число')
+            if sure2.isdigit() and len(sure2) >= 2:
+                delete = DeleteManager(files_to_delete)
+                delete.delete_files()
+            else:
+                print('Проверка для удаления необходима, так что перезапустите режим, если все еще хотите удалить файлы')
+
+
+    elif clearchoose in ('1', 'сброс файлов и папок'):
+        pass
+    elif clearchoose in ('2', 'сброс до начальной конфигурации'):
+        if not debug:
+            print('У вас недостаточно прав для совершения этого действия. (подробнее см. инструкцию)')
+        if debug:
+            pass
+
+
+
+
+    dev.write_to_file('password', random.randint(10000, 99999))
+
+
+
+
+
+
 
 # with open('students.json', 'r', encoding='utf-8') as f:
-    #     restored_students = json.load(f, object_hook=student_decoder)
-    #
-    # for key, student in restored_students.items():
-    #     print(key, student.__dict__)
+#     restored_students = json.load(f, object_hook=student_decoder)
+#
+# for key, student in restored_students.items():
+#     print(key, student.__dict__)
 
 
