@@ -13,7 +13,7 @@ import re
 import signal
 from pathlib import Path
 import random
-
+import time
 
 
 
@@ -586,6 +586,13 @@ class DeleteManager:
             with open(file, 'w') as f:
                 print(f"Файл {file} успешно создан.")
 
+    @staticmethod
+    def create_file_delete():
+        psw = random.randint(1000, 9999)
+        with open('delete.txt', 'w') as f:
+            print(f'Пароль для удаления: {psw}', file=f)
+        return psw
+
 
 class Marks:
 
@@ -744,7 +751,6 @@ def handle_stop_signal(signum, frame):
     dev.write_to_file('KeyboardInterrapt', True)
     dev.write_to_file('datetime_kill', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     exit(0)
-
 
 
 
@@ -1253,6 +1259,7 @@ elif mainchoose in dct_variants['clear']:
                         'Сброс до начальной конфигурации[2]\n').lower().strip()
     dev.write_to_file('clearchoose', clearchoose)
 
+
     with open('sys.json', 'r', encoding='utf-8') as f:
         smdct = json.load(f)
         files_to_delete_custom = {Path(smdct['answer']), Path(smdct['marks']), Path(smdct['missings'])}
@@ -1267,24 +1274,59 @@ elif mainchoose in dct_variants['clear']:
         if qst_sure.make_question():
             sure2 = input('Для проверки на миссклик, введите любое натуральное число')
             if sure2.isdigit() and len(sure2) >= 2:
+                dev.write_to_file('correct_check', True)
                 delete = DeleteManager(files_to_delete)
                 delete.delete_files()
+                dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             else:
                 print('Проверка для удаления необходима, так что перезапустите режим, если все еще хотите удалить файлы')
+                dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
     elif clearchoose in ('1', 'сброс файлов и папок'):
-        pass
+        qst_sure = Questions('Вы уверены, что хотите сбросить файлы и папку archive? (если вы понятия не имеете, какие файлы будут удалены, рекомендуется прочесть инструкцию)\n')
+        if qst_sure.make_question():
+            dev.write_to_file('sure', True)
+            right_psw = DeleteManager.create_file_delete()
+            dev.write_to_file('right_psw', right_psw)
+            print('Для проверки на миссклик программа создала в рабочей директории файл clear.txt с паролем для удаления. Пожалуйста, введите его.')
+            user_psw = input('Введите пароль из файла: ').strip()
+            dev.write_to_file('user_psw', user_psw)
+            if user_psw == str(right_psw):
+                files_to_delete.add('delete.txt')
+                files_to_delete.add(os.path.join(os.getcwd(), 'archive'))
+                delete = DeleteManager(files_to_delete)
+                delete.delete_files_and_folders()
+                print('Файлы и папка arhcive были удалены.')
+                sys.exit()
+            else:
+                print('Неверный пароль. Попробуйте снова, если все еще хотите удалить файлы')
+                dev.write_to_file('wrong_psw', True)
+                dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                sys.exit()
+
+
     elif clearchoose in ('2', 'сброс до начальной конфигурации'):
         if not debug:
             print('У вас недостаточно прав для совершения этого действия. (подробнее см. инструкцию)')
+            dev.write_to_file('rules_error', True)
         if debug:
-            pass
+            dev.write_to_file('password', random.randint(10000, 99999))
+            with open('syslog.json', 'r', encoding='utf-8') as logfile:
+                logdctdel = json.load(logfile)
+                right_psw = logdctdel['password']
+                user_psw = input('Введите пароль: ').strip()
+                dev.write_to_file('user_psw', user_psw)
+                if user_psw == str(right_psw):
+                    dev.write_to_file('correct_psw', True)
+                    for i in reversed(list(range(1, 6))):
+                        print(f'Удаление всех файлов и папок рабочей директории через {i}')
+                        time.sleep(1)
+                    dev.write_to_file('au revour', True)
+                    dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    DeleteManager.deep_delete()
 
 
-
-
-    dev.write_to_file('password', random.randint(10000, 99999))
 
 
 
