@@ -646,6 +646,7 @@ class Marks:
             else:
                 return 'Непредвиденная ошибка в процессе компиляции оценок. Сверьтесь с инструкцией.'
 
+
 # noinspection PyTypedDict
 class SettingsGeneration:
     def __init__(self):

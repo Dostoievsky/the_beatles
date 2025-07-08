@@ -1,118 +1,119 @@
-#
-# from pathlib import Path
-# import re
-# import os
-#
-# class Statistics:
-#     def __init__(self, dir):
-#         self.dir = dir
-#         self.pairs = {}
-#         self.printlist = []
-#
-#     @staticmethod
-#     def extract_core_name(file_path):
-#         stem = file_path.stem  # Имя файла без расширения
-#         core_name = re.sub(r'^sysfile_', '', stem)  # Убираем приставку sysfile_
-#         return core_name
-#
-#     def gen_pairs(self):
-#         files = [Path(self.dir) / file for file in os.listdir(self.dir) if (Path(self.dir) / file).is_file()]
-#         for file in files:
-#             if file.suffix == '.txt':
-#                 core_name = self.extract_core_name(file)
-#                 matching_json = next((jf for jf in files if jf.suffix == '.json' and self.extract_core_name(jf) == core_name), None)
-#                 self.pairs[file] = matching_json
-#         return self.pairs
-#
-# dctchosenstat = {}
-# st = Statistics(r'D:\pythonProject\apotheosis\archive\8в')
-# pairs = st.gen_pairs()
-#
-# for index, (txt_file, json_file) in enumerate(pairs.items(), 1):
-#     dctchosenstat[index] = (txt_file, json_file)
-#
-#
-#
-# for index, (txt_file, json_file) in dctchosenstat.items():
-#     print(f"{txt_file.name}[{index}] ({'подробная статистика доступна' if json_file is not None else 'подробная статистика недоступна'})")
-# ind = input('Выберите файл ')
-# print(dctchosenstat[int(ind)])
-
-
-
-# def csv_to_columns(file_path):
-#     plain_list = []
-#     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
-#         for _ in range(4):
-#             next(csvfile)
-#         for line in csvfile:
-#             plain_list.append(line.strip())
-#     return plain_list
-#
-
-
 import os
+from pathlib import Path
+from abc import ABC, abstractmethod
+import statistics as stat
+from collections import Counter
+
+class Statistics(ABC):
+    def __init__(self, lst_marks):
+        self.pairs = []
+        self.yet_added = []
+        self.lst_marks = lst_marks
+
+    def set_pairs(self, dirpath):
+        files = list(filter(lambda x: os.path.isfile(os.path.join(dirpath, x)), os.listdir(dirpath)))
+        files_json = list(filter(lambda x: x.endswith('.json'), files))
+        files_txt_csv = list(filter(lambda x: x.endswith('.txt') or x.endswith('.csv'), files))
+        for file_def in files_txt_csv:
+            file_without_ext = Path(file_def).stem
+            try:
+                _, namework, date = file_without_ext.split('_')
+            except ValueError:
+                pass
+            for file_json in files_json:
+                file_json_without_ext = Path(file_json).stem
+                try:
+                    _, _, namework_json, date_json = file_json_without_ext.split('_')
+                except ValueError:
+                    pass
+                if namework == namework_json and date == date_json:
+                    self.pairs.append((file_def, file_json))
+                    self.yet_added.append(file_def)
+
+        alone = (item for item in files_txt_csv if item not in self.yet_added)
+        for file in alone:
+            self.pairs.append((file, None))
+
+    def get_average(self):
+        avr = stat.mean(self.lst_marks)
+        return round(avr, 2)
+
+    def get_most_common(self):
+        return self.__class__.get_counter(self).most_common(1)[0][0]
+
+    def get_counter(self):
+        return Counter(self.lst_marks)
+
+    def get_median(self):
+        med = stat.median(self.lst_marks)
+        return round(med, 2)
+
+    @abstractmethod
+    def get_amount_missings(self):
+        pass
+
+    @abstractmethod
+    def get_notfilled(self):
+        pass
+
+    @abstractmethod
+    def get_the_best_puples(self):
+        pass
+
+    @abstractmethod
+    def get_the_worst_puples(self):
+        pass
 
 
 
-# noinspection PyShadowingNames
-class Finding:
+class BriefStatistics(Statistics, ABC):
+    def get_amount_missings(self):
+        print('test')
 
-    def __init__(self, name):
-        self.name = name
-        self.lst_found = []
+    def get_notfilled(self):
+        print('test')
 
-    @staticmethod
-    def txt_to_columns(file_path):
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for _ in range(4):
-                next(file)
-            return map(lambda x: x.strip(), file.readlines())
+    def get_the_best_puples(self):
+        print('test')
 
-
-    @staticmethod
-    def csv_to_columns(file_path):
-        plain_list = []
-        with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
-            for _ in range(4):
-                next(csvfile)
-            for line in csvfile:
-                plain_list.append(line.strip())
-        return plain_list
-
-    def find_from_dir(self, dirpath):
-        for file in os.listdir(dirpath):
-            filepath = os.path.join(dirpath, file)
-            if os.path.isfile(filepath) and not file.endswith('.json'):
-                if file.endswith('.csv'):
-                    lines = Finding.csv_to_columns(filepath)
-                else:
-                    lines = Finding.txt_to_columns(filepath)
-                for line in lines:
-                    if line.strip().lower().startswith(self.name.lower()):
-                        self.lst_found.append((line, filepath))
-                        continue
-        if self.lst_found:
-            return self.lst_found
-        return 0
+    def get_the_worst_puples(self):
+        print('test')
 
 
-    def find_from_file(self, filepath):
-        with open(filepath, 'r', encoding='utf-8') as filefind:
-            for line in filefind:
-                if line.strip().lower().startswith(self.name.lower()):
-                    name, surname, mark = line.split()
-                    fullname = f'{name} {surname}'
-                    return fullname, mark, os.path.basename(filepath)
-        return 0
 
+class DeepStatistics(Statistics, ABC):
+    def get_amount_missings(self):
+        print('test')
 
-fd = Finding('Аиша Муратова')
+    def get_notfilled(self):
+        print('test')
 
-dirpath = r'D:\pythonProject\apotheosis\archive\8в'
-found_lst = fd.find_from_dir(dirpath)
-for line, filepath in found_lst:
-    print(f"В работе '{os.path.basename(filepath)}' - {line}")
+    def get_the_best_puples(self):
+        print('test')
 
-found_file_list = fd.find_from_file(r'D:\pythonProject\apotheosis\archive\8в\8в_контрольная работа 5_30.06.2025.csv')
-print(found_file_list)
+    def get_the_worst_puples(self):
+        print('test')
+
+    def get_distribution(self):
+        pass
+
+    def get_average_answ(self):
+        pass
+
+# st = Statistics()
+# st.set_pairs(r'D:\pythonProject\apotheosis\archive\8в')
+# for index, pair in enumerate(st.pairs, 1):
+#     print(f'{pair[0]}[{index}] {"<только краткая статистика>" if pair[1] is None else ""}')
+
+lst = [2, 3, 4, 5, 5, 4, 3, 2, 2, 3, 4, 5, 4, 3, 4, 3, 5, 4, 3, 2, 2, 3, 4, 5, 4, 3, 4, 3, 4, 5, 4, 3, 2, 2, 3, 4, 5, 3, 4, 4, 4, 4, 4, 4]
+brief = BriefStatistics(lst)
+print(brief.get_average())
+print(brief.get_most_common())
+print(brief.get_counter())
+print(brief.get_median())
+
+deep = DeepStatistics(lst)
+print(deep.get_average())
+print(deep.get_most_common())
+print(deep.get_counter())
+print(deep.get_median())
