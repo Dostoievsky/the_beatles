@@ -1335,10 +1335,10 @@ elif mainchoose in dct_variants['clear']:
 
 
 
-# with open('students.json', 'r', encoding='utf-8') as f:
-#     restored_students = json.load(f, object_hook=student_decoder)
-#
-# for key, student in restored_students.items():
-#     print(key, student.__dict__)
+with open('students.json', 'r', encoding='utf-8') as f:
+    restored_students = json.load(f, object_hook=student_decoder)
+
+for key, student in restored_students.items():
+    print(key, student.__dict__)
 
 

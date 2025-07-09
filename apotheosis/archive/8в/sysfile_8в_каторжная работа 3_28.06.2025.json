@@ -55,7 +55,7 @@
             "5"
         ],
         "_correct_answers": 3,
-        "_mark": 5,
+        "_mark": 2,
         "_missings": false,
         "_flag_not_all": true
     },
@@ -77,7 +77,7 @@
             "0"
         ],
         "_correct_answers": 4,
-        "_mark": 5,
+        "_mark": 2,
         "_missings": false,
         "_flag_not_all": false
     },
@@ -99,7 +99,7 @@
             "0"
         ],
         "_correct_answers": 8,
-        "_mark": 5,
+        "_mark": 3,
         "_missings": false,
         "_flag_not_all": false
     },
@@ -613,6 +613,17 @@
         "__class__": "Student",
         "_name": "Николай",
         "_surname": "Второй",
+        "_file": null,
+        "_list_answers": null,
+        "_correct_answers": null,
+        "_mark": null,
+        "_missings": true,
+        "_flag_not_all": false
+    },
+    "Колька Третий": {
+        "__class__": "Student",
+        "_name": "Колька",
+        "_surname": "Третий",
         "_file": null,
         "_list_answers": null,
         "_correct_answers": null,
