@@ -1,5 +1,6 @@
 import json
 import os
+from itertools import count
 from pathlib import Path
 from abc import ABC, abstractmethod
 import statistics as stat
@@ -12,6 +13,7 @@ class Student:
         self._file = None
         self._list_answers = None
         self._correct_answers = None
+        self._response_status = None
         self._mark = None
         self._missings = False
         self._flag_not_all = False
@@ -58,6 +60,15 @@ class Student:
         self._correct_answers = new_correct_answers
 
     @property
+    def response_status(self):
+        return self._response_status
+
+    @response_status.setter
+    def response_status(self, new_response_status):
+        self._response_status = new_response_status
+
+
+    @property
     def mark(self):
         return self._mark
 
@@ -89,6 +100,7 @@ class Student:
             "_file": self._file,
             "_list_answers": self._list_answers,
             "_correct_answers": self._correct_answers,
+            "_response_status": self._response_status,
             "_mark": self._mark,
             "_missings": self._missings,
             "_flag_not_all": self._flag_not_all
@@ -101,15 +113,12 @@ def student_decoder(dct):
         instance._file = dct.get('_file')
         instance._list_answers = dct.get('_list_answers')
         instance._correct_answers = dct.get('_correct_answers')
+        instance._response_status = dct.get('_response_status')
         instance._mark = dct.get('_mark')
         instance._missings = dct.get('_missings')
         instance._flag_not_all = dct.get('_flag_not_all')
         return instance
     return dct
-
-
-
-
 
 
 class Statistics(ABC):
@@ -174,7 +183,7 @@ class Statistics(ABC):
 
 
 
-class BriefStatistics(Statistics, ABC):
+class BriefStatistics(Statistics):
     @staticmethod
     def process_file(filename):
         with open(filename, 'r', encoding='utf-8') as file:
@@ -223,7 +232,7 @@ class BriefStatistics(Statistics, ABC):
 
 
 
-class DeepStatistics(Statistics, ABC):
+class DeepStatistics(Statistics):
 
     @staticmethod
     def process_file(filename):
@@ -253,9 +262,9 @@ class DeepStatistics(Statistics, ABC):
     def process_to_distribution(json_data):
         lst = []
         for info in json_data.values():
-            if info.mark is None:
+            if info.response_status is None:
                 continue
-            lst.append(info.list_answers)
+            lst.append(info.response_status)
         return lst
 
     @staticmethod
@@ -292,8 +301,30 @@ class DeepStatistics(Statistics, ABC):
         return sorted(dct_best_worst, key=lambda x: dct_best_worst[x][0], reverse=False)[:3]
 
     @staticmethod
+    def convert_to_percentage(stats_dict):
+        result = {}
+        for question_num, (true_count, false_count) in stats_dict.items():
+            total_count = true_count + false_count
+            if total_count == 0:
+                percent = 0
+            else:
+                percent = (true_count / total_count) * 100
+            result[question_num] = round(percent, 2)
+        return result
+
+
+    @staticmethod
     def get_distribution(lst_distribution):
-        return lst_distribution
+        result = {}
+        for student in lst_distribution:
+            for question_num, is_correct in student:
+                if question_num not in result:
+                    result[question_num] = [0, 0]
+                if is_correct:
+                    result[question_num][0] += 1
+                else:
+                    result[question_num][1] += 1
+        return {q: tuple(ans) for q, ans in result.items()}
 
     @staticmethod
     def get_average_answ(lst_average_answ):
@@ -318,36 +349,38 @@ class DeepStatistics(Statistics, ABC):
 # print(brief.get_notfilled(processed_dict))
 
 
-processed_data = DeepStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\sysfile_8в_каторжная работа 3_28.06.2025.json')
+processed_data = DeepStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\sysfile_8в_катожная работа 3_06.07.2025.json')
 processed_list = DeepStatistics.process_to_list(processed_data)
 processed_dict = DeepStatistics.process_to_dict(processed_data)
 processed_distribution = DeepStatistics.process_to_distribution(processed_data)
-processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
-processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
-
+# processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
+# processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
+#
 deep = DeepStatistics(processed_list, processed_dict)
-print(deep.get_counter())
-print(deep.get_average())
-print(deep.get_median())
-print(deep.get_most_common())
-print(deep.get_amount_missings(processed_dict))
-print(deep.get_notfilled(processed_dict))
-print(deep.get_the_best_puples(processed_best_worst))
-print(deep.get_the_worst_puples(processed_best_worst))
-print(deep.get_distribution(processed_distribution))
-print(deep.get_average_answ(processed_average_answ))
+# print(deep.get_counter())
+# print(deep.get_average())
+# print(deep.get_median())
+# print(deep.get_most_common())
+# print(deep.get_amount_missings(processed_dict))
+# print(deep.get_notfilled(processed_dict))
+# print(deep.get_the_best_puples(processed_best_worst))
+# print(deep.get_the_worst_puples(processed_best_worst))
+# print(deep.get_average_answ(processed_average_answ))
+#
+stats_dict = deep.get_distribution(processed_distribution)
+
+print(deep.convert_to_percentage(stats_dict))
+
+# print(processed_list)
 
 
+class StatisticsRecommendations:
+    def __init__(self, converted_to_percentage):
+        self.converted_to_percentage = converted_to_percentage
+        for k, v in self.converted_to_percentage.items():
+            setattr(self, str(k), v)
 
-
-print(processed_list)
-
-
-
-
-
-
-
-
-
+ST = StatisticsRecommendations(deep.convert_to_percentage(stats_dict))
+print(ST.__dict__)
+print(getattr(ST, '1'))
 

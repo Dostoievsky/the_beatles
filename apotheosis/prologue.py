@@ -330,6 +330,7 @@ class Student:
         self._file = None
         self._list_answers = None
         self._correct_answers = None
+        self._response_status = None
         self._mark = None
         self._missings = False
         self._flag_not_all = False
@@ -376,6 +377,15 @@ class Student:
         self._correct_answers = new_correct_answers
 
     @property
+    def response_status(self):
+        return self._response_status
+
+    @response_status.setter
+    def response_status(self, new_response_status):
+        self._response_status = new_response_status
+
+
+    @property
     def mark(self):
         return self._mark
 
@@ -407,6 +417,7 @@ class Student:
             "_file": self._file,
             "_list_answers": self._list_answers,
             "_correct_answers": self._correct_answers,
+            "_response_status": self._response_status,
             "_mark": self._mark,
             "_missings": self._missings,
             "_flag_not_all": self._flag_not_all
@@ -741,6 +752,7 @@ def student_decoder(dct):
         instance._file = dct.get('_file')
         instance._list_answers = dct.get('_list_answers')
         instance._correct_answers = dct.get('_correct_answers')
+        instance._response_status = dct.get('_response_status')
         instance._mark = dct.get('_mark')
         instance._missings = dct.get('_missings')
         instance._flag_not_all = dct.get('_flag_not_all')
@@ -965,13 +977,23 @@ if mainchoose in dct_variants['check_works']: #проверка работ
 
     for k, v in puples_dct.items(): #заполнение экземпляров класса Student количеством правильных ответов
         counter_right = 0
+        response_list = []
         if len(v.list_answers) != len(lst_of_right_answers):
             v.flag_not_all = True
-        for pup, right in zip(v.list_answers, lst_of_right_answers):
+        for index, pupright in enumerate(zip(v.list_answers, lst_of_right_answers), 1):
+            pup, right = pupright
             if pup == right:
                 counter_right += 1
+                response_list.append((index, True))
+            else:
+                response_list.append((index, False))
         v.correct_answers = counter_right
+        v.response_status = response_list
         dev.write_to_file(k + '2', puples_dct[k].__dict__)
+
+
+
+
 
     m = Marks(main_dct['marks'], marks_flag) #создание экземпляра класса Marks
 
@@ -1335,10 +1357,10 @@ elif mainchoose in dct_variants['clear']:
 
 
 
-with open('students.json', 'r', encoding='utf-8') as f:
-    restored_students = json.load(f, object_hook=student_decoder)
-
-for key, student in restored_students.items():
-    print(key, student.__dict__)
+# with open('students.json', 'r', encoding='utf-8') as f:
+#     restored_students = json.load(f, object_hook=student_decoder)
+#
+# for key, student in restored_students.items():
+#     print(key, student.__dict__)
 
 
