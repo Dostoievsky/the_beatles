@@ -1,6 +1,5 @@
 import json
 import os
-from itertools import count
 from pathlib import Path
 from abc import ABC, abstractmethod
 import statistics as stat
@@ -353,34 +352,108 @@ processed_data = DeepStatistics.process_file(r'D:\pythonProject\apotheosis\archi
 processed_list = DeepStatistics.process_to_list(processed_data)
 processed_dict = DeepStatistics.process_to_dict(processed_data)
 processed_distribution = DeepStatistics.process_to_distribution(processed_data)
-# processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
-# processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
-#
+processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
+processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
+
 deep = DeepStatistics(processed_list, processed_dict)
-# print(deep.get_counter())
-# print(deep.get_average())
-# print(deep.get_median())
-# print(deep.get_most_common())
-# print(deep.get_amount_missings(processed_dict))
-# print(deep.get_notfilled(processed_dict))
-# print(deep.get_the_best_puples(processed_best_worst))
-# print(deep.get_the_worst_puples(processed_best_worst))
-# print(deep.get_average_answ(processed_average_answ))
-#
+print(deep.get_counter())
+print(deep.get_average())
+print(deep.get_median())
+print(deep.get_most_common())
+print(deep.get_amount_missings(processed_dict))
+print(deep.get_notfilled(processed_dict))
+print(deep.get_the_best_puples(processed_best_worst))
+print(deep.get_the_worst_puples(processed_best_worst))
+print(deep.get_average_answ(processed_average_answ))
+
 stats_dict = deep.get_distribution(processed_distribution)
 
-print(deep.convert_to_percentage(stats_dict))
+dek = deep.convert_to_percentage(stats_dict)
+# print(dek)
+fr = stat.mean(list(dek.values()))
+# print(fr)
 
 # print(processed_list)
+
+class RangeKey:
+    def __init__(self, start, stop, step=1):
+        self.range_obj = range(start, stop + 1, step)
+
+    def __eq__(self, other):
+        if isinstance(other, RangeKey):
+            return (
+                self.range_obj.start == other.range_obj.start and
+                self.range_obj.stop == other.range_obj.stop and
+                self.range_obj.step == other.range_obj.step
+            )
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self.range_obj.start, self.range_obj.stop, self.range_obj.step))
+
+    def __contains__(self, item):
+        return item in self.range_obj
+
+    def __repr__(self):
+        return f"RangeKey({self.range_obj.start}-{self.range_obj.stop-1})"
+
+
 
 
 class StatisticsRecommendations:
     def __init__(self, converted_to_percentage):
         self.converted_to_percentage = converted_to_percentage
-        for k, v in self.converted_to_percentage.items():
-            setattr(self, str(k), v)
+        self.counter = 0
 
-ST = StatisticsRecommendations(deep.convert_to_percentage(stats_dict))
-print(ST.__dict__)
-print(getattr(ST, '1'))
+    def group_tasks_by_percent(self):
+        grouped_tasks = {}
+        for task, percent in self.converted_to_percentage.items():
+            if percent not in grouped_tasks:
+                grouped_tasks[percent] = []
+            grouped_tasks[percent].append(task)
+        return grouped_tasks
 
+
+    def get_recommendations(self):
+        DICT_RECOMMENDATIONS = {
+            RangeKey(0, 0): f'Задания [{{numbers}}] не решил ни один ученик. Похоже, что задания чересчур сложные.',
+            RangeKey(1, 10): f'Задания [{{numbers}}] очень плохо усвоены, меньше 10% учеников ответили верно',
+            RangeKey(11, 20): f'Задания [{{numbers}}] ученики выполнили плохо, похоже, что тема усвоена не очень хорошо',
+            RangeKey(21, 35): f'Задания [{{numbers}}] выполнила небольшая часть учеников, стоит проработать эту тему',
+            RangeKey(36, 45): f'Задания [{{numbers}}] выполнила почти половина учеников, если это были задания повышенной сложности, то это очень неплохо',
+            RangeKey(46, 55): f'Задания [{{numbers}}] верно решили около половины учеников',
+            RangeKey(56, 70): f'Задания [{{numbers}}] решили больше половины учеников, что очень неплохо',
+            RangeKey(71, 90): f'Задания [{{numbers}}] решили большая часть ученики, тема отлично усвоена',
+            RangeKey(91, 99): f'Задания [{{numbers}}] не решили всего пара ученников, отличный результат, возможно, задания были слишком простые',
+            RangeKey(100, 100): f'Задания [{{numbers}}] решили абсолютно все ученики, тема идеально усвоена или, вероятно, задания были чересчур простые'}
+        grouped_tasks = self.group_tasks_by_percent()
+        recommendations = []
+
+        for percent, tasks in grouped_tasks.items():
+            numbers = ', '.join(map(str, tasks))
+            for key, rec in DICT_RECOMMENDATIONS.items():
+                if round(percent) in key:
+                    recommendations.append(rec.format(numbers=numbers))
+
+        return recommendations
+
+
+    @staticmethod
+    def get_final_conclusion(avrg):
+        CONCLUSIONS_DICT = {RangeKey(0, 30): 'В срднем ученики не очень хорошо справились с работой, лучше повторить эту тему',
+                            RangeKey(31, 60): 'В среднем ученики справились с работой, однако около половины учеников не усвоили тему',
+                            RangeKey(61, 80): 'В среднем ученики хорошо справились с работой, однако некоторые задания вызвали у них сложности',
+                            RangeKey(81, 99): 'В среднем ученики отлично справились, тема очень хорошо усвоена',
+                            RangeKey(100, 100): f'Ни один ученик не совершил ни одной ошибки, вам стоит проверить критерии оцениквания, ответы или задания на сложность, так как такой исход очень маловероятен'}
+        for key, conclusion in CONCLUSIONS_DICT.items():
+            if round(avrg) in key:
+                return conclusion
+
+
+
+
+strec = StatisticsRecommendations(deep.convert_to_percentage(stats_dict))
+print()
+print(*strec.get_recommendations(), sep='\n')
+print()
+print(strec.get_final_conclusion(fr))

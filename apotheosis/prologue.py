@@ -766,8 +766,6 @@ def handle_stop_signal(signum, frame):
     exit(0)
 
 
-
-
 #начало программы
 
 debug = False
@@ -881,8 +879,6 @@ else:
         sys.exit()
 
 
-
-
 dct_variants = {
     'check_works': ('1', 'проверка', 'проверка работ'),
     'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных'),
@@ -991,10 +987,6 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         v.response_status = response_list
         dev.write_to_file(k + '2', puples_dct[k].__dict__)
 
-
-
-
-
     m = Marks(main_dct['marks'], marks_flag) #создание экземпляра класса Marks
 
     try: #проверка корректности файла marks.txt
@@ -1088,7 +1080,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
-elif mainchoose in dct_variants['redact_data']:
+elif mainchoose in dct_variants['redact_data']: #перезапись данных, повторное открытие диалогового окна посредством удаления файла sys.json
     qst = Questions('Вы хотите перезаписать данные?\n')
     if qst.make_question():
         os.remove('sys.json')
@@ -1103,11 +1095,11 @@ elif mainchoose in dct_variants['find_puple']:
 
     archivepath = os.path.join(os.getcwd(), 'archive')
     dct_find_dirs = {}
-    for index, dir in enumerate(os.listdir(archivepath), 1):
+    for index, dir in enumerate(os.listdir(archivepath), 1): #генерация меню выбора и запись в словарь
         print(f'{dir}[{index}]')
         dct_find_dirs[index] = dir
         dev.write_to_file(dct_find_dirs[index], dir)
-    try:
+    try:    #ввод папки и проверка корректности
         input_dir = int(input('Введите номер папки, в которой хотите произвести поиск:\n'))
         dev.write_to_file('input_dir', input_dir)
     except Exception:
@@ -1208,13 +1200,13 @@ elif mainchoose in dct_variants['generate']:
         file_puples = input('Введите имя файла с именами учеников: ')
         count_strings = input('Введите количество необходимых полей для ответов: ')
 
-        ch = Generator.checking_setings(file_puples, count_strings)
+        ch = Generator.checking_setings(file_puples, count_strings) #проверка корректности файлов
         if ch:
             print('Ошибки при введении данных:')
             for error in ch:
                 print(error)
             sys.exit()
-        else:
+        else: #генерация файлов, см. docstrings
             g = Generator(file_puples, name_of_work)
             g.generate_dir_students()
             g.generate_file_students()
@@ -1230,10 +1222,11 @@ elif mainchoose in dct_variants['generate']:
         print('Вы находитесь в режиме ручной настройки генерации. ')
 
         settings = SettingsGeneration()
-        results = settings.run_survey()
+        results = settings.run_survey() #запуск выбора настроек
 
         print('Настройки сохранены. Дождитесь завершения генерации.')
 
+        #генерация файлов и папок по настройкам
         manset = Generator(name_work=results['name_of_work'], puples_file=results['pupe_file'])
         manset.generate_dir_students()
         manset.generate_file_students()
@@ -1246,6 +1239,7 @@ elif mainchoose in dct_variants['generate']:
 
 
 elif mainchoose in dct_variants['performance']:
+    #режим случайно вызывает учеников либо по номерам, либо по именно через while
     print('Это режим, который вызывает учеников к доске в случайном порядке. ("stop" для остановки цикла) Подробнее см. инструкцию')
     user_input = input("Введите файл, число, или пропустите ввод: ")
     dev.write_to_file('user_input', user_input)
@@ -1283,23 +1277,24 @@ elif mainchoose in dct_variants['clear']:
     dev.write_to_file('clearchoose', clearchoose)
 
 
-    with open('sys.json', 'r', encoding='utf-8') as f:
+    with open('sys.json', 'r', encoding='utf-8') as f: #получение данных по умолчанию из sys.json
         smdct = json.load(f)
         files_to_delete_custom = {Path(smdct['answer']), Path(smdct['marks']), Path(smdct['missings'])}
     lst_of_files = ['answers.txt', 'marks.txt', 'missings.txt', 'sys.json', 'syslog.json']
     mapped_list_of_files = list(map(lambda x: Path(os.path.join(os.getcwd(), x)), lst_of_files))
     files_to_delete_default = set(mapped_list_of_files)
-    files_to_delete = files_to_delete_default.union(files_to_delete_custom)
+    files_to_delete = files_to_delete_default.union(files_to_delete_custom) #объединение множеств файлов по умолчанию и пользовательских
 
 
     if clearchoose in ('0', 'сброс файлов'):
+        #несколько проверок на миссклик
         qst_sure = Questions('Вы уверены, что хотите удалить файлы? (если вы понятия не имеете, какие файлы будут удалены, рекомендуется прочесть инструкцию)\n')
         if qst_sure.make_question():
             sure2 = input('Для проверки на миссклик, введите любое натуральное число')
             if sure2.isdigit() and len(sure2) >= 2:
                 dev.write_to_file('correct_check', True)
                 delete = DeleteManager(files_to_delete)
-                delete.delete_files()
+                delete.delete_files() #удаление файлов
                 dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             else:
                 print('Проверка для удаления необходима, так что перезапустите режим, если все еще хотите удалить файлы')
@@ -1307,6 +1302,7 @@ elif mainchoose in dct_variants['clear']:
 
 
     elif clearchoose in ('1', 'сброс файлов и папок'):
+        #несколько проверок на миссклик и файл с паролем
         qst_sure = Questions('Вы уверены, что хотите сбросить файлы и папку archive? (если вы понятия не имеете, какие файлы будут удалены, рекомендуется прочесть инструкцию)\n')
         if qst_sure.make_question():
             dev.write_to_file('sure', True)
@@ -1316,10 +1312,10 @@ elif mainchoose in dct_variants['clear']:
             user_psw = input('Введите пароль из файла: ').strip()
             dev.write_to_file('user_psw', user_psw)
             if user_psw == str(right_psw):
-                files_to_delete.add('delete.txt')
-                files_to_delete.add(os.path.join(os.getcwd(), 'archive'))
+                files_to_delete.add('delete.txt') #добавление файла для удаления в множество
+                files_to_delete.add(os.path.join(os.getcwd(), 'archive')) #добавление папки для удаления в множество
                 delete = DeleteManager(files_to_delete)
-                delete.delete_files_and_folders()
+                delete.delete_files_and_folders() #удаление файлов и папок
                 print('Файлы и папка arhcive были удалены.')
                 sys.exit()
             else:
@@ -1331,9 +1327,11 @@ elif mainchoose in dct_variants['clear']:
 
     elif clearchoose in ('2', 'сброс до начальной конфигурации'):
         if not debug:
+            #проверка прав доступа, режим доступен только в режиме разработчика
             print('У вас недостаточно прав для совершения этого действия. (подробнее см. инструкцию)')
             dev.write_to_file('rules_error', True)
         if debug:
+            #проверка на миссклик, пароль и обратный отсчет для безопасности
             dev.write_to_file('password', random.randint(10000, 99999))
             with open('syslog.json', 'r', encoding='utf-8') as logfile:
                 logdctdel = json.load(logfile)
@@ -1347,7 +1345,7 @@ elif mainchoose in dct_variants['clear']:
                         time.sleep(1)
                     dev.write_to_file('au revour', True)
                     dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                    DeleteManager.deep_delete()
+                    DeleteManager.deep_delete() #удаление всего в рабочей директории, кроме py-файлов
 
 
 
