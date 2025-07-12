@@ -109,24 +109,6 @@ class FileManager:
         fullnamework = f'{self.dct["klass"]}_{self.dct["name_work"].lower().strip()}_{self.dct["date"]}.csv'
         return os.path.join(fullpath, fullnamework)
 
-    @staticmethod
-    def write_sysfile_for_qs_true():
-        sysdict = {"first_start": True}
-        with open('sysfileqs.json', 'w', encoding='utf-8') as file:
-            json.dump(sysdict, file, indent=4, ensure_ascii=False)
-
-    @staticmethod
-    def read_sysfile_for_qs():
-        with open('sysfileqs.json', 'r', encoding='utf-8') as file:
-            sd = json.load(file)
-            return sd['first_start']
-
-    @staticmethod
-    def write_sysfile_for_qs_false():
-        sysdict = {"first_start": False}
-        with open('sysfileqs.json', 'w', encoding='utf-8') as file:
-            json.dump(sysdict, file, indent=4, ensure_ascii=False)
-
 
 class Finding:
 
@@ -739,6 +721,8 @@ class SettingsGeneration:
         return self.inputs
 
 
+
+
 class StudentJSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Student):
@@ -758,6 +742,7 @@ def student_decoder(dct):
         instance._flag_not_all = dct.get('_flag_not_all')
         return instance
     return dct
+
 
 def handle_stop_signal(signum, frame):
     print("\nПрограмма остановлена.")
@@ -781,6 +766,7 @@ with open('syslog.json', 'w', encoding='utf-8') as sys_file:
     json.dump({'debug': False}, sys_file, indent=4, ensure_ascii=False)
 
 dev = DebugMode(debug)
+
 
 if os.path.isfile('sys.json') and len(json.load(open('sys.json'))) == 8:
     with open('sys.json', 'r', encoding='utf-8') as sys_file:
@@ -883,7 +869,7 @@ dct_variants = {
     'check_works': ('1', 'проверка', 'проверка работ'),
     'redact_data': ('2', 'редактирование', 'редактирование данных', 'перезапись', 'перезапись данных'),
     'find_puple': ('3', 'поиск по работам', 'поиск по работе', 'поиск'),
-    'quick_start': ('4', 'быстрый старт'),
+    'statistics': ('4', 'статистика', 'статистика работы', 'статистика работ'),
     'generate': ('5', 'генерация', 'генерация директорий и файлов'),
     'performance': ('6', 'случайный вызов'),
     'clear': ('7', 'сброс', 'сбросить', 'сбросить данные')
@@ -905,7 +891,7 @@ mainchoose = input('Выберите режим работы:\n'
                    '1. Проверка работ[1]\n'
                    '2. Перезапись данных[2]\n'
                    '3. Поиск по работам[3]\n'
-                   '4. Быстрый старт[4]\n'
+                   '4. Статистика по работам[4]\n'
                    '5. Генерация директорий и файлов[5]\n'
                    '6. Случайный вызов[6]\n'
                    '7. Сброс данных[7]\n').strip().lower()
@@ -1170,24 +1156,9 @@ elif mainchoose in dct_variants['find_puple']:
         sys.exit()
 
 
-#заморожено до лучших времен
-# elif mainchoose in dct_variants['quick_start']:
-#     fm_qs = FileManager()
-#     fm_qs.write_sysfile_for_qs_true()
-#
-#     print('В режиме быстрого старта программа сделает почти все за вас, однако без точной настройки, большиство значений будут заданы по умолчниаю. Для ознакомления настоятельно рекомендуется ознакомиться с инструкцией')
-#     name_of_work = input('Введите название работы: ')
-#     klass = input('Введите класс: ')
-#     puples_file = input('Введите имя файла с именами учеников: ')
-#
-#     qgen = Generator(name_of_work, puples_file)
-#     qgen.generate_dir_students()
-#     qgen.generate_file_students()
-#     qgen.create_answers_file(None)
-#     qgen.create_marks_file()
-#     qgen.create_missings_file()
-#
-#     print('Папка была создана и пуста. Заполните ее работами учеников.')
+elif mainchoose in dct_variants['statistics']:
+    print('U are in HELL')
+
 
 
 elif mainchoose in dct_variants['generate']:

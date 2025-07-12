@@ -355,6 +355,8 @@ processed_distribution = DeepStatistics.process_to_distribution(processed_data)
 processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
 processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
 
+
+
 deep = DeepStatistics(processed_list, processed_dict)
 print(deep.get_counter())
 print(deep.get_average())
@@ -457,3 +459,51 @@ print()
 print(*strec.get_recommendations(), sep='\n')
 print()
 print(strec.get_final_conclusion(fr))
+
+
+print()
+print()
+print()
+
+class PupleDeepStatistics:
+    def __init__(self, name, processed_data):
+        self.name = name
+        self.processed_data = processed_data
+        try:
+            self.puple = self.processed_data[self.name]
+        except:
+            print(f'Ученик {self.name} не найден')
+
+    def missings(self):
+        return self.puple.missings
+
+    def not_all(self):
+        return self.puple.flag_not_all
+
+    def mark(self):
+        return self.puple.mark
+
+    def response_status(self):
+        not_list = self.puple.response_status
+        return list(map(lambda x: 'Верно' if x[1] else 'Неверно', not_list))
+        # return not_list
+
+    def correct_answers_am(self):
+        return self.puple.correct_answers
+
+
+pds = PupleDeepStatistics('dmkebh Второй', processed_data)
+if pds.missings():
+    print('Отсутствовал')
+else:
+    print(pds.name)
+    print(*pds.response_status(), sep='\n')
+    print(pds.correct_answers_am())
+    print(pds.mark())
+    print(pds.not_all())
+
+
+
+
+
+
