@@ -4,6 +4,8 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 import statistics as stat
 from collections import Counter
+import sys
+import matplotlib.pyplot as plt
 
 class Student:
     def __init__(self, name, surname):
@@ -186,10 +188,18 @@ class BriefStatistics(Statistics):
     @staticmethod
     def process_file(filename):
         with open(filename, 'r', encoding='utf-8') as file:
-            iterator_lines =  map(lambda x: x.strip(), file.readlines())
-            for _ in range(4):
-                next(iterator_lines)
-            return list(iterator_lines)
+            if filename.endswith('.txt'):
+                iterator_lines =  map(lambda x: x.strip(), file.readlines())
+                for _ in range(4):
+                    next(iterator_lines)
+                return list(iterator_lines)
+            elif filename.endswith('.csv'):
+                plain_list = []
+                for _ in range(4):
+                    next(file)
+                for line in file:
+                    plain_list.append(line.strip())
+                return plain_list
 
     @staticmethod
     def process_to_dict(namemarks_lst):
@@ -335,17 +345,21 @@ class DeepStatistics(Statistics):
 # for index, pair in enumerate(st.pairs, 1):
 #     print(f'{pair[0]}[{index}] {"<только краткая статистика>" if pair[1] is None else ""}')
 
+# processed_data1 = BriefStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\8в_каторжная работа 3_28.06.2025.txt')
+processed_data = BriefStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\8в_контрольная работа 5_30.06.2025.csv')
+print(processed_data)
 
-# processed_data = BriefStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\8в_каторжная работа 3_28.06.2025.txt)
-# processed_list = BriefStatistics.process_to_list(processed_data)
-# processed_dict = BriefStatistics.process_to_dict(processed_data)
-# brief = BriefStatistics(processed_list, processed_dict)
-# print(brief.get_counter())
-# print(brief.get_average())
-# print(brief.get_median())
-# print(brief.get_most_common())
-# print(brief.get_amount_missings(processed_dict))
-# print(brief.get_notfilled(processed_dict))
+
+processed_list = BriefStatistics.process_to_list(processed_data)
+
+processed_dict = BriefStatistics.process_to_dict(processed_data)
+brief = BriefStatistics(processed_list, processed_dict)
+print(brief.get_counter())
+print(brief.get_average())
+print(brief.get_median())
+print(brief.get_most_common())
+print(brief.get_amount_missings(processed_dict))
+print(brief.get_notfilled(processed_dict))
 
 
 processed_data = DeepStatistics.process_file(r'D:\pythonProject\apotheosis\archive\8в\sysfile_8в_катожная работа 3_06.07.2025.json')
@@ -368,9 +382,11 @@ print(deep.get_the_best_puples(processed_best_worst))
 print(deep.get_the_worst_puples(processed_best_worst))
 print(deep.get_average_answ(processed_average_answ))
 
-stats_dict = deep.get_distribution(processed_distribution)
 
+stats_dict = deep.get_distribution(processed_distribution)
+print(stats_dict)
 dek = deep.convert_to_percentage(stats_dict)
+print(dek)
 # print(dek)
 fr = stat.mean(list(dek.values()))
 # print(fr)
@@ -473,6 +489,7 @@ class PupleDeepStatistics:
             self.puple = self.processed_data[self.name]
         except:
             print(f'Ученик {self.name} не найден')
+            sys.exit()
 
     def missings(self):
         return self.puple.missings
@@ -492,7 +509,7 @@ class PupleDeepStatistics:
         return self.puple.correct_answers
 
 
-pds = PupleDeepStatistics('dmkebh Второй', processed_data)
+pds = PupleDeepStatistics('Аиша Муратова', processed_data)
 if pds.missings():
     print('Отсутствовал')
 else:
@@ -503,7 +520,50 @@ else:
     print(pds.not_all())
 
 
+class DeepStatisticsGraphics:
+    def __init__(self, data_distr, data_marks):
+        self.data_distr = data_distr
+        self.data_marks = data_marks
 
+    def show(self):
+        sorted_data = sorted(self.data_marks.items(), key=lambda x: (x[0] is None, -x[0] if x[0] is not None else float('inf')))
+        counter_data = dict(sorted_data)
+        labels = [label if label is not None else 'отсутствующие' for label in counter_data.keys()]
+        values = list(counter_data.values())
+
+        color = '#7a7a7a'
+
+        fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 7))
+
+        colors_first = []
+        for percent in self.data_distr.values():
+            if percent < 40:
+                colors_first.append('#c71d1d')
+            elif percent < 70:
+                colors_first.append('#eddc31')
+            else:
+                colors_first.append('#356a0c')
+
+        axes[0].bar(self.data_distr.keys(), self.data_distr.values(), color=colors_first)
+        axes[0].set_title('Процент правильных ответов по вопросам')
+        axes[0].set_xlabel('Номер вопроса')
+        axes[0].set_ylabel('Процент правильных ответов')
+        axes[0].set_xticks(list(self.data_distr.keys()))
+
+        positions = range(len(values))
+        axes[1].bar(positions, values, color=color)
+        axes[1].set_title('Распределение оценок')
+        axes[1].set_xlabel('Оценка')
+        axes[1].set_ylabel('Количество')
+        axes[1].set_xticks(positions)
+        axes[1].set_xticklabels(labels)
+
+        plt.tight_layout()
+        plt.show()
+
+dsg = DeepStatisticsGraphics(dek, deep.get_counter())
+input('Press Enter to show graphics ')
+dsg.show()
 
 
 
