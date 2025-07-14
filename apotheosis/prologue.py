@@ -34,22 +34,17 @@ def on_submit():
     result = (class_value, work_value, date_value, answer_file, marks_file, students_file, missings_file, students_folder)
     root.destroy()
 
+
 def browse_file(entry):
     file_path = filedialog.askopenfilename()
     entry.delete(0, tk.END)
     entry.insert(0, file_path)
 
+
 def browse_folder(entry):
     folder_path = filedialog.askdirectory()
     entry.delete(0, tk.END)
     entry.insert(0, folder_path)
-
-
-class StudentJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Student):
-            return o.to_json()
-        return super().default(o)
 
 
 def student_decoder(dct):
@@ -73,17 +68,47 @@ def handle_stop_signal(signum, frame):
     exit(0)
 
 
+# class StudentJSONEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, Student):
+#             return {'__class__': Student,
+#                    'name': obj.name,
+#                    'surname': obj.surname,
+#                    'file': obj.file,
+#                    'list_answers': obj.list_answers,
+#                    'response_status': obj.response_status,
+#                    'correct_answers': obj.correct_answers,
+#                    'mark': obj.mark}
+#         return super().default(obj)
+
 class StudentJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Student):
-            return {'__student__': True,
-                   'name': obj.name,
-                   'surname': obj.surname,
-                   'file': obj.file,
-                   'list_answers': obj.list_answers,
-                   'correct_answers': obj.correct_answers,
-                   'mark': obj.mark}
-        return super().default(obj)
+    def default(self, o):
+        if isinstance(o, Student):
+            return o.to_json()
+        return super().default(o)
+
+
+class RangeKey:
+    def __init__(self, start, stop, step=1):
+        self.range_obj = range(start, stop + 1, step)
+
+    def __eq__(self, other):
+        if isinstance(other, RangeKey):
+            return (
+                self.range_obj.start == other.range_obj.start and
+                self.range_obj.stop == other.range_obj.stop and
+                self.range_obj.step == other.range_obj.step
+            )
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self.range_obj.start, self.range_obj.stop, self.range_obj.step))
+
+    def __contains__(self, item):
+        return item in self.range_obj
+
+    def __repr__(self):
+        return f"RangeKey({self.range_obj.start}-{self.range_obj.stop-1})"
 
 
 # noinspection PyShadowingNames
@@ -102,7 +127,7 @@ class FileManager:
 
             for k, v in puples_dct:
                 if v.missings:
-                    writer.writerow([f'{k}  -  отсутствовал(а)'])
+                    writer.writerow([f'{k}:    отсутствовал(а)'])
                 else:
                     star = '*' if v.flag_not_all else ''
                     writer.writerow([f'{k}:    {v.mark}{star}'])
@@ -309,7 +334,7 @@ class Questions:
         self.tuple_of_variants = tuple_of_variants
 
     def make_question(self):
-        if input(self.question) in self.tuple_of_variants:
+        if input(self.question).strip().lower() in self.tuple_of_variants:
             return True
         else:
             return False
@@ -965,29 +990,6 @@ class DeepStatistics(Statistics):
         return stat.mean(lst_average_answ)
 
 
-class RangeKey:
-    def __init__(self, start, stop, step=1):
-        self.range_obj = range(start, stop + 1, step)
-
-    def __eq__(self, other):
-        if isinstance(other, RangeKey):
-            return (
-                self.range_obj.start == other.range_obj.start and
-                self.range_obj.stop == other.range_obj.stop and
-                self.range_obj.step == other.range_obj.step
-            )
-        return NotImplemented
-
-    def __hash__(self):
-        return hash((self.range_obj.start, self.range_obj.stop, self.range_obj.step))
-
-    def __contains__(self, item):
-        return item in self.range_obj
-
-    def __repr__(self):
-        return f"RangeKey({self.range_obj.start}-{self.range_obj.stop-1})"
-
-
 class StatisticsRecommendations:
     def __init__(self, converted_to_percentage):
         self.converted_to_percentage = converted_to_percentage
@@ -1235,7 +1237,6 @@ if debug:
     print('Вы вошли в режим разработчика. Включен режим отладки.')
     print()
 
-
 dev.write_to_file('datetime_start', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
@@ -1254,6 +1255,7 @@ mainchoose = input('Выберите режим работы:\n'
 
 dev.write_to_file('mainchoose', mainchoose)
 
+
 if mainchoose in dct_variants['check_works']: #проверка работ
     print('Программа работает со следующими данными, если вы хотите измеенить их, то выберите режим измения данных:')
     for k, v in main_dct.items():
@@ -1265,13 +1267,16 @@ if mainchoose in dct_variants['check_works']: #проверка работ
     marks_flag = False
     csv_flag = False
 
-    qst = Questions('Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системный json-файл.\n')
-    if qst.make_question():
-        stat_flag = True
-
     qst1 = Questions('В файле с оценками критерии оценивания записаны в форме баллов?\n')
     if qst1.make_question():
         marks_flag = True
+
+    if not marks_flag:
+        qst = Questions('Вам нужны подробные отчеты по ученику или классу? Для подробной статистики будет создан дополнительный системный json-файл.\n')
+        if qst.make_question():
+            stat_flag = True
+
+
 
     qst0 = Questions('Записать результаты проверки в csv-файл? (при отрицательном ответе результаты будут записаны в txt-файл)\n')
     if qst0.make_question():
@@ -1556,7 +1561,6 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
         sys.exit()
 
     chosen_pair = list(map(lambda x: x if x is None else os.path.join(chose_stat_p, x), chosen_file))
-    print(chosen_pair)
 
     if chosen_pair[1] is None: #если доступна ТОЛЬКО краткая статистика, то не спрашиваем
         try:
@@ -1591,10 +1595,123 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
 
 
     else: #если доступна и та, и другая статистика
-        pass
+        secondary_choose_stat = input('Выберите режим статистики:\n'
+                                      '1. Краткая статистика[1]\n'
+                                      '2. Полная статистика по классу[2]\n'
+                                      '3. Полная статистика по ученику[3]\n').lower().strip()
 
+        if secondary_choose_stat in ('1', 'краткая статистика'): #запись краткой статистики
+            processed_data = BriefStatistics.process_file(chosen_pair[0])
+            processed_list = BriefStatistics.process_to_list(processed_data)
+            processed_dict = BriefStatistics.process_to_dict(processed_data)
+            brief = BriefStatistics(processed_list, processed_dict)
 
+            with open('statistics.txt', 'w', encoding='utf-8') as statfile:  # запись статистики в файл
+                filename = Path(chosen_pair[0]).stem
+                klass, name_work, date = filename.split('_')
+                print(f'Краткая статистика по работе "{name_work}" класса {klass} за {date}:\n', file=statfile)
+                print(f'Средняя оценка по классу: {brief.get_average()}', file=statfile)
+                print(f'Медианное по классу: {brief.get_median()}', file=statfile)
+                print(f'Отсутствующих учеников: {brief.get_amount_missings(processed_dict)}', file=statfile)
+                print(f'Учеников, давших ответы не на все вопросы: {brief.get_amount_notfilled(processed_dict)}',
+                      file=statfile)
+                print(file=statfile)
+                print('Распределение оценок по классу:', file=statfile)
+                for k, v in brief.get_counter().items():
+                    print(f'Оценок {k}: {v}', file=statfile)
+                print(f'Больше всего оценок: {brief.get_most_common()}', file=statfile)
+                print('Статистика успешно сгенерирована и записана в одноразовый файл statistics.txt')
+                qst8 = Questions('Открыть файл?\n')
+                if qst8.make_question():
+                    os.startfile('statistics.txt')
+                else:
+                    sys.exit()
 
+        elif secondary_choose_stat in ('2', 'полная статистика по классу'): #полная статистики по классу
+            processed_data = DeepStatistics.process_file(chosen_pair[1])
+            processed_list = DeepStatistics.process_to_list(processed_data)
+            processed_dict = DeepStatistics.process_to_dict(processed_data)
+            processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+            processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
+            processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
+
+            deep = DeepStatistics(processed_list, processed_dict)
+
+            with open('statistics.txt', 'w', encoding='utf-8') as statfile: #запись полной статистики в файл
+                filename = Path(chosen_pair[0]).stem
+                klass, name_work, date = filename.split('_')
+                print(f'Полная статистика по работе "{name_work}" класса {klass} за {date}:\n', file=statfile)
+                print(f'Средняя оценка по классу: {deep.get_average()}', file=statfile)
+                print(f'Медианное по классу: {deep.get_median()}', file=statfile)
+                print(f'Среднее количество правильных ответов(подробнее см. Инструкцию): {deep.get_average_answ(processed_average_answ)}', file=statfile)
+                print(f'Отсутствующих учеников: {deep.get_amount_missings(processed_dict)}', file=statfile)
+                print(f'Учеников, давших ответы не на все вопросы: {len(deep.get_amount_notfilled(processed_dict))}', file=statfile)
+                print(file=statfile)
+                print('Распределение оценок по классу:', file=statfile)
+                for k, v in deep.get_counter().items():
+                    print(f'Оценок {k}: {v}', file=statfile)
+                print(f'Больше всего оценок: {deep.get_most_common()}', file=statfile)
+                print(file=statfile)
+                print(f'Лучшие ученики по классу:', file=statfile)
+                print(', '.join(deep.get_the_best_puples(processed_best_worst)), file=statfile)
+                print(file=statfile)
+                print(f'Худшие ученики по классу:', file=statfile)
+                print(', '.join(deep.get_the_worst_puples(processed_best_worst)), file=statfile)
+                print(file=statfile)
+                stats_dict_deep_distr = deep.get_distribution(processed_distribution)
+                percentage_dict = deep.convert_to_percentage(stats_dict_deep_distr)
+                for num, percent in percentage_dict.items():
+                    print(f'На вопрос {num} правильно ответили {percent}% учеников', file=statfile)
+                print(file=statfile)
+
+                statsrec = StatisticsRecommendations(deep.convert_to_percentage(stats_dict_deep_distr))
+                print('Рекомендации по работе:', file=statfile)
+                print(*statsrec.get_recommendations(), sep='\n', file=statfile)
+                print(file=statfile)
+                dek = deep.convert_to_percentage(stats_dict_deep_distr)
+                mean_to_colcl = stat.mean(list(dek.values()))
+                print(statsrec.get_final_conclusion(mean_to_colcl), file=statfile)
+
+                print('Подробная статистика успешно сгенерирована и записана в одноразовый файл statistics.txt')
+
+            qst9 = Questions('Сгенерировать графики по статистике?\n')
+            if qst9.make_question():
+                dsg = DeepStatisticsGraphics(dek, deep.get_counter())
+                print('Генерация графиков...')
+                time.sleep(0.7)
+                dsg.show()
+                os.startfile('statistics.txt')
+                print('Графики успешно сгенерированы')
+            else:
+                qst10 = Questions('Открыть файл?\n')
+                if qst10.make_question():
+                    os.startfile('statistics.txt')
+                else:
+                    sys.exit()
+
+        elif secondary_choose_stat in ('3', 'полная статистика по ученику'):
+            name = input('Введите имя ученика(с учетом регистра): ')
+
+            processed_data = DeepStatistics.process_file(chosen_pair[1])
+            pds = PupleDeepStatistics(name, processed_data)
+            filename = Path(chosen_pair[0]).stem
+            klass, name_work, date = filename.split('_')
+
+            with open('statistics.txt', 'w', encoding='utf-8') as statfile:
+                if pds.missings():
+                    print(f'Ученик {name} отсутствовал', file=statfile)
+                    print(f'Статистика по ученику {name} успешно записана в одноразовый файл statistics.txt')
+                else:
+                    print(f'Статистика для ученика {name} по работе "{name_work}" за {date}', file=statfile)
+                    print(file=statfile)
+                    print(f'Оценка за работу: {pds.mark()}', file=statfile)
+                    print('Ученик дал ответы не на все задания' if not pds.not_all() else "Ученик дал ответы на все задания", file=statfile)
+                    print(file=statfile)
+                    print('Ответы ученика:', file=statfile)
+                    for num, status in enumerate(pds.response_status(), 1):
+                        print(f'{num} - {status}', file=statfile)
+                    print(f'Всего правильных ответов: {pds.correct_answers_am()}', file=statfile)
+                    print(f'Статистика по ученику {name} успешно записана в одноразовый файл statistics.txt')
 
 
 elif mainchoose in dct_variants['generate']:
@@ -1762,10 +1879,6 @@ elif mainchoose in dct_variants['clear']:
 
 
 
-# with open('students.json', 'r', encoding='utf-8') as f:
-#     restored_students = json.load(f, object_hook=student_decoder)
-#
-# for key, student in restored_students.items():
-#     print(key, student.__dict__)
+
 
 
