@@ -534,14 +534,18 @@ class DebugMode:
         self.debug = debug
 
     def write_to_file(self, attr, value):
-        if self.debug:
-            with open('syslog.json', 'r', encoding='utf-8') as file:
-                data = json.load(file)
+        try:
+            if self.debug:
+                with open('syslog.json', 'r', encoding='utf-8') as file:
+                    data = json.load(file)
 
-            data[attr] = value
+                data[attr] = value
 
-            with open('syslog.json', 'w', encoding='utf-8') as file:
-                json.dump(data, file, indent=4, ensure_ascii=False)
+                with open('syslog.json', 'w', encoding='utf-8') as file:
+                    json.dump(data, file, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f'Вы не должны видеть это сообщение. Если вы не трогали искходный код и файлы, то сообщите на почту, указанную в инструкции. Если вы видете это сообщение, то программа будет выдывать ошибку при следующем запуске. Вручную удалите файл syslog.json для продолжения пользования.\n Во время выполнения программы возникла ошибка: {e}')
+            sys.exit(1)
 
 
 class RandomCall:
@@ -1237,6 +1241,7 @@ if debug:
     print('Вы вошли в режим разработчика. Включен режим отладки.')
     print()
 
+
 dev.write_to_file('datetime_start', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
@@ -1252,7 +1257,6 @@ mainchoose = input('Выберите режим работы:\n'
                    '5. Генерация директорий и файлов[5]\n'
                    '6. Случайный вызов[6]\n'
                    '7. Сброс данных[7]\n').strip().lower()
-
 dev.write_to_file('mainchoose', mainchoose)
 
 
@@ -1525,19 +1529,23 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
         filepathrem = os.path.join(os.getcwd(), 'archive', dir)
         dct_stat_chose[index] = filepathrem
     chose_stat = input('Введите номер папки, по которой хотите получить статистику:\n')
+    dev.write_to_file('chose_stat', chose_stat)
     try:
         chose_stat = int(chose_stat)
     except Exception:
         print('Введите номер папки')
+        dev.write_to_file('error_chose_stat', True)
         sys.exit()
     try:
         chose_stat_p = dct_stat_chose[chose_stat]
     except KeyError:
         print('Нет папки с таким номером')
+        dev.write_to_file('error_number_chose_stat', True)
         sys.exit()
 
     if not any(os.path.isfile(os.path.join(chose_stat_p, x)) for x in os.listdir(chose_stat_p)):
         print('Папка пуста') #проверка на пустоту папки
+        dev.write_to_file('empty_chose_stat', True)
         sys.exit()
 
     brief_st = BriefStatistics()
@@ -1549,50 +1557,70 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
         print(f'{pair[0]}[{index}] {"<только краткая статистика>" if pair[1] is None else ""}')
         dct_stat_choose_file[index] = pair
 
+    dev.write_to_file('dct_stat_choose_file', dct_stat_choose_file)
+
     try:
         choose_stat_work = int(input('Введите номер работы:\n'))
+        dev.write_to_file('choose_stat_work', choose_stat_work)
     except Exception:
         print('Введите номер работы')
+        dev.write_to_file('error_choose_stat_work', True)
         sys.exit()
     try:
         chosen_file = dct_stat_choose_file[choose_stat_work]
     except KeyError:
         print('Нет работы с таким номером')
+        dev.write_to_file('error_number_choose_stat_work', True)
         sys.exit()
 
     chosen_pair = list(map(lambda x: x if x is None else os.path.join(chose_stat_p, x), chosen_file))
+    dev.write_to_file('chosen_pair', chosen_pair)
 
     if chosen_pair[1] is None: #если доступна ТОЛЬКО краткая статистика, то не спрашиваем
         try:
             processed_data = BriefStatistics.process_file(chosen_pair[0])
+            dev.write_to_file('processed_data', processed_data)
         except Exception:
             print('Формат файла не корректен')
+            dev.write_to_file('error_format_file', True)
             sys.exit()
 
         processed_list = BriefStatistics.process_to_list(processed_data)
+        dev.write_to_file('processed_list', processed_list)
         processed_dict = BriefStatistics.process_to_dict(processed_data)
+        dev.write_to_file('processed_dict', processed_dict)
         brief = BriefStatistics(processed_list, processed_dict)
+
 
         with open('statistics.txt', 'w', encoding='utf-8') as statfile: #запись статистики в файл
             filename = Path(chosen_pair[0]).stem
             klass, name_work, date = filename.split('_')
             print(f'Краткая статистика по работе "{name_work}" класса {klass} за {date}:\n', file=statfile)
             print(f'Средняя оценка по классу: {brief.get_average()}', file=statfile)
+            dev.write_to_file('average', brief.get_average())
             print(f'Медианное по классу: {brief.get_median()}', file=statfile)
+            dev.write_to_file('median', brief.get_median())
             print(f'Отсутствующих учеников: {brief.get_amount_missings(processed_dict)}', file=statfile)
+            dev.write_to_file('missings', brief.get_amount_missings(processed_dict))
             print(f'Учеников, давших ответы не на все вопросы: {brief.get_amount_notfilled(processed_dict)}', file=statfile)
+            dev.write_to_file('notfilled', brief.get_amount_notfilled(processed_dict))
             print(file=statfile)
             print('Распределение оценок по классу:', file=statfile)
             for k, v in brief.get_counter().items():
                 print(f'Оценок {k}: {v}', file=statfile)
             print(f'Больше всего оценок: {brief.get_most_common()}', file=statfile)
+            dev.write_to_file('most_common', brief.get_most_common())
             print('Статистика успешно сгенерирована и записана в одноразовый файл statistics.txt')
             qst8 = Questions('Открыть файл?\n')
+            dev.write_to_file('success', True)
             if qst8.make_question():
                 os.startfile('statistics.txt')
+                dev.write_to_file('happy_end', True)
             else:
                 sys.exit()
+                dev.write_to_file('happy_end', True)
 
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     else: #если доступна и та, и другая статистика
         secondary_choose_stat = input('Выберите режим статистики:\n'
@@ -1600,10 +1628,15 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
                                       '2. Полная статистика по классу[2]\n'
                                       '3. Полная статистика по ученику[3]\n').lower().strip()
 
-        if secondary_choose_stat in ('1', 'краткая статистика'): #запись краткой статистики
+        dev.write_to_file('secondary_choose_stat', secondary_choose_stat)
+
+        if secondary_choose_stat in ('1', 'краткая статистика'): #краткая статистика
             processed_data = BriefStatistics.process_file(chosen_pair[0])
+            dev.write_to_file('processed_data', processed_data)
             processed_list = BriefStatistics.process_to_list(processed_data)
+            dev.write_to_file('processed_list', processed_list)
             processed_dict = BriefStatistics.process_to_dict(processed_data)
+            dev.write_to_file('processed_dict', processed_dict)
             brief = BriefStatistics(processed_list, processed_dict)
 
             with open('statistics.txt', 'w', encoding='utf-8') as statfile:  # запись статистики в файл
@@ -1611,29 +1644,43 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
                 klass, name_work, date = filename.split('_')
                 print(f'Краткая статистика по работе "{name_work}" класса {klass} за {date}:\n', file=statfile)
                 print(f'Средняя оценка по классу: {brief.get_average()}', file=statfile)
+                dev.write_to_file('average', brief.get_average())
                 print(f'Медианное по классу: {brief.get_median()}', file=statfile)
+                dev.write_to_file('median', brief.get_median())
                 print(f'Отсутствующих учеников: {brief.get_amount_missings(processed_dict)}', file=statfile)
-                print(f'Учеников, давших ответы не на все вопросы: {brief.get_amount_notfilled(processed_dict)}',
-                      file=statfile)
+                dev.write_to_file('missings', brief.get_amount_missings(processed_dict))
+                print(f'Учеников, давших ответы не на все вопросы: {brief.get_amount_notfilled(processed_dict)}', file=statfile)
+                dev.write_to_file('notfilled', brief.get_amount_notfilled(processed_dict))
                 print(file=statfile)
                 print('Распределение оценок по классу:', file=statfile)
                 for k, v in brief.get_counter().items():
                     print(f'Оценок {k}: {v}', file=statfile)
                 print(f'Больше всего оценок: {brief.get_most_common()}', file=statfile)
+                dev.write_to_file('most_common', brief.get_most_common())
                 print('Статистика успешно сгенерирована и записана в одноразовый файл statistics.txt')
+                dev.write_to_file('success', True)
                 qst8 = Questions('Открыть файл?\n')
                 if qst8.make_question():
                     os.startfile('statistics.txt')
+                    dev.write_to_file('happy_end', True)
                 else:
                     sys.exit()
+                    dev.write_to_file('happy_end', True)
+            dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         elif secondary_choose_stat in ('2', 'полная статистика по классу'): #полная статистики по классу
             processed_data = DeepStatistics.process_file(chosen_pair[1])
+
             processed_list = DeepStatistics.process_to_list(processed_data)
+            dev.write_to_file('processed_list', processed_list)
             processed_dict = DeepStatistics.process_to_dict(processed_data)
+            dev.write_to_file('processed_dict', processed_dict)
             processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+            dev.write_to_file('processed_distribution', processed_distribution)
             processed_best_worst = DeepStatistics.procces_to_best_worst(processed_data)
+            dev.write_to_file('processed_best_worst', processed_best_worst)
             processed_average_answ = DeepStatistics.process_to_average_answ(processed_data)
+            dev.write_to_file('processed_average_answ', processed_average_answ)
 
             deep = DeepStatistics(processed_list, processed_dict)
 
@@ -1642,24 +1689,34 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
                 klass, name_work, date = filename.split('_')
                 print(f'Полная статистика по работе "{name_work}" класса {klass} за {date}:\n', file=statfile)
                 print(f'Средняя оценка по классу: {deep.get_average()}', file=statfile)
+                dev.write_to_file('average', deep.get_average())
                 print(f'Медианное по классу: {deep.get_median()}', file=statfile)
+                dev.write_to_file('median', deep.get_median())
                 print(f'Среднее количество правильных ответов(подробнее см. Инструкцию): {deep.get_average_answ(processed_average_answ)}', file=statfile)
+                dev.write_to_file('average_answ', deep.get_average_answ(processed_average_answ))
                 print(f'Отсутствующих учеников: {deep.get_amount_missings(processed_dict)}', file=statfile)
+                dev.write_to_file('missings', deep.get_amount_missings(processed_dict))
                 print(f'Учеников, давших ответы не на все вопросы: {len(deep.get_amount_notfilled(processed_dict))}', file=statfile)
+                dev.write_to_file('notfilled', deep.get_amount_notfilled(processed_dict))
                 print(file=statfile)
                 print('Распределение оценок по классу:', file=statfile)
                 for k, v in deep.get_counter().items():
                     print(f'Оценок {k}: {v}', file=statfile)
                 print(f'Больше всего оценок: {deep.get_most_common()}', file=statfile)
+                dev.write_to_file('most_common', deep.get_most_common())
                 print(file=statfile)
                 print(f'Лучшие ученики по классу:', file=statfile)
                 print(', '.join(deep.get_the_best_puples(processed_best_worst)), file=statfile)
+                dev.write_to_file('the_best_puples', deep.get_the_best_puples(processed_best_worst))
                 print(file=statfile)
                 print(f'Худшие ученики по классу:', file=statfile)
                 print(', '.join(deep.get_the_worst_puples(processed_best_worst)), file=statfile)
+                dev.write_to_file('the_worst_puples', deep.get_the_worst_puples(processed_best_worst))
                 print(file=statfile)
                 stats_dict_deep_distr = deep.get_distribution(processed_distribution)
+                dev.write_to_file('stats_dict_deep_distr', stats_dict_deep_distr)
                 percentage_dict = deep.convert_to_percentage(stats_dict_deep_distr)
+                dev.write_to_file('percentage_dict', percentage_dict)
                 for num, percent in percentage_dict.items():
                     print(f'На вопрос {num} правильно ответили {percent}% учеников', file=statfile)
                 print(file=statfile)
@@ -1667,51 +1724,71 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
                 statsrec = StatisticsRecommendations(deep.convert_to_percentage(stats_dict_deep_distr))
                 print('Рекомендации по работе:', file=statfile)
                 print(*statsrec.get_recommendations(), sep='\n', file=statfile)
+                dev.write_to_file('recommendations', statsrec.get_recommendations())
                 print(file=statfile)
                 dek = deep.convert_to_percentage(stats_dict_deep_distr)
                 mean_to_colcl = stat.mean(list(dek.values()))
+                dev.write_to_file('mean_to_colcl', mean_to_colcl)
                 print(statsrec.get_final_conclusion(mean_to_colcl), file=statfile)
+                dev.write_to_file('final_conclusion', statsrec.get_final_conclusion(mean_to_colcl))
 
                 print('Подробная статистика успешно сгенерирована и записана в одноразовый файл statistics.txt')
+                dev.write_to_file('success', True)
 
             qst9 = Questions('Сгенерировать графики по статистике?\n')
             if qst9.make_question():
+                dev.write_to_file('generate_graphs', True)
                 dsg = DeepStatisticsGraphics(dek, deep.get_counter())
                 print('Генерация графиков...')
                 time.sleep(0.7)
                 dsg.show()
                 os.startfile('statistics.txt')
                 print('Графики успешно сгенерированы')
+                dev.write_to_file('happy_end', True)
             else:
                 qst10 = Questions('Открыть файл?\n')
                 if qst10.make_question():
+                    dev.write_to_file('open_file', True)
                     os.startfile('statistics.txt')
+                    dev.write_to_file('happy_end', True)
                 else:
                     sys.exit()
+                    dev.write_to_file('happy_end', True)
 
-        elif secondary_choose_stat in ('3', 'полная статистика по ученику'):
+            dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+        elif secondary_choose_stat in ('3', 'полная статистика по ученику'): #полная статистика по ученику
             name = input('Введите имя ученика(с учетом регистра): ')
+            dev.write_to_file('name', name)
 
             processed_data = DeepStatistics.process_file(chosen_pair[1])
             pds = PupleDeepStatistics(name, processed_data)
             filename = Path(chosen_pair[0]).stem
             klass, name_work, date = filename.split('_')
 
-            with open('statistics.txt', 'w', encoding='utf-8') as statfile:
+            with open('statistics.txt', 'w', encoding='utf-8') as statfile: #запись в файл
                 if pds.missings():
                     print(f'Ученик {name} отсутствовал', file=statfile)
+                    dev.write_to_file('missings', True)
                     print(f'Статистика по ученику {name} успешно записана в одноразовый файл statistics.txt')
+                    dev.write_to_file('success', True)
                 else:
                     print(f'Статистика для ученика {name} по работе "{name_work}" за {date}', file=statfile)
                     print(file=statfile)
                     print(f'Оценка за работу: {pds.mark()}', file=statfile)
+                    dev.write_to_file('mark', pds.mark())
                     print('Ученик дал ответы не на все задания' if not pds.not_all() else "Ученик дал ответы на все задания", file=statfile)
+                    dev.write_to_file('not_all', pds.not_all())
                     print(file=statfile)
                     print('Ответы ученика:', file=statfile)
                     for num, status in enumerate(pds.response_status(), 1):
                         print(f'{num} - {status}', file=statfile)
+                    dev.write_to_file('response_status', pds.response_status())
                     print(f'Всего правильных ответов: {pds.correct_answers_am()}', file=statfile)
+                    dev.write_to_file('correct_answers_am', pds.correct_answers_am())
                     print(f'Статистика по ученику {name} успешно записана в одноразовый файл statistics.txt')
+                    dev.write_to_file('success', True)
+            dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 elif mainchoose in dct_variants['generate']:
@@ -1872,7 +1949,8 @@ elif mainchoose in dct_variants['clear']:
                     DeleteManager.deep_delete() #удаление всего в рабочей директории, кроме py-файлов
 
 
-
+elif ...:
+    ...
 
 
 

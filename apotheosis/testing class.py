@@ -407,47 +407,112 @@ import os
 # f1 = input('Введите что-нибудь еще раз и нажмите Enter: ')
 # print(f+f1)
 
-
-import pickle
+from abc import ABC, abstractmethod
+from pathlib import Path
+from collections import Counter
+import statistics as stat
 import sys
 
+class Statistics:
+    def __init__(self, lst_marks=None, tuple_info=None):
+        if lst_marks is None:
+            lst_marks = []
+        if tuple_info is None:
+            tuple_info = {}
+        self.pairs = []
+        self.yet_added = []
+        self.lst_marks = lst_marks
 
-class PickleHandler:
-    def __init__(self, filepath):
-        self.filepath = filepath
+    def set_pairs(self, dirpath):
+        files = list(filter(lambda x: os.path.isfile(os.path.join(dirpath, x)), os.listdir(dirpath)))
+        files_json = list(filter(lambda x: x.endswith('.json'), files))
+        files_txt_csv = list(filter(lambda x: x.endswith('.txt') or x.endswith('.csv'), files))
+        for file_def in files_txt_csv:
+            file_without_ext = Path(file_def).stem
+            try:
+                _, namework, date = file_without_ext.split('_')
+            except ValueError:
+                pass
+            for file_json in files_json:
+                file_json_without_ext = Path(file_json).stem
+                try:
+                    _, _, namework_json, date_json = file_json_without_ext.split('_')
+                except ValueError:
+                    pass
+                if namework == namework_json and date == date_json:
+                    self.pairs.append((file_def, file_json))
+                    self.yet_added.append(file_def)
 
-    def load_data(self):
-        try:
-            with open(self.filepath, 'rb') as file:
-                return pickle.load(file)
-        except FileNotFoundError:
-            print(f"Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
-            sys.exit()
-        except pickle.UnpicklingError:
-            print(f"Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
-            sys.exit()
+        alone = (item for item in files_txt_csv if item not in self.yet_added)
+        for file in alone:
+            self.pairs.append((file, None))
 
-    def save_data(self, data):
-        try:
-            with open(self.filepath, 'wb') as file:
-                pickle.dump(data, file)
-        except IOError:
-            print("Если вы видите это сообщение и вы не трогали исходный код, то напишите на почту, указанную в инструкции")
-            sys.exit()
+    def get_average(self):
+        self.lst_marks = list(filter(lambda x: isinstance(x, int), self.lst_marks))
+        avr = stat.mean(self.lst_marks)
+        return round(avr, 2)
 
-pickle_handler = PickleHandler('sysdev.pkl')
+    def get_most_common(self):
+        return self.__class__.get_counter(self).most_common(1)[0][0]
 
-data_to_save = {1: 1821}
-pickle_handler.save_data(data_to_save)
+    def get_counter(self):
+        return Counter(self.lst_marks)
 
-
-loaded_data = pickle_handler.load_data()
-print(loaded_data)
+    def get_median(self):
+        self.lst_marks = list(filter(lambda x: isinstance(x, int), self.lst_marks))
+        med = stat.median(self.lst_marks)
+        return round(med, 2)
 
 
 
 
+class Compare:
+    def __init__(self, chosen_dir):
+        self.chosen_dir = chosen_dir
+        self.filtered_files = []
+        self.json_files_not_rep = set()
 
+    def filter_files(self, pairs):
+        for pair in pairs:
+            if pair[1] is not None:
+                pair = (os.path.join(self.chosen_dir, pair[0]), os.path.join(self.chosen_dir, pair[1]))
+                self.filtered_files.append(pair)
+
+    def split_chosen(self, files_str, compdct):
+        for num in files_str.split():
+            try:
+                num = int(num)
+            except:
+                print('Некорректный ввод, введите только числа')
+                sys.exit()
+
+            try:
+                json = compdct[num][1]
+                self.json_files_not_rep.add(json)
+            except KeyError:
+                print('Некорректный ввод, вы ввели номер несуществующего файла')
+                sys.exit()
+
+
+
+chosen_dir = r'D:\pythonProject\apotheosis\archive\8в'
+statcomp = Statistics(chosen_dir)
+statcomp.set_pairs(chosen_dir)
+print(*statcomp.pairs, sep='\n')
+print()
+comp = Compare(chosen_dir)
+comp.filter_files(statcomp.pairs)
+
+compdct = {}
+for index, compfile in enumerate(comp.filtered_files, 1):
+    print(f'{compfile[0]}[{index}]')
+    compdct[index] = compfile
+print()
+print(compdct)
+files = input('Введите номера файлов: ').strip()
+
+comp.split_chosen(files, compdct)
+print(*comp.json_files_not_rep, sep='\n')
 
 
 
