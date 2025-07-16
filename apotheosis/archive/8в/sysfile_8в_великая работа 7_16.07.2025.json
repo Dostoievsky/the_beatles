@@ -1,0 +1,2003 @@
+{
+    "Аиша Муратова": {
+        "__class__": "Student",
+        "_name": "Аиша",
+        "_surname": "Муратова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\аиша_муратова.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "4",
+            "0",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 8,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 4,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Александра Беляева": {
+        "__class__": "Student",
+        "_name": "Александра",
+        "_surname": "Беляева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\александра_беляева.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "3",
+            "0",
+            "0",
+            "0",
+            "0",
+            "8",
+            "0",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 3,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Алина Большакова": {
+        "__class__": "Student",
+        "_name": "Алина",
+        "_surname": "Большакова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\алина_большакова.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "0",
+            "5",
+            "6",
+            "0",
+            "0",
+            "9",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 6,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Анна Герасимова": {
+        "__class__": "Student",
+        "_name": "Анна",
+        "_surname": "Герасимова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\анна_герасимова.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "0",
+            "5",
+            "6",
+            "7",
+            "8",
+            "0",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 8,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 4,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Владимир Еремин": {
+        "__class__": "Student",
+        "_name": "Владимир",
+        "_surname": "Еремин",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\владимир_еремин.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "0",
+            "4",
+            "5",
+            "0",
+            "7",
+            "0",
+            "0",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 4,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Григорий Басов": {
+        "__class__": "Student",
+        "_name": "Григорий",
+        "_surname": "Басов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\григорий_басов.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "4",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 3,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Даниил Иванов": {
+        "__class__": "Student",
+        "_name": "Даниил",
+        "_surname": "Иванов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\даниил_иванов.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "9",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 2,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Даниил Кондратов": {
+        "__class__": "Student",
+        "_name": "Даниил",
+        "_surname": "Кондратов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\даниил_кондратов.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "3",
+            "0",
+            "5",
+            "0",
+            "7",
+            "0",
+            "9",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 8,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 4,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Дарья Королева": {
+        "__class__": "Student",
+        "_name": "Дарья",
+        "_surname": "Королева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\дарья_королева.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "0",
+            "0",
+            "5",
+            "0",
+            "7",
+            "8",
+            "9",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Ева Никонова": {
+        "__class__": "Student",
+        "_name": "Ева",
+        "_surname": "Никонова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\ева_никонова.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "3",
+            "4",
+            "0",
+            "6",
+            "7",
+            "8",
+            "9",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Елизавета Федорова": {
+        "__class__": "Student",
+        "_name": "Елизавета",
+        "_surname": "Федорова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\елизавета_федорова.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "0",
+            "0",
+            "0",
+            "0",
+            "7",
+            "0",
+            "0",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 2,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Кира Воробьева": {
+        "__class__": "Student",
+        "_name": "Кира",
+        "_surname": "Воробьева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\кира_воробьева.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "0",
+            "4",
+            "5",
+            "0",
+            "0",
+            "0",
+            "9",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Ксения Максимова": {
+        "__class__": "Student",
+        "_name": "Ксения",
+        "_surname": "Максимова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\ксения_максимова.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "3",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 5,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Ксения Никифорова": {
+        "__class__": "Student",
+        "_name": "Ксения",
+        "_surname": "Никифорова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\ксения_никифорова.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "4",
+            "0",
+            "6",
+            "0",
+            "0",
+            "9",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 4,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Лев Калинин": {
+        "__class__": "Student",
+        "_name": "Лев",
+        "_surname": "Калинин",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\лев_калинин.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "3",
+            "4",
+            "0",
+            "6",
+            "7",
+            "8",
+            "0",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Леонид Назаров": {
+        "__class__": "Student",
+        "_name": "Леонид",
+        "_surname": "Назаров",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\леонид_назаров.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "5",
+            "6",
+            "0",
+            "8",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 5,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Максим Евдокимов": {
+        "__class__": "Student",
+        "_name": "Максим",
+        "_surname": "Евдокимов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\максим_евдокимов.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "0",
+            "0",
+            "0",
+            "6",
+            "0",
+            "0",
+            "9",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 3,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Максим Кузнецов": {
+        "__class__": "Student",
+        "_name": "Максим",
+        "_surname": "Кузнецов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\максим_кузнецов.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "3",
+            "4",
+            "5",
+            "0",
+            "0",
+            "8",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 6,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Мария Белова": {
+        "__class__": "Student",
+        "_name": "Мария",
+        "_surname": "Белова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\мария_белова.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "0",
+            "0",
+            "0",
+            "6",
+            "0",
+            "0",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 4,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Мария Соколова": {
+        "__class__": "Student",
+        "_name": "Мария",
+        "_surname": "Соколова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\мария_соколова.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "5",
+            "6",
+            "0",
+            "8",
+            "9",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 5,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Марьям Лебедева": {
+        "__class__": "Student",
+        "_name": "Марьям",
+        "_surname": "Лебедева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\марьям_лебедева.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "0",
+            "0",
+            "6",
+            "7",
+            "8",
+            "9",
+            "0",
+            "11"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Милана Литвинова": {
+        "__class__": "Student",
+        "_name": "Милана",
+        "_surname": "Литвинова",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\милана_литвинова.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "8",
+            "9",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 4,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Мирослава Савельева": {
+        "__class__": "Student",
+        "_name": "Мирослава",
+        "_surname": "Савельева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\мирослава_савельева.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "4",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "10",
+            "11"
+        ],
+        "_correct_answers": 5,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                true
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Михаил Смирнов": {
+        "__class__": "Student",
+        "_name": "Михаил",
+        "_surname": "Смирнов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\михаил_смирнов.txt",
+        "_list_answers": [
+            "1",
+            "0",
+            "3",
+            "4",
+            "0",
+            "0",
+            "0",
+            "8",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 6,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Николай Второй": {
+        "__class__": "Student",
+        "_name": "Николай",
+        "_surname": "Второй",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\николай_второй.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "3",
+            "0",
+            "5",
+            "0",
+            "0",
+            "0",
+            "0",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 5,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Таисия Сергеева": {
+        "__class__": "Student",
+        "_name": "Таисия",
+        "_surname": "Сергеева",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\таисия_сергеева.txt",
+        "_list_answers": [
+            "0",
+            "0",
+            "0",
+            "4",
+            "0",
+            "0",
+            "0",
+            "8",
+            "0",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 3,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                false
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                false
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                false
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Тимур Аксенов": {
+        "__class__": "Student",
+        "_name": "Тимур",
+        "_surname": "Аксенов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\тимур_аксенов.txt",
+        "_list_answers": [
+            "1",
+            "2",
+            "3",
+            "0",
+            "5",
+            "0",
+            "7",
+            "8",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 8,
+        "_response_status": [
+            [
+                1,
+                true
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                false
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                false
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                true
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 4,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Фёдор Филатов": {
+        "__class__": "Student",
+        "_name": "Фёдор",
+        "_surname": "Филатов",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\фёдор_филатов.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "0",
+            "4",
+            "5",
+            "6",
+            "7",
+            "0",
+            "9",
+            "10",
+            "0"
+        ],
+        "_correct_answers": 7,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                false
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                true
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                true
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 3,
+        "_missings": false,
+        "_flag_not_all": false
+    },
+    "Фёдор Яковлев": {
+        "__class__": "Student",
+        "_name": "Фёдор",
+        "_surname": "Яковлев",
+        "_file": "D:/pythonProject/apotheosis/Великая работа 7\\фёдор_яковлев.txt",
+        "_list_answers": [
+            "0",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "0",
+            "0",
+            "9",
+            "0",
+            "0"
+        ],
+        "_correct_answers": 6,
+        "_response_status": [
+            [
+                1,
+                false
+            ],
+            [
+                2,
+                true
+            ],
+            [
+                3,
+                true
+            ],
+            [
+                4,
+                true
+            ],
+            [
+                5,
+                true
+            ],
+            [
+                6,
+                true
+            ],
+            [
+                7,
+                false
+            ],
+            [
+                8,
+                false
+            ],
+            [
+                9,
+                true
+            ],
+            [
+                10,
+                false
+            ],
+            [
+                11,
+                false
+            ]
+        ],
+        "_mark": 2,
+        "_missings": false,
+        "_flag_not_all": false
+    }
+}

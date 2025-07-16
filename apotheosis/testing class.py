@@ -413,57 +413,8 @@ from collections import Counter
 import statistics as stat
 import sys
 
-class Statistics:
-    def __init__(self, lst_marks=None, tuple_info=None):
-        if lst_marks is None:
-            lst_marks = []
-        if tuple_info is None:
-            tuple_info = {}
-        self.pairs = []
-        self.yet_added = []
-        self.lst_marks = lst_marks
-
-    def set_pairs(self, dirpath):
-        files = list(filter(lambda x: os.path.isfile(os.path.join(dirpath, x)), os.listdir(dirpath)))
-        files_json = list(filter(lambda x: x.endswith('.json'), files))
-        files_txt_csv = list(filter(lambda x: x.endswith('.txt') or x.endswith('.csv'), files))
-        for file_def in files_txt_csv:
-            file_without_ext = Path(file_def).stem
-            try:
-                _, namework, date = file_without_ext.split('_')
-            except ValueError:
-                pass
-            for file_json in files_json:
-                file_json_without_ext = Path(file_json).stem
-                try:
-                    _, _, namework_json, date_json = file_json_without_ext.split('_')
-                except ValueError:
-                    pass
-                if namework == namework_json and date == date_json:
-                    self.pairs.append((file_def, file_json))
-                    self.yet_added.append(file_def)
-
-        alone = (item for item in files_txt_csv if item not in self.yet_added)
-        for file in alone:
-            self.pairs.append((file, None))
-
-    def get_average(self):
-        self.lst_marks = list(filter(lambda x: isinstance(x, int), self.lst_marks))
-        avr = stat.mean(self.lst_marks)
-        return round(avr, 2)
-
-    def get_most_common(self):
-        return self.__class__.get_counter(self).most_common(1)[0][0]
-
-    def get_counter(self):
-        return Counter(self.lst_marks)
-
-    def get_median(self):
-        self.lst_marks = list(filter(lambda x: isinstance(x, int), self.lst_marks))
-        med = stat.median(self.lst_marks)
-        return round(med, 2)
-
-
+from statonly import *
+import statistics as stat
 
 
 class Compare:
@@ -496,25 +447,77 @@ class Compare:
 
 
 chosen_dir = r'D:\pythonProject\apotheosis\archive\8в'
-statcomp = Statistics(chosen_dir)
+statcomp = BriefStatistics(chosen_dir)
 statcomp.set_pairs(chosen_dir)
 print(*statcomp.pairs, sep='\n')
 print()
 comp = Compare(chosen_dir)
 comp.filter_files(statcomp.pairs)
 
-compdct = {}
-for index, compfile in enumerate(comp.filtered_files, 1):
-    print(f'{compfile[0]}[{index}]')
-    compdct[index] = compfile
-print()
-print(compdct)
-files = input('Введите номера файлов: ').strip()
+method_to_comp = input('Сравнить работы:\n'
+                        'по классу [1]\n'
+                        'по конкретному ученику[2]\n').strip()
 
-comp.split_chosen(files, compdct)
-print(*comp.json_files_not_rep, sep='\n')
+choose_method_to_comp  = input('Как хотите получить статистику?\n'
+                                'по конкрентым работам[1]\n'
+                                'за период[2]\n').strip()
+
+res = method_to_comp+choose_method_to_comp
+
+dct_of_methods = {
+    '11': lambda: 'classsplit',
+    '12': lambda: 'classperiod',
+    '21': lambda: 'studentsplit',
+    '22': lambda: 'studentperiod'
+}
+
+res_choose = dct_of_methods[res]()
+if res_choose == 'classsplit':
+    compdct = {}
+    for index, compfile in enumerate(comp.filtered_files, 1):
+        print(f'{compfile[0]}[{index}]')
+        compdct[index] = compfile
+    print()
+    print(compdct)
+    files = input('Введите номера файлов: ').strip()
+    comp.split_chosen(files, compdct)
+    print(*comp.json_files_not_rep, sep='\n')
+
+    dict_to_graph_distr = {}
+    dict_to_graph_avrg = {}
 
 
+    for json in comp.json_files_not_rep:
+        processed_data = DeepStatistics.process_file(json)
+        processed_dict = DeepStatistics.process_to_dict(processed_data)
+        processed_list = DeepStatistics.process_to_list(processed_data)
+        processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+        distributoin = DeepStatistics.get_distribution(processed_distribution)
+        percentage_to_graph = DeepStatistics.convert_to_percentage(distributoin)
+        print('percentage_to_graph', percentage_to_graph)
+        json = Path(json).name
+        json = json.replace('.json', '')
+        _, klass, namework, date = json.split('_')
+        good_name = f'{namework.capitalize().strip()} {date.strip()}'
+        dict_to_graph_distr[good_name] = round(stat.mean(percentage_to_graph.values()))
+
+        deep = DeepStatistics(lst_marks=processed_list)
+        dict_to_graph_avrg[good_name] = deep.get_average()
+
+
+
+    print(dict_to_graph_distr)
+    print(dict_to_graph_avrg)
+
+
+elif res_choose == 'classperiod':
+    pass
+
+elif res_choose == 'studentsplit':
+    pass
+
+elif res_choose == 'studentperiod':
+    pass
 
 
 
