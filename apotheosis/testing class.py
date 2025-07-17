@@ -415,7 +415,9 @@ import sys
 
 from statonly import *
 import statistics as stat
-
+from mathplotlib import *
+from datetime import datetime
+import re
 
 class Compare:
     def __init__(self, chosen_dir):
@@ -430,6 +432,7 @@ class Compare:
                 self.filtered_files.append(pair)
 
     def split_chosen(self, files_str, compdct):
+
         for num in files_str.split():
             try:
                 num = int(num)
@@ -444,6 +447,36 @@ class Compare:
                 print('Некорректный ввод, вы ввели номер несуществующего файла')
                 sys.exit()
 
+    @staticmethod
+    def compare_works(json_files):
+        dict_to_graph_distr = {}
+        dict_to_graph_avrg = {}
+        dict_to_graph_miss = {}
+        dict_to_graph_avrg_answ = {}
+
+        for json in json_files:
+            processed_data = DeepStatistics.process_file(json)
+            processed_dict = DeepStatistics.process_to_dict(processed_data)
+            processed_list = DeepStatistics.process_to_list(processed_data)
+            processed_avrg_answers = DeepStatistics.process_to_average_answ(processed_data)
+            processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+            distribution = DeepStatistics.get_distribution(processed_distribution)
+            percentage_to_graph = DeepStatistics.convert_to_percentage(distribution)
+
+            json = Path(json).name
+            json = json.replace('.json', '')
+            _, klass, namework, date = json.split('_')
+            good_name = f'{namework.capitalize().strip()} {date.strip()}'
+
+            dict_to_graph_distr[good_name] = round(stat.mean(percentage_to_graph.values()))
+            deep = DeepStatistics(lst_marks=processed_list)
+            dict_to_graph_avrg[good_name] = deep.get_average()
+            am_miss = deep.get_amount_missings(processed_dict)
+            dict_to_graph_miss[good_name] = am_miss
+            avrg_answ = DeepStatistics.get_average_answ(processed_avrg_answers)
+            dict_to_graph_avrg_answ[good_name] = round(avrg_answ, 1)
+
+        return dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ
 
 
 chosen_dir = r'D:\pythonProject\apotheosis\archive\8в'
@@ -480,38 +513,40 @@ if res_choose == 'classsplit':
     print()
     print(compdct)
     files = input('Введите номера файлов: ').strip()
+    if files == 'all' or files == 'все':
+        files = ' '.join(list(map(str, compdct.keys())))
     comp.split_chosen(files, compdct)
     print(*comp.json_files_not_rep, sep='\n')
 
-    dict_to_graph_distr = {}
-    dict_to_graph_avrg = {}
+    json_files = comp.json_files_not_rep
 
+    dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ = Compare.compare_works(json_files)
 
-    for json in comp.json_files_not_rep:
-        processed_data = DeepStatistics.process_file(json)
-        processed_dict = DeepStatistics.process_to_dict(processed_data)
-        processed_list = DeepStatistics.process_to_list(processed_data)
-        processed_distribution = DeepStatistics.process_to_distribution(processed_data)
-        distributoin = DeepStatistics.get_distribution(processed_distribution)
-        percentage_to_graph = DeepStatistics.convert_to_percentage(distributoin)
-        print('percentage_to_graph', percentage_to_graph)
-        json = Path(json).name
-        json = json.replace('.json', '')
-        _, klass, namework, date = json.split('_')
-        good_name = f'{namework.capitalize().strip()} {date.strip()}'
-        dict_to_graph_distr[good_name] = round(stat.mean(percentage_to_graph.values()))
-
-        deep = DeepStatistics(lst_marks=processed_list)
-        dict_to_graph_avrg[good_name] = deep.get_average()
-
-
-
-    print(dict_to_graph_distr)
-    print(dict_to_graph_avrg)
-
+    compare_graph = CompareGraphs(dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ)
+    compare_graph.show()
 
 elif res_choose == 'classperiod':
-    pass
+    period = input('Введите период, по которому хотите сравнить работы в формате: дд.мм.гггг - дд.мм.гггг\n').strip()
+    regex = r'^\d{2}\.\d{2}\.\d{4} - \d{2}\.\d{2}\.\d{4}$'
+    if not re.match(regex, period):
+        print('Дата не соответствует формату дд.мм.гггг - дд.мм.гггг')
+        sys.exit()
+    try:
+        start_date, end_date = period.split(' - ')
+        datetime_start = datetime.strptime(start_date, '%d.%m.%Y')
+        datetime_end = datetime.strptime(end_date, '%d.%m.%Y')
+    except:
+        print('Некорретная дата')
+        sys.exit()
+
+    if datetime_start > datetime_end:
+        print('Дата начала должна быть раньше даты конца')
+        sys.exit()
+
+    print(comp.filtered_files)
+
+
+
 
 elif res_choose == 'studentsplit':
     pass

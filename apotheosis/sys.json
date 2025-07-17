@@ -1,10 +1,10 @@
 {
     "klass": "8в",
     "name_work": "Паршивая работа 4",
-    "date": "09.09.2025",
+    "date": "17.07.2025",
     "answer": "D:/pythonProject/apotheosis/answers.txt",
     "marks": "D:/pythonProject/apotheosis/marks.txt",
     "students": "D:/pythonProject/apotheosis/puples8v.txt",
-    "missings": "D:/pythonProject/apotheosis/missings.txt",
+    "missings": "auto",
     "students_folder": "D:/pythonProject/apotheosis/Паршивая работа 4"
 }

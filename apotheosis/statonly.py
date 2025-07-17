@@ -320,10 +320,10 @@ class DeepStatistics(Statistics):
 
 
     def get_amount_missings(self, tuple_info):
-        return len(tuple_info[2])
+        return len(tuple_info[1])
 
     def get_amount_notfilled(self, tuple_info):
-        return tuple_info[1]
+        return tuple_info[2]
 
     @staticmethod
     def get_the_best_puples(dct_best_worst):
@@ -393,11 +393,18 @@ class StatisticsRecommendations:
         grouped_tasks = self.group_tasks_by_percent()
         recommendations = []
 
+        recommendation_groups = {}
         for percent, tasks in grouped_tasks.items():
-            numbers = ', '.join(map(str, tasks))
+            rounded_percent = round(percent)
             for key, rec in DICT_RECOMMENDATIONS.items():
-                if round(percent) in key:
-                    recommendations.append(rec.format(numbers=numbers))
+                if rounded_percent in key:
+                    if rec not in recommendation_groups:
+                        recommendation_groups[rec] = []
+                    recommendation_groups[rec].extend(sorted(tasks))
+
+        for rec, tasks in recommendation_groups.items():
+            numbers = ', '.join(map(str, tasks))
+            recommendations.append(rec.format(numbers=numbers))
 
         return recommendations
 

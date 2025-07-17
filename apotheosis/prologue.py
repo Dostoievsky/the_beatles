@@ -950,10 +950,10 @@ class DeepStatistics(Statistics):
 
 
     def get_amount_missings(self, tuple_info):
-        return len(tuple_info[2])
+        return len(tuple_info[1])
 
     def get_amount_notfilled(self, tuple_info):
-        return tuple_info[1]
+        return tuple_info[2]
 
     @staticmethod
     def get_the_best_puples(dct_best_worst):
@@ -991,7 +991,7 @@ class DeepStatistics(Statistics):
 
     @staticmethod
     def get_average_answ(lst_average_answ):
-        return stat.mean(lst_average_answ)
+        return round(stat.mean(lst_average_answ), 1)
 
 
 class StatisticsRecommendations:
@@ -1017,17 +1017,24 @@ class StatisticsRecommendations:
             RangeKey(36, 45): f'Задания [{{numbers}}] выполнила почти половина учеников, если это были задания повышенной сложности, то это очень неплохо',
             RangeKey(46, 55): f'Задания [{{numbers}}] верно решили около половины учеников',
             RangeKey(56, 70): f'Задания [{{numbers}}] решили больше половины учеников, что очень неплохо',
-            RangeKey(71, 90): f'Задания [{{numbers}}] решили большая часть ученики, тема отлично усвоена',
+            RangeKey(71, 90): f'Задания [{{numbers}}] решили большая часть учеников, тема отлично усвоена',
             RangeKey(91, 99): f'Задания [{{numbers}}] не решили всего пара ученников, отличный результат, возможно, задания были слишком простые',
             RangeKey(100, 100): f'Задания [{{numbers}}] решили абсолютно все ученики, тема идеально усвоена или, вероятно, задания были чересчур простые'}
         grouped_tasks = self.group_tasks_by_percent()
         recommendations = []
 
+        recommendation_groups = {}
         for percent, tasks in grouped_tasks.items():
-            numbers = ', '.join(map(str, tasks))
+            rounded_percent = round(percent)
             for key, rec in DICT_RECOMMENDATIONS.items():
-                if round(percent) in key:
-                    recommendations.append(rec.format(numbers=numbers))
+                if rounded_percent in key:
+                    if rec not in recommendation_groups:
+                        recommendation_groups[rec] = []
+                    recommendation_groups[rec].extend(sorted(tasks))
+
+        for rec, tasks in recommendation_groups.items():
+            numbers = ', '.join(map(str, tasks))
+            recommendations.append(rec.format(numbers=numbers))
 
         return recommendations
 
@@ -1098,6 +1105,7 @@ class DeepStatisticsGraphics:
 
         axes[0].bar(self.data_distr.keys(), self.data_distr.values(), color=colors_first)
         axes[0].set_title('Процент правильных ответов по вопросам')
+        axes[0].set_ylim(0, 100)
         axes[0].set_xlabel('Номер вопроса')
         axes[0].set_ylabel('Процент правильных ответов')
         axes[0].set_xticks(list(self.data_distr.keys()))
@@ -1109,6 +1117,8 @@ class DeepStatisticsGraphics:
         axes[1].set_ylabel('Количество')
         axes[1].set_xticks(positions)
         axes[1].set_xticklabels(labels)
+        max_val = int(max(values)) + 1
+        axes[1].set_yticks(range(0, max_val))
 
         plt.tight_layout()
         plt.show()
