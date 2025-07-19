@@ -1,5 +1,5 @@
-
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 
@@ -54,6 +54,44 @@ class CompareGraphs:
         ax4.set_title('Среднее количество правильных ответов')
 
         # Показ всех окон
+        plt.show()
+
+
+class ComparePupleGraphs:
+    def __init__(self, dict_pup_answ, dict_pup_mark):
+        self.dict_pup_answ = dict_pup_answ
+        self.dict_pup_mark = dict_pup_mark
+
+    def show(self):
+        # Создаем фигуру с 2 подграфиками (1 строка, 2 столбца)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # Первый график: среднее количество правильных ответов
+        keys_answ = list(self.dict_pup_answ.keys())
+        values_answ = list(self.dict_pup_answ.values())
+
+        ax1.plot(keys_answ, values_answ, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax1.set_ylabel('Количество правильных ответов')
+        ax1.set_xticks(range(len(keys_answ)))
+        ax1.set_xticklabels(keys_answ, rotation=60, ha='right', fontsize=10)
+        ax1.set_title('Количество правильных ответов')
+        ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
+        # Второй график: средняя оценка
+        keys_mark = list(self.dict_pup_mark.keys())
+        values_mark = list(self.dict_pup_mark.values())
+
+        ax2.plot(keys_mark, values_mark, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax2.set_ylabel('Оценка за каждую работу')
+        ax2.set_xticks(range(len(keys_mark)))
+        ax2.set_xticklabels(keys_mark, rotation=60, ha='right', fontsize=10)
+        ax2.set_title('Оценка за каждую работу')
+        ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
+        # Показываем графики
+        plt.tight_layout()
         plt.show()
 
 

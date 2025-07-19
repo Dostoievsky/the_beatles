@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 import statistics as stat
 import matplotlib.pyplot as plt
 from collections import Counter
-
+from matplotlib.ticker import MaxNLocator
 
 
 # noinspection PyGlobalUndefined
@@ -67,19 +67,6 @@ def handle_stop_signal(signum, frame):
     dev.write_to_file('datetime_kill', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     exit(0)
 
-
-# class StudentJSONEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, Student):
-#             return {'__class__': Student,
-#                    'name': obj.name,
-#                    'surname': obj.surname,
-#                    'file': obj.file,
-#                    'list_answers': obj.list_answers,
-#                    'response_status': obj.response_status,
-#                    'correct_answers': obj.correct_answers,
-#                    'mark': obj.mark}
-#         return super().default(obj)
 
 class StudentJSONEncoder(json.JSONEncoder):
     def default(self, o):
@@ -1124,6 +1111,299 @@ class DeepStatisticsGraphics:
         plt.show()
 
 
+class DateValidator:
+    def __init__(self):
+        self._month_periods = {
+            1: ("01.01", "31.01"),
+            2: ("01.02", "28.02"),
+            3: ("01.03", "31.03"),
+            4: ("01.04", "30.04"),
+            5: ("01.05", "31.05"),
+            6: ("01.06", "30.06"),
+            7: ("01.07", "31.07"),
+            8: ("01.08", "31.08"),
+            9: ("01.09", "30.09"),
+            10: ("01.10", "31.10"),
+            11: ("01.11", "30.11"),
+            12: ("01.12", "31.12")
+        }
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, instance, owner):
+        return instance.__dict__.get(self.name)
+
+    def __set__(self, instance, value):
+        current_year = datetime.now().year
+        regex_period = r'^\d{2}\.\d{2}\.\d{4} - \d{2}\.\d{2}\.\d{4}$'
+        regex_month = r'^(1[0-2]|0?[1-9])$'
+        regex_month_range = r'^(1[0-2]|0?[1-9])-(1[0-2]|0?[1-9])$'
+
+        if not (
+            re.fullmatch(regex_period, value) or
+            re.fullmatch(regex_month, value) or
+            re.fullmatch(regex_month_range, value)
+        ):
+            print('Дата не соответствует формату дд.мм.гггг - дд.мм.гггг, номеру месяца или диапазону месяцев')
+            sys.exit()
+
+        # Если это диапазон дат
+        if re.fullmatch(regex_period, value):
+            try:
+                start_date_str, end_date_str = value.split(" - ")
+                start_date = datetime.strptime(start_date_str, '%d.%m.%Y')
+                end_date = datetime.strptime(end_date_str, '%d.%m.%Y')
+
+                if start_date > end_date:
+                    print('Дата начала должна быть раньше даты конца')
+                    sys.exit()
+                instance.__dict__[self.name] = (start_date, end_date)
+                return
+            except Exception:
+                print(f'Некорректная дата')
+                sys.exit()
+
+        # Если это месяц
+        elif re.fullmatch(regex_month, value):
+            month = int(value)
+            start_str, end_str = self._month_periods[month]
+            try:
+                start_date = datetime.strptime(f"{start_str}.{current_year}", "%d.%m.%Y")
+                end_date = datetime.strptime(f"{end_str}.{current_year}", "%d.%m.%Y")
+                instance.__dict__[self.name] = (start_date, end_date)
+                return
+            except ValueError:
+                print(f"Ошибка при парсинге даты")
+                sys.exit()
+
+        # Если это диапазон месяцев
+        elif re.fullmatch(regex_month_range, value):
+            start_month_str, end_month_str = value.split('-')
+            start_month = int(start_month_str)
+            end_month = int(end_month_str)
+
+            if not (1 <= start_month <= 12 and 1 <= end_month <= 12):
+                print('Месяцы должны быть в диапазоне от 1 до 12')
+                sys.exit()
+
+            if start_month > end_month:
+                print('Начальный месяц должен быть меньше или равен конечному')
+                sys.exit()
+
+            start_str, end_str = self._month_periods[start_month]
+            start_date = datetime.strptime(f"{start_str}.{current_year}", "%d.%m.%Y")
+
+            end_str_last, end_str_last_day = self._month_periods[end_month]
+            end_date = datetime.strptime(f"{end_str_last_day}.{current_year}", "%d.%m.%Y")
+
+            instance.__dict__[self.name] = (start_date, end_date)
+            return
+
+        else:
+            print('Неизвестный формат даты')
+            sys.exit()
+
+
+class Periods:
+    period = DateValidator()
+
+    def filtered_by_date(self, filtered_files):
+        start_date, end_date = self.period
+        list_filtered_by_date = []
+        for _, json in filtered_files:
+            jsonname = Path(json).name
+            jsonname = jsonname.replace('.json', '')
+            _, klass, namework, date = jsonname.split('_')
+            date = datetime.strptime(date, '%d.%m.%Y')
+            if start_date <= date <= end_date:
+                 list_filtered_by_date.append(json)
+        return list_filtered_by_date
+
+    @staticmethod
+    def sorted_by_date(list_filtered_by_date):
+        def key_func(x):
+            x = Path(x).name
+            x = x.replace('.json', '')
+            _, klass, namework, date = x.split('_')
+            date = datetime.strptime(date, '%d.%m.%Y')
+            return date
+
+        return sorted(list_filtered_by_date, key=key_func)
+
+
+class Compare:
+    def __init__(self, chosen_dir):
+        self.chosen_dir = chosen_dir
+        self.filtered_files = []
+        self.json_files_not_rep = set()
+
+    def filter_files(self, pairs):
+        for pair in pairs:
+            if pair[1] is not None:
+                pair = (os.path.join(self.chosen_dir, pair[0]), os.path.join(self.chosen_dir, pair[1]))
+                self.filtered_files.append(pair)
+
+    def split_chosen(self, files_str, compdct):
+        for num in files_str.split():
+            try:
+                num = int(num)
+            except:
+                print('Некорректный ввод, введите только числа')
+                sys.exit()
+
+            try:
+                json = compdct[num][1]
+                self.json_files_not_rep.add(json)
+            except KeyError:
+                print('Некорректный ввод, вы ввели номер несуществующего файла')
+                sys.exit()
+
+    @staticmethod
+    def compare_works(json_files):
+        dict_to_graph_distr = {}
+        dict_to_graph_avrg = {}
+        dict_to_graph_miss = {}
+        dict_to_graph_avrg_answ = {}
+
+        for json in json_files:
+            processed_data = DeepStatistics.process_file(json)
+            processed_dict = DeepStatistics.process_to_dict(processed_data)
+            processed_list = DeepStatistics.process_to_list(processed_data)
+            processed_avrg_answers = DeepStatistics.process_to_average_answ(processed_data)
+            processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+            distribution = DeepStatistics.get_distribution(processed_distribution)
+            percentage_to_graph = DeepStatistics.convert_to_percentage(distribution)
+
+            json = Path(json).name
+            json = json.replace('.json', '')
+            _, klass, namework, date = json.split('_')
+            good_name = f'{namework.capitalize().strip()} {date.strip()}'
+
+            dict_to_graph_distr[good_name] = round(stat.mean(percentage_to_graph.values()))
+            deep = DeepStatistics(lst_marks=processed_list)
+            dict_to_graph_avrg[good_name] = deep.get_average()
+            am_miss = deep.get_amount_missings(processed_dict)
+            dict_to_graph_miss[good_name] = am_miss
+            avrg_answ = DeepStatistics.get_average_answ(processed_avrg_answers)
+            dict_to_graph_avrg_answ[good_name] = round(avrg_answ, 1)
+
+        return dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ
+
+    @staticmethod
+    def compare_works_pup(json_files, name):
+        compare_pup_dict_mark = {}
+        compare_pup_dict_answ = {}
+
+        for json in json_files:
+            processed_data = DeepStatistics.process_file(json)
+            pupstats = PupleDeepStatistics(name, processed_data)
+            mark = pupstats.mark()
+            amount_cor_answ = pupstats.correct_answers_am()
+
+            json = Path(json).name
+            json = json.replace('.json', '')
+            _, klass, namework, date = json.split('_')
+            good_name = f'{namework.capitalize().strip()} {date.strip()}'
+
+            compare_pup_dict_mark[good_name] = mark
+            compare_pup_dict_answ[good_name] = amount_cor_answ
+
+        return compare_pup_dict_mark, compare_pup_dict_answ
+
+
+class CompareGraphs:
+    def __init__(self, dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ):
+        self.dict_to_graph_distr = dict_to_graph_distr
+        self.dict_to_graph_avrg = dict_to_graph_avrg
+        self.dict_to_graph_miss = dict_to_graph_miss
+        self.dict_to_graph_avrg_answ = dict_to_graph_avrg_answ
+
+    def show(self):
+        # Первый график
+        fig1, ax1 = plt.subplots()
+        dict_to_graph_distr_keys = list(self.dict_to_graph_distr.keys())
+        dict_to_graph_distr_values = list(self.dict_to_graph_distr.values())
+        ax1.plot(dict_to_graph_distr_keys, dict_to_graph_distr_values, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax1.set_ylabel('Средний процент правильных ответов')
+        ax1.set_ylim(0, 100)
+        ax1.set_xticks(range(len(dict_to_graph_distr_keys)))
+        ax1.set_xticklabels(dict_to_graph_distr_keys, rotation=60, ha='right', fontsize=10)
+        ax1.set_title('Средний процент правильных ответов')
+
+        # Второй график
+        fig2, ax2 = plt.subplots()
+        dict_to_graph_avrg_keys = list(self.dict_to_graph_avrg.keys())
+        dict_to_graph_avrg_values = list(self.dict_to_graph_avrg.values())
+        ax2.plot(dict_to_graph_avrg_keys, dict_to_graph_avrg_values, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax2.set_ylabel('Средняя оценка по классу')
+        ax2.set_ylim(0, 5)
+        ax2.set_xticks(range(len(dict_to_graph_avrg_keys)))
+        ax2.set_xticklabels(dict_to_graph_avrg_keys, rotation=60, ha='right', fontsize=10)
+        ax2.set_title('Средняя оценка по классу')
+
+        # Третий график
+        fig3, ax3 = plt.subplots()
+        dict_to_graph_miss_keys = list(self.dict_to_graph_miss.keys())
+        dict_to_graph_miss_values = list(self.dict_to_graph_miss.values())
+        ax3.plot(dict_to_graph_miss_keys, dict_to_graph_miss_values, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax3.set_ylabel('Количество отсутствующих учеников')
+        ax3.set_xticks(range(len(dict_to_graph_miss_keys)))
+        ax3.set_xticklabels(dict_to_graph_miss_keys, rotation=60, ha='right', fontsize=10)
+        ax3.set_title('Количество отсутствующих учеников')
+
+        # Четвёртый график
+        fig4, ax4 = plt.subplots()
+        dict_to_graph_avrg_answ_keys = list(self.dict_to_graph_avrg_answ.keys())
+        dict_to_graph_avrg_answ_values = list(self.dict_to_graph_avrg_answ.values())
+        ax4.plot(dict_to_graph_avrg_answ_keys, dict_to_graph_avrg_answ_values, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax4.set_ylabel('Среднее количество правильных ответов')
+        ax4.set_xticks(range(len(dict_to_graph_avrg_answ_keys)))
+        ax4.set_xticklabels(dict_to_graph_avrg_answ_keys, rotation=60, ha='right', fontsize=10)
+        ax4.set_title('Среднее количество правильных ответов')
+
+        # Показ всех окон
+        plt.show()
+
+
+class ComparePupleGraphs:
+    def __init__(self, dict_pup_answ, dict_pup_mark):
+        self.dict_pup_answ = dict_pup_answ
+        self.dict_pup_mark = dict_pup_mark
+
+    def show(self):
+        # Создаем фигуру с 2 подграфиками (1 строка, 2 столбца)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # Первый график: среднее количество правильных ответов
+        keys_answ = list(self.dict_pup_answ.keys())
+        values_answ = list(self.dict_pup_answ.values())
+
+        ax1.plot(keys_answ, values_answ, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax1.set_ylabel('Количество правильных ответов')
+        ax1.set_xticks(range(len(keys_answ)))
+        ax1.set_xticklabels(keys_answ, rotation=60, ha='right', fontsize=10)
+        ax1.set_title('Количество правильных ответов')
+        ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
+        # Второй график: средняя оценка
+        keys_mark = list(self.dict_pup_mark.keys())
+        values_mark = list(self.dict_pup_mark.values())
+
+        ax2.plot(keys_mark, values_mark, marker='o', linestyle='--', color='#7a7a7a', linewidth=2)
+        ax2.set_ylabel('Оценка за каждую работу')
+        ax2.set_xticks(range(len(keys_mark)))
+        ax2.set_xticklabels(keys_mark, rotation=60, ha='right', fontsize=10)
+        ax2.set_title('Оценка за каждую работу')
+        ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
+        # Показываем графики
+        plt.tight_layout()
+        plt.show()
+
+
 #начало программы
 debug = False
 
@@ -1244,7 +1524,8 @@ dct_variants = {
     'statistics': ('4', 'статистика', 'статистика работы', 'статистика работ'),
     'generate': ('5', 'генерация', 'генерация директорий и файлов'),
     'performance': ('6', 'случайный вызов'),
-    'clear': ('7', 'сброс', 'сбросить', 'сбросить данные')
+    'clear': ('7', 'сброс', 'сбросить', 'сбросить данные'),
+    'compare': ('8', 'сравнить', 'сравнить работы')
 }
 
 if debug:
@@ -1266,7 +1547,9 @@ mainchoose = input('Выберите режим работы:\n'
                    '4. Статистика по работам[4]\n'
                    '5. Генерация директорий и файлов[5]\n'
                    '6. Случайный вызов[6]\n'
-                   '7. Сброс данных[7]\n').strip().lower()
+                   '7. Сброс данных[7]\n'
+                   '8. Сравнить работы[8]\n').strip().lower()
+
 dev.write_to_file('mainchoose', mainchoose)
 
 
@@ -1959,11 +2242,187 @@ elif mainchoose in dct_variants['clear']:
                     DeleteManager.deep_delete() #удаление всего в рабочей директории, кроме py-файлов
 
 
-elif ...:
-    ...
+elif mainchoose in dct_variants['compare']:
 
+    print('Вы в режиме сравнения работ. Выберите папку, работы из которой хотите сравнить')
+    dct_stat_chose = {}
+    for index, dir in enumerate(os.listdir('archive'), 1):
+        print(f'{dir}[{index}]')
+        filepathrem = os.path.join(os.getcwd(), 'archive', dir)
+        dct_stat_chose[index] = filepathrem
+    chose_comp = input('Введите номер папки, по которой хотите получить статистику:\n')
+    dev.write_to_file('chose_comp', chose_comp)
+    try:
+        chosen_comp = int(chose_comp)
+    except Exception:
+        print('Введите номер папки')
+        dev.write_to_file('error_input', True)
+        sys.exit()
+    try:
+        chosen_dir_comp = dct_stat_chose[chosen_comp]
+    except KeyError:
+        print('Нет папки с таким номером')
+        dev.write_to_file('error_input', True)
+        sys.exit()
 
+    if not any(os.path.isfile(os.path.join(chosen_dir_comp, x)) for x in os.listdir(chosen_dir_comp)):
+        print('Папка пуста')  # проверка на пустоту папки
+        dev.write_to_file('empty_dir', True)
+        sys.exit()
 
+    statcomp = BriefStatistics(chosen_dir_comp)
+    statcomp.set_pairs(chosen_dir_comp)
+    dev.write_to_file('pairs', statcomp.pairs)
+    comp = Compare(chosen_dir_comp)
+    comp.filter_files(statcomp.pairs)
+    dev.write_to_file('filtered_files', comp.filtered_files)
+
+    method_to_comp = input('Сравнить работы:\n'
+                           'по классу [1]\n'
+                           'по конкретному ученику[2]\n').strip()
+    dev.write_to_file('method_to_comp', method_to_comp)
+
+    choose_method_to_comp = input('Как хотите получить статистику?\n'
+                                  'по конкрентым работам[1]\n'
+                                  'за период[2]\n').strip()
+    dev.write_to_file('choose_method_to_comp', choose_method_to_comp)
+
+    res = method_to_comp + choose_method_to_comp
+    dev.write_to_file('res', res)
+
+    dct_of_methods = {
+        '11': lambda: 'classsplit',
+        '12': lambda: 'classperiod',
+        '21': lambda: 'studentsplit',
+        '22': lambda: 'studentperiod'
+    }
+
+    try:
+        res_choose = dct_of_methods[res]()
+        dev.write_to_file('res_choose', res_choose)
+    except KeyError:
+        print('Неверный режим')
+        dev.write_to_file('error_method', True)
+        sys.exit()
+
+    if res_choose == 'classsplit':
+        compdct = {}
+        for index, compfile in enumerate(comp.filtered_files, 1):
+            print(f'{Path(compfile[0]).stem}[{index}]')
+            compdct[index] = compfile
+
+        files = input('Введите номера файлов:\n').strip()
+        if files == 'all' or files == 'все':
+            files = ' '.join(list(map(str, compdct.keys())))
+            dev.write_to_file('all_files', True)
+        comp.split_chosen(files, compdct)
+        if len(comp.json_files_not_rep) < 2:
+            print("Для сравнения требуется как минимум две работы.")
+            dev.write_to_file('error_less_two', True)
+            sys.exit()
+
+        json_files = comp.json_files_not_rep
+        dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ = Compare.compare_works(json_files)
+        dev.write_to_file('dict_to_graph_distr', dict_to_graph_distr)
+        dev.write_to_file('dict_to_graph_avrg', dict_to_graph_avrg)
+        dev.write_to_file('dict_to_graph_miss', dict_to_graph_miss)
+        dev.write_to_file('dict_to_graph_avrg_answ', dict_to_graph_avrg_answ)
+        compare_graph = CompareGraphs(dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ)
+        print('Генерация графиков...')
+        time.sleep(0.7)
+        compare_graph.show()
+        dev.write_to_file('happy_end', True)
+        print('Графики успешно сгенерированы')
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    elif res_choose == 'classperiod':
+        period = input('Введите период, по которому хотите сравнить работы в одном из допустимых форматов(см. инструкцию)\n').strip()
+        dev.write_to_file('period', period)
+        per = Periods()
+        per.period = period
+        filtered_by_date = per.filtered_by_date(comp.filtered_files)
+        dev.write_to_file('filtered_by_date', filtered_by_date)
+        sorted_by_date = per.sorted_by_date(filtered_by_date)
+        dev.write_to_file('sorted_by_date', sorted_by_date)
+        if len(sorted_by_date) < 2:
+            print("В введеном вами периоде одна или ни одной работы. Для сравнения требуется как минимум две работы")
+            dev.write_to_file('error_less_two', True)
+            sys.exit()
+        print('В введеном периоде найдены следующие работы:')
+        for work in sorted_by_date:
+            print(Path(work).stem[8:])
+        dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ = comp.compare_works(sorted_by_date)
+        dev.write_to_file('dict_to_graph_distr', dict_to_graph_distr)
+        dev.write_to_file('dict_to_graph_avrg', dict_to_graph_avrg)
+        dev.write_to_file('dict_to_graph_miss', dict_to_graph_miss)
+        dev.write_to_file('dict_to_graph_avrg_answ', dict_to_graph_avrg_answ)
+        comp_graph = CompareGraphs(dict_to_graph_distr, dict_to_graph_avrg, dict_to_graph_miss, dict_to_graph_avrg_answ)
+        print('Генерация графиков...')
+        time.sleep(0.7)
+        comp_graph.show()
+        dev.write_to_file('happy_end', True)
+        print('Графики успешно сгенерированы')
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    elif res_choose == 'studentsplit':
+        name = input('Введите имя ученика:\n').strip()
+        dev.write_to_file('name', name)
+        compdct = {}
+        for index, compfile in enumerate(comp.filtered_files, 1):
+            print(f'{compfile[0]}[{index}]')
+            compdct[index] = compfile
+        files = input('Введите номера файлов:\n').strip()
+        dev.write_to_file('files', files)
+        if files == 'all' or files == 'все':
+            files = ' '.join(list(map(str, compdct.keys())))
+
+        comp.split_chosen(files, compdct)
+
+        if len(comp.json_files_not_rep) < 2:
+            print("Для сравнения требуется как минимум две работы.")
+            dev.write_to_file('error_less_two', True)
+            sys.exit()
+
+        dict_pup_mark_graph, dict_pup_answ_graph = comp.compare_works_pup(comp.json_files_not_rep, name)
+        dev.write_to_file('dict_pup_mark_graph', dict_pup_mark_graph)
+        dev.write_to_file('dict_pup_answ_graph', dict_pup_answ_graph)
+        pup_graph = ComparePupleGraphs(dict_pup_answ_graph, dict_pup_mark_graph)
+        print('Генерация графиков...')
+        time.sleep(0.7)
+        pup_graph.show()
+        dev.write_to_file('happy_end', True)
+        print('Графики успешно сгенерированы')
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    elif res_choose == 'studentperiod':
+        period = input('Введите период, по которому хотите сравнить работы в одном из допустимых форматов(см. инструкцию)\n').strip()
+        dev.write_to_file('period', period)
+        name = input('Введите имя ученика:\n').strip()
+        dev.write_to_file('name', name)
+        per = Periods()
+        per.period = period
+        filtered_by_date = per.filtered_by_date(comp.filtered_files)
+        dev.write_to_file('filtered_by_date', filtered_by_date)
+        sorted_by_date = per.sorted_by_date(filtered_by_date)
+        dev.write_to_file('sorted_by_date', sorted_by_date)
+        if len(sorted_by_date) < 2:
+            print("В введеном вами периоде одна или ни одной работы. Для сравнения требуется как минимум две работы.")
+            dev.write_to_file('error_less_two', True)
+            sys.exit()
+        print('В введеном периоде найдены следующие работы:')
+        for work in sorted_by_date:
+            print(Path(work).stem[8:])
+
+        dict_pup_mark_graph, dict_pup_answ_graph = comp.compare_works_pup(sorted_by_date, name)
+        dev.write_to_file('dict_pup_mark_graph', dict_pup_mark_graph)
+        dev.write_to_file('dict_pup_answ_graph', dict_pup_answ_graph)
+        pup_graph = ComparePupleGraphs(dict_pup_answ_graph, dict_pup_mark_graph)
+        print('Генерация графиков...')
+        time.sleep(0.7)
+        pup_graph.show()
+        dev.write_to_file('happy_end', True)
+        print('Графики успешно сгенерированы')
+        dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 
