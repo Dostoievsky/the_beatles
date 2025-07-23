@@ -28,7 +28,7 @@ def generate_test_data(answers, foldername, puples):
     print(f"Тестовые данные успешно созданы в папке {foldername}.")
 
 answers = 'answers.txt'
-foldername = 'Паршивая работа 4'
+foldername = 'Провальная работа 4'
 puples = 'puples8v.txt'
 
 

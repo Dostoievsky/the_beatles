@@ -1,4 +1,7 @@
-оценка 5 от 18 до 20 баллов
-оценка 4 от 15 до 17 баллов
-оценка 3 от 12 до 14 баллов
-оценка 2 от 0 до 11 баллов
+| Файл                    | Что туда входит                                                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `classes_checking.py`   | ``, ``, ``, ``, ``, ``, `` — всё, что связано с обработкой и проверкой         |
+| `classes_find.py`       | `Finding`, `RandomCall`, `Compare`, `CompareGraphs`, `ComparePupleGraphs` — поиск, сравнение                                             |
+| `classes_stat.py`       | `Statistics`, `BriefStatistics`, `DeepStatistics`, `StatisticsRecommendations`, `PupleDeepStatistics` — статистика по работам и ученикам |
+| `classes_statistics.py` | `DeepStatisticsGraphics`, `Periods`, `DateValidator` — графики и фильтрация по датам                                                     |
+| `other_classes.py`      | `Generator`, `Questions`, `SettingsGeneration`, `DeleteManager`, `DebugMode`, `RangeKey` — всё остальное, вспомогательное                |
