@@ -7,7 +7,7 @@ from modules.CONFIG_functions import *
 from modules.CONFIG_classes_compare import *
 from modules.CONFIG_classes_find_and_generator import *
 from modules.CONFIG_classes_rcall_and_delete import *
-
+from modules.CONFIG_classes_import_data import *
 
 # noinspection PyGlobalUndefined
 def handle_stop_signal(signum, frame):
@@ -287,7 +287,8 @@ dct_variants = {
     'performance': ('6', 'случайный вызов'),
     'clear': ('7', 'сброс', 'сбросить', 'сбросить данные'),
     'compare': ('8', 'сравнить', 'сравнить работы'),
-    'help': ('9', 'помощь', 'помощь по работе', 'помощь с программой')
+    'help': ('9', 'помощь', 'помощь по работе', 'помощь с программой'),
+    'import': ('10', 'импорт', 'импорт данных')
 }
 
 if debug:
@@ -311,7 +312,8 @@ mainchoose = input('Выберите режим работы:\n'
                    '6. Случайный вызов[6]\n'
                    '7. Сброс данных[7]\n'
                    '8. Сравнить работы[8]\n'
-                   '9. Помощь[9]\n').strip().lower()
+                   '9. Помощь[9]\n'
+                   '10. Импорт данных(бета)[10]\n').strip().lower()
 dev.write_to_file('mainchoose', mainchoose)
 
 
@@ -1182,3 +1184,19 @@ elif mainchoose in dct_variants['compare']:
 
 elif mainchoose in dct_variants['help']:
     print('Инструкция:')
+
+elif mainchoose in dct_variants['import']:
+    filepath = input('Введите путь к json-файлу:\n')
+    work_name = input('Введите название работы:\n')
+
+    Import = ImportData(filepath, work_name)
+    n_data = Import.normalize_data()
+
+    print("Нормализация данных...")
+    time.sleep(0.7)
+    fools = Import.generate_data(n_data)
+    print("Генерация файлов...")
+    time.sleep(0.7)
+    print("Готово!")
+    if fools:
+        print(f"Предупреждение:\nУченики {fools} ввели некорректное имя, их данные не обработаны")

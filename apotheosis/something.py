@@ -237,19 +237,19 @@ m = Marks('marks.txt', 0)
 #         self.puples_dict = puples_dict
 #
 #     def get_missings(self):
-#         lst = []
+#         res_lst = []
 #         if self.string.lower().strip() == 'auto':
 #             with open(self.puple_file, 'r', encoding='utf-8') as pup_file:
 #                 puples = map(lambda x: x.strip(), pup_file.readlines())
 #                 for puple in puples:
 #                     if puple not in self.puples_dict.keys():
-#                         lst.append(puple)
-#                 return lst
+#                         res_lst.append(puple)
+#                 return res_lst
 #         else:
 #             with open(self.string, 'r', encoding='utf-8') as miss_file:
 #                 for line in miss_file.readlines():
-#                     lst.append(line.strip())
-#                 return lst
+#                     res_lst.append(line.strip())
+#                 return res_lst
 #
 #
 #

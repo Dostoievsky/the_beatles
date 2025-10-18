@@ -1,35 +1,93 @@
-class Testpaper:
-    def __init__(self, topic, right_answers, percantage):
-        self.topic = topic
-        self.right_answers = right_answers
-        self.percantage = int(percantage[:-1])
+from dataclasses import dataclass, field
+
+@dataclass
+class Book:
+    name: str
+    author: str
+    isbn: int
+    copies_total: field(default=0, repr=False, compare=False)
+    copies_available: field(default=0, repr=False, compare=False)
+
+    def __str__(self):
+        return f'{self.name} by {self.author}({self.isbn})'
 
 
-class Student:
-    def __init__(self):
-        self.tests_taken = 'No tests taken'
+class Reader:
+    def __init__(self, name, age, borrowed_books=None):
+        self.name = name
+        self.age = age
+        if not borrowed_books:
+            self.borrowed_books = []
+        else:
+            self.borrowed_books = borrowed_books
 
-    def take_test(self, paper_test, student_test):
-        if type(self.tests_taken) == str:
-            self.tests_taken = {}
-        correct = sum(1 for st, rig in zip(student_test, paper_test.right_answers) if st == rig)
-        percentage = round((correct / len(paper_test.right_answers)) * 100)
+    def take_book(self, book):
+        if book.copies_available > 0:
+            if book in self.borrowed_books:
+                print(f'You have already borrowed the book {book.name}')
+            else:
+                book.copies_available -= 1
+                self.borrowed_books.append(book)
+                print(f'You have taken the book {book.name}!')
+        else:
+            print(f'There are no copies of {book.name} available')
 
-        result = "Passed!" if percentage >= paper_test.percantage else "Failed!"
-        self.tests_taken[paper_test.topic] = f"{result} ({percentage}%)"
+    def return_book(self, book):
+        if book in self.borrowed_books:
+            self.borrowed_books.remove(book)
+            book.copies_available += 1
+            print(f'You have returned the book {book.name}!')
+        else:
+            print(f'You have not borrowed the book {book.name}')
+
+    def __repr__(self):
+        return f'Reader(name={self.name}, age={self.age}, borrowed_books={self.borrowed_books})'
 
 
-# TEST_1:
-paper1 = Testpaper('Maths', ['1A', '2C', '3D', '4A', '5A'], '60%')
-paper2 = Testpaper('Chemistry', ['1C', '2C', '3D', '4A'], '75%')
-paper3 = Testpaper('Computing', ['1D', '2C', '3C', '4B', '5D', '6C', '7A'], '75%')
 
-student1 = Student()
-student2 = Student()
+class Library:
+    def __init__(self, books=None, readers=None):
+        if readers is None:
+            readers = []
+        if books is None:
+            books = []
+        self.books = books
+        self.readers = readers
 
-student1.take_test(paper1, ['1A', '2D', '3D', '4A', '5A'])
-student2.take_test(paper2, ['1C', '2D', '3A', '4C'])
-student2.take_test(paper3, ['1A', '2C', '3A', '4C', '5D', '6C', '7B'])
+    def add_book(self, book):
+        self.books.append(book)
+        print(f'The book {book.name} has been added to the library!')
 
-print(student1.tests_taken)
-print(student2.tests_taken)
+    def add_reader(self, reader):
+        self.readers.append(reader)
+        print(f'The reader {reader.name} has been added to the library!')
+
+    def all_books(self):
+        for book in self.books:
+            print(book)
+
+    def borrowed_books(self):
+        for book in self.books:
+            if not book.copies_available == book.copies_total:
+                print(f'{book.name} by {book.author} borrowed: {book.copies_total - book.copies_available}, available: {book.copies_available}')
+
+
+
+
+
+book1 = Book('Harry Potter', 'J.K. Rowling', 1234, 1, 1)
+book2 = Book('Lord of the Rings', 'J.R.R. Tolkien', 5678, 5, 5)
+
+reader1 = Reader('John', 25)
+reader2 = Reader('Jane', 30)
+
+
+
+reader1.take_book(book1)
+reader2.take_book(book2)
+reader1.take_book(book2)
+
+
+library = Library(books=[book1, book2], readers=[reader1, reader2])
+library.all_books()
+library.borrowed_books()
