@@ -1013,7 +1013,7 @@ elif mainchoose in dct_variants['compare']:
     try:
         chosen_comp = int(chose_comp)
     except Exception:
-        print('Введите номер папки')
+        print('Введите номер папки:')
         dev.write_to_file('error_input', True)
         sys.exit()
     try:
