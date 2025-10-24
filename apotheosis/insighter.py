@@ -1002,7 +1002,7 @@ elif mainchoose in dct_variants['clear']:
 
 elif mainchoose in dct_variants['compare']:
 
-    print('Вы в режиме сравнения работ. Выберите папку, работы из которой хотите сравнить')
+    print('Вы в режиме сравнения работ. Выберите папку, работы из которой хотите сравнить:')
     dct_stat_chose = {}
     for index, dir in enumerate(os.listdir('archive'), 1):
         print(f'{dir}[{index}]')
