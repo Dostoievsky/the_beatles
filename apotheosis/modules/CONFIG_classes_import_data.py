@@ -9,6 +9,8 @@ class ImportData:
 
     def normalize_data(self):
         big_data = {}
+        if not (os.path.exists(self.filepath) and os.path.isfile(self.filepath)):
+            return None
         with open(self.filepath, 'r', encoding='utf-8') as file:
             filelist = json.load(file)
             for i in filelist:

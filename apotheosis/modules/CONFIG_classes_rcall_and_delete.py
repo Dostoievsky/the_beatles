@@ -128,6 +128,6 @@ class DeleteManager:
         Используется для защиты от случайного удаления.
         """
         psw = random.randint(1000, 9999)
-        with open('delete.txt', 'w') as f:
+        with open('delete.txt', 'w', encoding='utf-8') as f:
             print(f'Пароль для удаления: {psw}', file=f)
         return psw

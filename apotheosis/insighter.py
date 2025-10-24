@@ -151,8 +151,8 @@ class SettingsGeneration:
         return self.inputs
 
 
-print('Insighter 1.0 BETA. Система анализа, контроля и проверки ученических работ') #заголовок программы
-print(f'Запуск: {datetime.now().strftime('%m.%d, %H:%M:%S')}' )
+print('Insighter 1.1 BETA. Система анализа, контроля и проверки ученических работ') #заголовок программы
+print(f'Запуск: {datetime.now().strftime('%d.%m, %H:%M:%S')}' )
 print()
 
 #начало программы
@@ -181,7 +181,8 @@ if os.path.isfile('sys.json') and len(json.load(open('sys.json'))) == 8:
         with open('sys.json', 'r', encoding='utf-8') as sys_file:
             main_dct = json.load(sys_file)
     except Exception:
-        print('Основной системный файл sys.json повреждён или не найден. Сверьтесь с инструкцией')
+        print('Основной системный файл sys.json повреждён или не найден. Сверьтесь с инструкцией. Попробуйте '
+              'переустановить программу, если не помогли рекомендации из инструкции.')
         sys.exit()
 
 #форма заполнения данных через tkinter
@@ -313,7 +314,7 @@ mainchoose = input('Выберите режим работы:\n'
                    '7. Сброс данных[7]\n'
                    '8. Сравнить работы[8]\n'
                    '9. Помощь[9]\n'
-                   '10. Импорт данных(бета)[10]\n').strip().lower()
+                   '10. Импорт данных[10]\n').strip().lower()
 dev.write_to_file('mainchoose', mainchoose)
 
 
@@ -1183,20 +1184,49 @@ elif mainchoose in dct_variants['compare']:
 
 
 elif mainchoose in dct_variants['help']:
-    print('Инструкция:')
+    if os.path.exists('instruction.pdf'):
+        os.startfile('instruction.pdf')
+        sys.exit()
+    else:
+        print('На вашем устройстве нет файла с интрукцией. Вы можете скачать или посмотреть ее по ссылке: '
+              'https://github.com/Dostoievsky/Insighter')
+
 
 elif mainchoose in dct_variants['import']:
     filepath = input('Введите путь к json-файлу:\n')
+    dev.write_to_file('filepath', filepath)
     work_name = input('Введите название работы:\n')
-
-    Import = ImportData(filepath, work_name)
-    n_data = Import.normalize_data()
+    dev.write_to_file('work_name', work_name)
 
     print("Нормализация данных...")
+    try:
+        Import = ImportData(filepath, work_name)
+        n_data = Import.normalize_data()
+        dev.write_to_file('n_data', n_data)
+    except Exception as err:
+        dev.write_to_file('error_norm', True)
+        print(f'В процессе обработки ответов возникла ошибка: {err}. Вероятно, это связано с некорректными данными.')
+        sys.exit()
+    if n_data is None:
+        print("Файл не найден")
+        dev.write_to_file('file_not_found', True)
+        sys.exit()
     time.sleep(0.7)
-    fools = Import.generate_data(n_data)
+
     print("Генерация файлов...")
+    try:
+        fools = Import.generate_data(n_data)
+        dev.write_to_file('fools', fools)
+    except Exception as err:
+        dev.write_to_file('error_gen', True)
+        print(f'В процессе генерации файлов возникла ошибка: {err}. Проверьте корректность данных.')
+        sys.exit()
+
     time.sleep(0.7)
     print("Готово!")
     if fools:
         print(f"Предупреждение:\nУченики {fools} ввели некорректное имя, их данные не обработаны")
+    dev.write_to_file('happy_end', True)
+    dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+
