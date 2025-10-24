@@ -949,7 +949,7 @@ elif mainchoose in dct_variants['clear']:
                 delete.delete_files() #удаление файлов
                 dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             else:
-                print('Проверка для удаления необходима, так что перезапустите режим, если все еще хотите удалить файлы')
+                print("Проверка для удаления необходима, так что перезапустите режим, если все еще хотите удалить файлы")
                 dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
