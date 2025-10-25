@@ -289,7 +289,8 @@ dct_variants = {
     'clear': ('7', 'сброс', 'сбросить', 'сбросить данные'),
     'compare': ('8', 'сравнить', 'сравнить работы'),
     'help': ('9', 'помощь', 'помощь по работе', 'помощь с программой'),
-    'import': ('10', 'импорт', 'импорт данных')
+    'import': ('10', 'импорт', 'импорт данных'),
+    'queue': ('11', 'вывод по очереди', 'вывод по очереди работ')
 }
 
 if debug:
@@ -314,7 +315,9 @@ mainchoose = input('Выберите режим работы:\n'
                    '7. Сброс данных[7]\n'
                    '8. Сравнить работы[8]\n'
                    '9. Помощь[9]\n'
-                   '10. Импорт данных[10]\n').strip().lower()
+                   '10. Импорт данных[10]\n'
+                   '11. Вывод по очереди[11]\n').strip().lower()
+
 dev.write_to_file('mainchoose', mainchoose)
 
 
@@ -677,7 +680,8 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
         secondary_choose_stat = input('Выберите режим статистики:\n'
                                       '1. Краткая статистика[1]\n'
                                       '2. Полная статистика по классу[2]\n'
-                                      '3. Полная статистика по ученику[3]\n').lower().strip()
+                                      '3. Полная статистика по ученику[3]\n'
+                                      '4. Полная статистика по заданиям[4]\n').lower().strip()
 
         dev.write_to_file('secondary_choose_stat', secondary_choose_stat)
 
@@ -839,6 +843,47 @@ elif mainchoose in dct_variants['statistics']: #режим статистики 
                     dev.write_to_file('correct_answers_am', pds.correct_answers_am())
                     print(f'Статистика по ученику {name} успешно записана в одноразовый файл statistics.txt')
                     dev.write_to_file('success', True)
+            dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+        elif secondary_choose_stat in ('4', 'полная статистика по заданиям'): #полная статистика по заданиям
+            processed_data = DeepStatistics.process_file(chosen_pair[1])
+
+            processed_dict = DeepStatistics.process_to_dict(processed_data)
+            dev.write_to_file('processed_dict', processed_dict)
+            processed_distribution = DeepStatistics.process_to_distribution(processed_data)
+            dev.write_to_file('processed_distribution', processed_distribution)
+            processed_zip = dict(zip(list(processed_dict[0].keys()), processed_distribution))
+            dev.write_to_file('processed_zip', processed_zip)
+
+            max_tasks = max(len(v) for v in processed_zip.values())
+            header = ['Ученик'] + [f'Задание {i + 1}' for i in range(max_tasks)]
+            dev.write_to_file('header', header)
+            marker = input('Данные успешно обработаны. Выберите отметку правильности ответов, написав через пробел в формате: "верно неверно". (enter для значений по умолчанию)\n')
+            dev.write_to_file('marker', marker)
+
+            try:
+                with open('results.csv', 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f, delimiter=';')
+                    writer.writerow(header)
+
+                    for name, tasks in processed_zip.items():
+                        if not marker:
+                            row = [name] + [int(done) for _, done in tasks]
+                            dev.write_to_file(f'row of {name}', row)
+                        else:
+                            right, wrong = marker.split()
+                            row = [name] + [right if done is True else wrong for _, done in tasks]
+                            dev.write_to_file(f'row of {name}', row)
+                        writer.writerow(row)
+            except PermissionError:
+                print('Файл results.csv уже открыт. Закройте его и повторите попытку.')
+                dev.write_to_file('PermErr', True)
+                sys.exit()
+            print('Статистика успешно сгенерирована и записана в файл results.csv')
+            qst10 = Questions('Открыть файл?\n')
+            if qst10.make_question():
+                os.startfile('results.csv')
+            dev.write_to_file('happy_end', True)
             dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
@@ -1230,3 +1275,52 @@ elif mainchoose in dct_variants['import']:
     dev.write_to_file('datetime_end', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
+elif mainchoose in dct_variants['queue']:
+
+    dct_queue_chose = {}
+    for index, dir in enumerate(os.listdir('archive'), 1):
+        print(f'{dir}[{index}]')
+        filepathrem = os.path.join(os.getcwd(), 'archive', dir)
+        dct_queue_chose[index] = filepathrem
+    chose_queue = input('Введите номер папки, по которой хотите получить статистику:\n')
+    dev.write_to_file('chose_queue', chose_queue)
+    try:
+        chose_queue = int(chose_queue)
+    except Exception:
+        print('Введите номер папки')
+        dev.write_to_file('error_chose_queue', True)
+        sys.exit()
+    try:
+        chose_queue_p = dct_queue_chose[chose_queue]
+    except KeyError:
+        print('Нет папки с таким номером')
+        dev.write_to_file('error_number_chose_queue', True)
+        sys.exit()
+
+    if not any(os.path.isfile(os.path.join(chose_queue_p, x)) for x in os.listdir(chose_queue_p)):
+        print('Папка пуста')  # проверка на пустоту папки
+        dev.write_to_file('empty_chose_queue', True)
+        sys.exit()
+
+    dct_queue_choose_file = {}
+    print('Выберите работу, статистику по которой хотите получить:')
+
+    for index, file in enumerate([f for f in os.listdir(chose_queue_p) if not f.endswith('.json') and os.path.isfile(os.path.join(chose_queue_p, f))], 1):
+        print(f'{file}[{index}]')
+        dct_queue_choose_file[index] = os.path.join(chose_queue_p, file)
+
+    try:
+        choose_queue_work = int(input('Введите номер работы:\n'))
+        dev.write_to_file('choose_queue_work', choose_queue_work)
+    except Exception:
+        print('Введите номер работы')
+        dev.write_to_file('error_choose_queue_work', True)
+        sys.exit()
+    try:
+        chosen_file = dct_queue_choose_file[choose_queue_work]
+    except KeyError:
+        print('Нет работы с таким номером')
+        dev.write_to_file('error_number_choose_queue_work', True)
+        sys.exit()
+
+    print(chosen_file)
