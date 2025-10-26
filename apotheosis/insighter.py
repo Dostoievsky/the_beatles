@@ -41,6 +41,7 @@ class SettingsGeneration:
         self.inputs = {
             "name_of_work": None,
             "pupe_file": None,
+            "zip_file": None,
             "count_strings_pup": None,
             "answers_file": None,
             "template_lines": None,
@@ -102,6 +103,7 @@ class SettingsGeneration:
             sm = self.Questions("Нужны ли строки для ответов в файлах учеников? ")
             if sm.make_question():
                 self.inputs["count_strings_pup"] = self.validate_integer("Введите количество строк для ответов: ")
+
 
     def step_get_answers_file(self):
         """
@@ -1323,4 +1325,22 @@ elif mainchoose in dct_variants['queue']:
         dev.write_to_file('error_number_choose_queue_work', True)
         sys.exit()
 
-    print(chosen_file)
+    with open(chosen_file, 'r', encoding='utf-8') as f:
+        lines = [i.strip() for i in f.readlines() if i.strip() or i == '\n']
+
+        print(lines[0])
+        print(lines[1])
+        print(lines[2])
+
+        rest = lines[4:]
+
+        rest_sorted = sorted(rest, key=lambda x: x.split()[::-1])
+
+        iterlines = iter(rest_sorted)
+
+        for line in iterlines:
+            print(f'{line.split()[1][:-1]} {line.split()[0]}: {line.split()[2]}')
+
+            input()
+            clear_console()
+        print('Вы выставили все оценки!')
