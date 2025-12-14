@@ -29,7 +29,6 @@ def on_submit():
     students_folder = students_folder_entry.get()
     result = (class_value, work_value, date_value, answer_file, marks_file, students_file, missings_file, students_folder)
     root.destroy()
-
 # noinspection PyTypedDict
 class SettingsGeneration:
     """
@@ -153,7 +152,7 @@ class SettingsGeneration:
         return self.inputs
 
 
-print('Insighter 1.1 BETA. Система анализа, контроля и проверки ученических работ') #заголовок программы
+print('Insighter v1.2. Система анализа, контроля и проверки ученических работ') #заголовок программы
 print(f'Запуск: {datetime.now().strftime('%d.%m, %H:%M:%S')}' )
 print()
 
