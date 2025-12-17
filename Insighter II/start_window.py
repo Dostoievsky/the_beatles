@@ -6,76 +6,55 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 
 
-COLORS = {
-    "bg_main": "#1e1e1e",
-    "bg_block": "#2b2b2b",
-    "bg_button": "#2d2d2d",
-    "bg_hover": "#3a3a3a",
-    "bg_pressed": "#1f1f1f",
-
-    "border_main": "#3a3a3a",
-    "border_button": "#555555",
-
-    "text_main": "#dddddd",
-    "text_label": "#e4e4e4",
-
-    "accent": "#f0c75e",
-    "accent_soft": "#d18904",
-}
 
 class WelcomeWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Insighter — первый запуск")
-        self.resize(500, 260)
+        self.resize(550, 300)
 
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {COLORS['bg_main']};
-                color: {COLORS['text_main']};
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #595e5b;
+                color: white;
                 font-size: 14px;
                 border-radius: 15px;
-            }}
+                font-weight: bold;
+                font-family: "Consolas";
+            }
 
-            QLabel {{
-                font-size: 15px;
-                color: {COLORS['text_label']};
-            }}
-
-            QProgressBar {{
-                border: 2px solid {COLORS['border_main']};
+            QProgressBar {
+                border: 2px solid #303b3d;
                 border-radius: 10px;
                 text-align: center;
                 height: 20px;
-                background-color: {COLORS['bg_block']};
-            }}
+                background-color: #303b3d;
+            }
 
-            QProgressBar::chunk {{
-                background-color: {COLORS['accent_soft']};
+            QProgressBar::chunk {
+                background-color: #557A95;
                 border-radius: 10px;
-            }}
+            }
 
-            QPushButton {{
-                background-color: {COLORS['bg_button']};
-                border: 1px solid {COLORS['border_button']};
+            QPushButton {
+                background-color: #303b3d;
                 border-radius: 10px;
                 padding: 6px 14px;
-                color: {COLORS['text_main']};
-                font-size: 14px;
-            }}
+            }
 
-            QPushButton:hover {{
-                background-color: {COLORS['bg_hover']};
-            }}
-
-            QPushButton:pressed {{
-                background-color: {COLORS['accent_soft']};
-            }}
+            QPushButton:hover {
+                background-color: #557A95;
+            }
+            
+            QPushButton:pressed {
+                background-color: #303b3d;
+            }
         """)
 
         text = (
             "Добро пожаловать в Insighter!\n\n"
-            "Так как это первый запуск, программа создаёт\n"
+            "Так как это первый запуск(либо програмные файлы были повреждены и программа пересоздает все заново), "
+            "программа создаёт\n"
             "все необходимые файлы, папки и базу данных.\n"
             "Пожалуйста, подождите пару секунд.\n\n"
             "После этого прочитайте инструкцию — и можно начинать!"
@@ -90,12 +69,13 @@ class WelcomeWindow(QWidget):
         self.progress.setMaximum(100)
 
         self.ok_button = QPushButton("Продолжить")
+        self.ok_button.setFixedSize(170, 35)
         self.ok_button.clicked.connect(self.close)
         self.ok_button.setVisible(False)
 
         layout = QVBoxLayout()
         layout.addWidget(label)
-        layout.addSpacing(15)
+        layout.addSpacing(10)
         layout.addWidget(self.progress)
         layout.addSpacing(10)
         layout.addWidget(self.ok_button, alignment=Qt.AlignCenter)
@@ -104,7 +84,7 @@ class WelcomeWindow(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_progress)
-        self.timer.start(100)
+        self.timer.start(120)
 
     def update_progress(self):
         value = self.progress.value()
@@ -117,7 +97,3 @@ class WelcomeWindow(QWidget):
 
 
 
-app = QApplication(sys.argv)
-window = WelcomeWindow()
-window.show()
-sys.exit(app.exec_())

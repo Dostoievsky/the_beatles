@@ -1,38 +1,16 @@
+import os
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QComboBox, QDateEdit,
                              QFileDialog, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt, QDate
-
-COLORS = {
-    # Фоны
-    "bg_main": "#1e1e1e",
-    "bg_block": "#2b2b2b",
-    "bg_button": "#2d2d2d",
-    "bg_hover": "#3a3a3a",
-    "bg_pressed": "#1f1f1f",
-
-    # Инпуты
-    "bg_input": "#262626",
-    "bg_input_focus": "#2f2f2f",
-
-    # Границы
-    "border_main": "#3a3a3a",
-    "border_button": "#555555",
-    "border_input": "#444444",
-
-    # Текст
-    "text_main": "#dddddd",
-    "text_label": "#e4e4e4",
-    "text_placeholder": "#888888",
-    "text_on_accent": "#1e1e1e",
-
-    # Акцент
-    "accent_soft": "#d18904",  # горчичный, как ты и хотел
-}
+from PyQt5.QtCore import pyqtSignal
+import json
 
 
 
 class WindowForRewrite(QWidget):
+    finished = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Ввод данных')
@@ -138,19 +116,48 @@ class WindowForRewrite(QWidget):
 
         self.setLayout(grid)
 
+        self.setStyleSheet("""           
+                    QWidget {
+                        background-color: #595e5b;
+                        color: white;
+                        font-size: 14px;
+                        font-weight: bold;
+                        font-family: "Consolas";
+                    }
+
+                    QPushButton {
+                        border-radius: 10px;
+                        background-color: #303b3d;
+                    }
+
+                    QPushButton:hover {
+                        background-color: #557A95;
+                    }
+
+                    QPushButton:pressed {
+                        background-color: #303b3d;
+                    }
+                    
+                    QLineEdit {
+                        background-color: #262626;
+                        border: 1px solid #444444;
+                        border-radius: 3px;
+                    }
+                """)
+
 
     def choose_file_answers(self):
-        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'All files (*.*)')
+        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'txt files (*.txt)')
         if file:
             self.answer_choose_line.setText(file)
 
     def choose_file_absents(self):
-        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'All files (*.*)')
+        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'txt files (*.txt)')
         if file:
             self.absents_choose_line.setText(file)
 
     def choose_file_grades(self):
-        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'All files (*.*)')
+        file, _ = QFileDialog.getOpenFileName(self, 'Open file', '', 'txt files (*.txt)')
         if file:
             self.grade_choose_line.setText(file)
 
@@ -169,10 +176,44 @@ class WindowForRewrite(QWidget):
             'date': self.date_edit.date().toString('dd.MM.yyyy')
         }
 
-        self.close()
         print(data)
 
-app = QApplication(sys.argv)
-window = WindowForRewrite()
-window.show()
-sys.exit(app.exec())
+        self.finished.emit()
+        self.close()
+
+
+
+class Validator:
+    def __init__(self, class_name, answers_file, grades_file, works_folder, absents_file, date):
+        self.class_name = class_name
+        self.answers_file = answers_file
+        self.grades_file = grades_file
+        self.works_folder = works_folder
+        self.absents_file = absents_file
+        self.date = date
+        self.errors = []
+        self.previous_data = {}
+        self.flag = True
+
+    def get_previous_data(self):
+        path = os.path.join(os.getcwd(), 'system_files/sys.json')
+        if not os.path.exists(path):
+            print('Критическая ошибка. Перезапустите программу.')
+            sys.exit()
+
+        with open(path, 'r', encoding='utf-8') as sysfile:
+            jsondata = json.load(sysfile)
+            if json.load(sysfile):
+                self.previous_data = jsondata
+            else:
+                self.flag = False
+
+
+    def validate_answers_file(self):
+        with open(self.answers_file, 'r', encoding='utf-8') as answfile:
+            list_of_answ_lines = answfile.readlines()
+
+
+
+
+
