@@ -2,9 +2,10 @@ import os
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QComboBox, QDateEdit,
                              QFileDialog, QGridLayout, QSizePolicy, QCheckBox)
+
 from PyQt5.QtCore import Qt, QDate
 import json
-
+from PyQt5.QtCore import pyqtSignal
 
 
 SYSTEM_DIR = os.path.join(os.getcwd(), 'system_files')
@@ -25,6 +26,7 @@ DEFAULT_SETTINGS = {
 
 
 class SettingsWindow(QWidget):
+    finished = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Настройки")
@@ -230,7 +232,11 @@ class SettingsWindow(QWidget):
         self.save_settings()
         self.close()
 
-app = QApplication(sys.argv)
-window = SettingsWindow()
-window.show()
-sys.exit(app.exec_())
+    def closeEvent(self, event):
+        self.finished.emit()
+        super().closeEvent(event)
+
+# app = QApplication(sys.argv)
+# window = SettingsWindow()
+# window.show()
+# sys.exit(app.exec_())

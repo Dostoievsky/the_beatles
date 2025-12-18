@@ -13,6 +13,7 @@ class WindowForRewrite(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.result_data = {}
         self.setWindowTitle('Ввод данных')
         self.resize(700, 330)
 
@@ -23,6 +24,7 @@ class WindowForRewrite(QWidget):
         self.class_name_line = QLineEdit()
         self.class_name_line.setMinimumHeight(32)
         self.class_name_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
 
         self.class_name_label = QLabel('Напишите название класса')
 
@@ -38,6 +40,7 @@ class WindowForRewrite(QWidget):
         self.answer_choose_line = QLineEdit()
         self.answer_choose_line.setMinimumHeight(32)
         self.answer_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.answer_choose_line.setReadOnly(True)
 
         self.answer_label = QLabel('Выберите файл с ответами')
 
@@ -49,6 +52,7 @@ class WindowForRewrite(QWidget):
         self.grade_choose_line = QLineEdit()
         self.grade_choose_line.setMinimumHeight(32)
         self.grade_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.grade_choose_line.setReadOnly(True)
 
         self.grade_label = QLabel('Выберите файл с критерями')
 
@@ -60,7 +64,7 @@ class WindowForRewrite(QWidget):
         self.works_folder_line = QLineEdit()
         self.works_folder_line.setMinimumHeight(32)
         self.works_folder_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
+        self.works_folder_line.setReadOnly(True)
         self.works_folder_label = QLabel('Выберите папку с работами')
 
 
@@ -72,6 +76,7 @@ class WindowForRewrite(QWidget):
         self.absents_choose_line.setMinimumHeight(32)
         self.absents_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.absents_choose_line.setPlaceholderText('auto')
+        self.absents_choose_line.setReadOnly(True)
 
         self.absents_label = QLabel('Выберите файл с отсутствующими')
 
@@ -167,7 +172,7 @@ class WindowForRewrite(QWidget):
             self.works_folder_line.setText(folder)
 
     def get_data(self):
-        data = {
+        self.result_data = {
             'class_name': self.class_name_line.text(),
             'answers_file': self.answer_choose_line.text(),
             'grades_file': self.grade_choose_line.text(),
@@ -175,43 +180,13 @@ class WindowForRewrite(QWidget):
             'absents_file': self.absents_choose_line.text(),
             'date': self.date_edit.date().toString('dd.MM.yyyy')
         }
-
-        print(data)
-
+        print(self.result_data)
         self.finished.emit()
         self.close()
 
 
 
-class Validator:
-    def __init__(self, class_name, answers_file, grades_file, works_folder, absents_file, date):
-        self.class_name = class_name
-        self.answers_file = answers_file
-        self.grades_file = grades_file
-        self.works_folder = works_folder
-        self.absents_file = absents_file
-        self.date = date
-        self.errors = []
-        self.previous_data = {}
-        self.flag = True
 
-    def get_previous_data(self):
-        path = os.path.join(os.getcwd(), 'system_files/sys.json')
-        if not os.path.exists(path):
-            print('Критическая ошибка. Перезапустите программу.')
-            sys.exit()
-
-        with open(path, 'r', encoding='utf-8') as sysfile:
-            jsondata = json.load(sysfile)
-            if json.load(sysfile):
-                self.previous_data = jsondata
-            else:
-                self.flag = False
-
-
-    def validate_answers_file(self):
-        with open(self.answers_file, 'r', encoding='utf-8') as answfile:
-            list_of_answ_lines = answfile.readlines()
 
 
 

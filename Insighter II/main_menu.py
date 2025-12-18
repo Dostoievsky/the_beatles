@@ -3,18 +3,19 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
                              QFileDialog, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
+from settings import SettingsWindow
+from for_classes_test import Validator
 
 class MainMenu(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.settings_window = None
         self.rewrite_window = None
         self.setWindowTitle("Main Menu")
         self.resize(550, 340)
 
         label = QLabel("Выберите режим:", self)
-
-
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -50,6 +51,7 @@ class MainMenu(QWidget):
         self.close_button.setFixedSize(230, 60)
 
         self.rewrite_button.clicked.connect(self.run_rewrite)
+        self.settings_button.clicked.connect(self.run_settings)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -66,8 +68,6 @@ class MainMenu(QWidget):
         grid.addWidget(self.settings_button, 0, 2)
 
         grid.addWidget(label, 0, 0)
-
-
 
         self.setLayout(grid)
 
@@ -112,6 +112,29 @@ class MainMenu(QWidget):
         """)
 
     def on_rewrite_finished(self):
+        data = self.rewrite_window.result_data
+
+        validator = Validator(data)
+        ok, errors = validator.validate()
+
+        if ok:
+            self.show()
+            return
+
+        self.handle_errors(errors)
+
+    def handle_errors(self, errors):
+        self.rewrite_window.hide()
+
+        print("\nОбнаружены ошибки:\n")
+        for err in errors:
+            print(" -", err)
+
+        input("\nНажмите Enter, чтобы вернуться в меню\n")
+        self.show()
+
+
+    def on_settings_finished(self):
         self.show()
 
     def run_rewrite(self):
@@ -119,5 +142,14 @@ class MainMenu(QWidget):
         self.rewrite_window = WindowForRewrite()
         self.rewrite_window.finished.connect(self.on_rewrite_finished)
         self.rewrite_window.show()
+
+    def run_settings(self):
+        self.hide()
+        self.settings_window = SettingsWindow()
+        self.settings_window.finished.connect(self.on_settings_finished)
+        self.settings_window.show()
+
+
+
 
 
