@@ -14,7 +14,7 @@ list_of_json_files = [
 
 
 class Database:
-    def __init__(self, db_path = "insighter.db"):
+    def __init__(self, db_path = r"system_files/insighter.db"):
         self.db_path = db_path
         self.conn = None
         self.cursor = None
@@ -52,7 +52,7 @@ class Database:
                 work_date TEXT,
                 class_id INTEGER,
                 answer_data TEXT,
-                absents_data TEXT,
+                grades_data TEXT,
                 status TEXT
             )
         """)
@@ -81,6 +81,105 @@ class Database:
         self.create_tables()
         self.close()
 
+    def get_or_create_class(self, class_name):
+        self.cursor.execute(
+            "SELECT id FROM classes WHERE class_name = ?",
+            (class_name,)
+        )
+        result = self.cursor.fetchone()
+
+        if result:
+            return result[0]
+
+        self.cursor.execute(
+            "INSERT INTO classes (class_name) VALUES (?)",
+            (class_name,)
+        )
+        self.conn.commit()
+
+        return self.cursor.lastrowid
+
+    def save_work(self, work_name, work_date, class_name, answer_data, grades_data, status):
+        print('save_work')
+        class_id = self.get_or_create_class(class_name)
+
+        self.cursor.execute("""
+            INSERT INTO works (
+                work_name, work_date, class_id,
+                answer_data, grades_data, status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            work_name,
+            work_date,
+            class_id,
+            answer_data,
+            grades_data,
+            status
+        ))
+        print('сработала save_work')
+        self.conn.commit()
+        return self.cursor.lastrowid
+
+    @staticmethod
+    def parse_name(full_name: str):
+        parts = full_name.strip().split()
+        if len(parts) >= 2:
+            return parts[0], parts[1]
+        else:
+            return parts[0], ""
+
+    def add_student(self, class_id, name, surname):
+        self.cursor.execute("""
+            INSERT INTO students (class_id, name, surname)
+            VALUES (?, ?, ?)
+        """, (class_id, name, surname))
+
+    def add_students_from_list(self, class_name, students_list):
+        class_id = self.get_or_create_class(class_name)
+
+        for full_name in students_list:
+            name, surname = self.parse_name(full_name)
+
+            self.cursor.execute("""
+                SELECT id FROM students
+                WHERE class_id = ? AND name = ? AND surname = ?
+            """, (class_id, name, surname))
+
+            if self.cursor.fetchone() is None:
+                self.add_student(class_id, name, surname)
+
+        self.conn.commit()
+
+    def add_submission(self, work_id, student_id, student_answer):
+        self.cursor.execute("""
+            INSERT INTO submissions (work_id, student_id, student_answer)
+            VALUES (?, ?, ?)
+        """, (work_id, student_id, student_answer))
+
+    def add_submissions_from_answers(self, class_name, work_id, answers):
+        class_id = self.get_or_create_class(class_name)
+
+        for full_name, answer in answers.items():
+            name, surname = self.parse_name(full_name)
+            answer_str  = ",".join(answer)
+
+            self.cursor.execute("""
+                SELECT id FROM students
+                WHERE class_id = ? AND name = ? AND surname = ?
+            """, (class_id, name, surname))
+
+            row = self.cursor.fetchone()
+            if row is None:
+                continue  # ученик не найден — пропускаем
+
+            student_id = row[0]
+
+            self.add_submission(work_id, student_id, answer_str)
+
+        self.conn.commit()
+
+
 def is_first_launch():
     if not os.path.exists(SYSTEM_DIR):
         return True
@@ -90,3 +189,50 @@ def is_first_launch():
 
     files = set(os.listdir(SYSTEM_DIR))
     return not set(list_of_json_files).issubset(files)
+
+
+class Settings:
+    def __init__(self, path=r'system_files\settings.json'):
+        self._path = os.path.join(os.getcwd(), path)
+        self._data = self._load()
+
+    def _load(self):
+        with open(self._path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    @property
+    def show_warnings(self):
+        return self._data.get('show_warnings', False)
+
+    @property
+    def automatically_file_opening(self):
+        return self._data.get('automatically_file_opening', False)
+
+    @property
+    def saving_all_files_in_one_folder(self):
+        return self._data.get('saving_all_files_in_one_folder', False)
+
+    @property
+    def developer_mode(self):
+        return self._data.get('developer_mode', False)
+
+    @property
+    def saving_statistics_in_unque_files(self):
+        return self._data.get('saving_statistics_in_unque_files', False)
+
+    @property
+    def format_by_default(self):
+        return self._data.get('format_by_default', 'txt')
+
+    @property
+    def alsways_build_the_graphics(self):
+        return self._data.get('alsways_build_the_graphics', False)
+
+    @property
+    def encoding(self):
+        return self._data.get('encoding', ["utf-8", "utf-8-sig"])
+
+    @property
+    def take_data_from_previous_load(self):
+        return self._data.get('take_data_from_previous_load', False)
+

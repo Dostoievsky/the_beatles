@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
 from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
-from for_classes_test import Validator
+from for_classes_test import Validator, Parser
+from something_classes_and_funcs import Database, Settings
+
 
 class MainMenu(QWidget):
     def __init__(self):
@@ -118,6 +120,31 @@ class MainMenu(QWidget):
         ok, errors = validator.validate()
 
         if ok:
+            print('Сработало условие')
+            parser = Parser(validator.validate_answers_file(), validator.validate_grades_file(), validator.absents_file,
+                validator.works_folder, validator.date, validator.class_name)
+            class_name = parser.parse_class_name()
+            date = parser.parse_date()
+            answers_string = parser.parse_answers_dict()
+            grades_string = parser.parse_grades_dict()
+            work_name = parser.parse_works_folder()[0]
+            dict_with_student_answers = parser.parse_works_folder()[1]
+            students_list = parser.parse_works_folder()[2]
+            print('Все отпарсили')
+            db = Database()
+
+            db.connect()
+            work_id = db.save_work(work_name, date, class_name, answers_string, grades_string, 'raw')
+            print(1)
+            db.add_students_from_list(class_name, students_list)
+            print(2)
+            try:
+                db.add_submissions_from_answers(class_name, work_id, dict_with_student_answers)
+            except Exception as e:
+                print(e)
+            db.close()
+            print(3)
+
             self.show()
             return
 
@@ -128,9 +155,11 @@ class MainMenu(QWidget):
 
         print("\nОбнаружены ошибки:\n")
         for err in errors:
-            print(" -", err)
+            print(err)
+        if Settings.take_data_from_previous_load:
+            print('Корректные данные сохранены, потому что включена эта опция.')
+        input("\nНажмите Enter, чтобы вернуться в меню...\n")
 
-        input("\nНажмите Enter, чтобы вернуться в меню\n")
         self.show()
 
 
