@@ -77,6 +77,7 @@ class Window(QWidget):
 
         layout.addWidget(self.date_edit)
 
+
         self.setLayout(layout)
         self.check = QCheckBox('Check me')
 

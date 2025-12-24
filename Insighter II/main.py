@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from PyQt5.QtWidgets import QApplication
 from start_window import *
-from something_classes_and_funcs import *
+from Database_Settings_classes import *
 from main_menu import *
 
 SYSTEM_DIR = os.path.join(os.getcwd(), 'system_files')
@@ -25,8 +25,7 @@ DEFAULT_SETTINGS = {
     'format_by_default': 'ask',
     'alsways_build_the_graphics': False,
     'encoding': ['utf-8', 'utf-8-sig'],
-    'show_warnings': True,
-    'take_data_from_previous_load': True
+    'show_warnings': True
 }
 
 app = QApplication(sys.argv)

@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from pathlib import Path
+import json
 
 SYSTEM_DIR = 'system_files'
 DB_PATH = os.path.join(SYSTEM_DIR, 'insighter.db')
@@ -11,6 +12,28 @@ list_of_json_files = [
     'patterns.json',
     'settings.json'
 ]
+
+def print_menu(strings):
+    dct = {}
+    for i, string in enumerate(strings, 1):
+        print(f"{string}[{i}]")
+        dct[i] = string
+    chose = input('Введите номер: ')
+    try:
+        return dct[int(chose)], chose
+    except:
+        print('Такого значения не существует.')
+
+
+def is_first_launch():
+    if not os.path.exists(SYSTEM_DIR):
+        return True
+
+    if not os.path.exists(DB_PATH):
+        return True
+
+    files = set(os.listdir(SYSTEM_DIR))
+    return not set(list_of_json_files).issubset(files)
 
 
 class Database:
@@ -47,13 +70,14 @@ class Database:
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS works (
-                id INTEGER PRIMARY KEY,
-                work_name TEXT,
-                work_date TEXT,
-                class_id INTEGER,
-                answer_data TEXT,
-                grades_data TEXT,
-                status TEXT
+            id INTEGER PRIMARY KEY,
+            work_name TEXT,
+            work_date TEXT,
+            class_id INTEGER,
+            answer_data TEXT,
+            grades_data TEXT,
+            status TEXT,
+            absents TEXT
             )
         """)
 
@@ -171,7 +195,7 @@ class Database:
 
             row = self.cursor.fetchone()
             if row is None:
-                continue  # ученик не найден — пропускаем
+                continue
 
             student_id = row[0]
 
@@ -179,16 +203,69 @@ class Database:
 
         self.conn.commit()
 
+    def get_students_of_class(self, class_name):
+        class_id = self.get_or_create_class(class_name)
 
-def is_first_launch():
-    if not os.path.exists(SYSTEM_DIR):
-        return True
+        self.cursor.execute("""
+            SELECT id FROM students
+            WHERE class_id = ?
+        """, (class_id,))
 
-    if not os.path.exists(DB_PATH):
-        return True
+        return {row[0] for row in self.cursor.fetchall()}
 
-    files = set(os.listdir(SYSTEM_DIR))
-    return not set(list_of_json_files).issubset(files)
+    def get_students_with_submission(self, work_id):
+        self.cursor.execute("""
+            SELECT student_id FROM submissions
+            WHERE work_id = ?
+        """, (work_id,))
+
+        return {row[0] for row in self.cursor.fetchall()}
+
+    def set_absents_for_work(self, work_id, class_name, absents):
+
+        if not absents:
+            self.cursor.execute("""
+                UPDATE works
+                SET absents = NULL
+                WHERE id = ?
+            """, (work_id,))
+            self.conn.commit()
+            return
+
+        class_id = self.get_or_create_class(class_name)
+        absent_ids = set()
+
+        for full_name in absents:
+            name, surname = self.parse_name(full_name)
+
+            self.cursor.execute("""
+                SELECT id FROM students
+                WHERE class_id = ? AND name = ? AND surname = ?
+            """, (class_id, name, surname))
+
+            row = self.cursor.fetchone()
+
+            if row is None:
+                # ученика нет — добавляем
+                self.cursor.execute("""
+                    INSERT INTO students (class_id, name, surname)
+                    VALUES (?, ?, ?)
+                """, (class_id, name, surname))
+                student_id = self.cursor.lastrowid
+            else:
+                student_id = row[0]
+
+            absent_ids.add(student_id)
+
+        absents_value = ",".join(map(str, sorted(absent_ids)))
+
+        self.cursor.execute("""
+            UPDATE works
+            SET absents = ?
+            WHERE id = ?
+        """, (absents_value, work_id))
+
+        self.conn.commit()
 
 
 class Settings:
@@ -232,7 +309,32 @@ class Settings:
     def encoding(self):
         return self._data.get('encoding', ["utf-8", "utf-8-sig"])
 
-    @property
-    def take_data_from_previous_load(self):
-        return self._data.get('take_data_from_previous_load', False)
 
+
+class DatabaseChecking:
+    def __init__(self, root_db):
+        self.root_db = root_db
+
+    def get_works_by_class(self, class_name):
+        self.root_db.cursor.execute('''
+            SELECT *
+            FROM classes JOIN works ON classes.id = works.class_id
+            WHERE classes.class_name = ?
+        ''', (class_name,))
+        return self.root_db.cursor.fetchall()
+
+    @staticmethod
+    def parse_names(data_tuple):
+        lst = []
+        for row in data_tuple:
+            lst.append(f'{row[3]} за {row[4]}')
+        return lst
+
+
+db = Database()
+db.connect()
+
+dbc = DatabaseChecking(db)
+print(dbc.parse_names(()))
+
+db.close()

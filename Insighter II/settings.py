@@ -160,11 +160,20 @@ class SettingsWindow(QWidget):
         }
         """)
 
-
     @staticmethod
     def load_settings():
-        with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        os.makedirs(SYSTEM_DIR, exist_ok=True)
+
+        if not os.path.exists(SETTINGS_PATH):
+            with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
+                json.dump(DEFAULT_SETTINGS, f, indent=4, ensure_ascii=False)
+            return DEFAULT_SETTINGS.copy()
+
+        try:
+            with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return DEFAULT_SETTINGS.copy()
 
     def save_settings(self):
         with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
@@ -178,7 +187,6 @@ class SettingsWindow(QWidget):
         self.saving_statistics_in_unque_files.setChecked(s['saving_statistics_in_unque_files'])
         self.alsways_build_the_graphics.setChecked(s['alsways_build_the_graphics'])
         self.show_warnings.setChecked(s['show_warnings'])
-        self.take_data_from_previous_load.setChecked(s['take_data_from_previous_load'])
         self.saving_all_files_in_one_folder.blockSignals(True)
 
         value = s['saving_all_files_in_one_folder']

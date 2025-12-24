@@ -7,6 +7,16 @@ from PyQt5.QtCore import pyqtSignal
 import json
 
 
+def load_sys_json():
+    if not os.path.exists(r'system_files/sys.json'):
+        return {}
+
+    try:
+        with open(r'system_files/sys.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
 
 class WindowForRewrite(QWidget):
     finished = pyqtSignal()
@@ -25,6 +35,7 @@ class WindowForRewrite(QWidget):
         self.class_name_line.setMinimumHeight(32)
         self.class_name_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
+        sys_data_for_lines = load_sys_json()
 
         self.class_name_label = QLabel('Напишите название класса')
 
@@ -40,7 +51,7 @@ class WindowForRewrite(QWidget):
         self.answer_choose_line = QLineEdit()
         self.answer_choose_line.setMinimumHeight(32)
         self.answer_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.answer_choose_line.setReadOnly(True)
+        self.answer_choose_line.setDisabled(True)
 
         self.answer_label = QLabel('Выберите файл с ответами')
 
@@ -52,7 +63,7 @@ class WindowForRewrite(QWidget):
         self.grade_choose_line = QLineEdit()
         self.grade_choose_line.setMinimumHeight(32)
         self.grade_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.grade_choose_line.setReadOnly(True)
+        self.grade_choose_line.setDisabled(True)
 
         self.grade_label = QLabel('Выберите файл с критерями')
 
@@ -64,7 +75,7 @@ class WindowForRewrite(QWidget):
         self.works_folder_line = QLineEdit()
         self.works_folder_line.setMinimumHeight(32)
         self.works_folder_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.works_folder_line.setReadOnly(True)
+        self.works_folder_line.setDisabled(True)
         self.works_folder_label = QLabel('Выберите папку с работами')
 
 
@@ -75,9 +86,13 @@ class WindowForRewrite(QWidget):
         self.absents_choose_line = QLineEdit()
         self.absents_choose_line.setMinimumHeight(32)
         self.absents_choose_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.absents_choose_line.setPlaceholderText('auto')
-        self.absents_choose_line.setReadOnly(True)
+        self.absents_choose_line.setDisabled(True)
 
+        self.class_name_line.setPlaceholderText(sys_data_for_lines.get('class_name', ''))
+        self.answer_choose_line.setPlaceholderText(sys_data_for_lines.get('answers_file', ''))
+        self.grade_choose_line.setPlaceholderText(sys_data_for_lines.get('grades_file', ''))
+        self.works_folder_line.setPlaceholderText(sys_data_for_lines.get('works_folder', ''))
+        self.absents_choose_line.setPlaceholderText(('auto' if not sys_data_for_lines.get('absents_file', '') else sys_data_for_lines.get('absents_file', '')))
         self.absents_label = QLabel('Выберите файл с отсутствующими')
 
 
@@ -180,8 +195,10 @@ class WindowForRewrite(QWidget):
             'absents_file': self.absents_choose_line.text(),
             'date': self.date_edit.date().toString('dd.MM.yyyy')
         }
-        print(self.result_data)
-        self.finished.emit()
+        try:
+            self.finished.emit()
+        except Exception as e:
+            print(e)
         self.close()
 
 

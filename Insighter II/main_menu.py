@@ -4,8 +4,17 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
 from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
-from for_classes_test import Validator, Parser
-from something_classes_and_funcs import Database, Settings
+from Parser_Validator_classes import *
+from Database_Settings_classes import *
+import json
+
+def save_sys_json(data: dict):
+    path = r'system_files/sys.json'
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(e)
 
 
 class MainMenu(QWidget):
@@ -113,42 +122,59 @@ class MainMenu(QWidget):
         }
         """)
 
+
     def on_rewrite_finished(self):
-        data = self.rewrite_window.result_data
+
+        input_data = self.rewrite_window.result_data
+        sys_data = load_sys_json()
+        data = merge_with_sys_json(input_data, sys_data)
 
         validator = Validator(data)
         ok, errors = validator.validate()
 
         if ok:
-            print('Сработало условие')
             parser = Parser(validator.validate_answers_file(), validator.validate_grades_file(), validator.absents_file,
                 validator.works_folder, validator.date, validator.class_name)
             class_name = parser.parse_class_name()
             date = parser.parse_date()
             answers_string = parser.parse_answers_dict()
             grades_string = parser.parse_grades_dict()
-            work_name = parser.parse_works_folder()[0]
-            dict_with_student_answers = parser.parse_works_folder()[1]
-            students_list = parser.parse_works_folder()[2]
-            print('Все отпарсили')
-            db = Database()
-
-            db.connect()
-            work_id = db.save_work(work_name, date, class_name, answers_string, grades_string, 'raw')
-            print(1)
-            db.add_students_from_list(class_name, students_list)
-            print(2)
             try:
-                db.add_submissions_from_answers(class_name, work_id, dict_with_student_answers)
+                work_name, dict_with_student_answers, students_list = parser.parse_works_folder()
             except Exception as e:
-                print(e)
-            db.close()
-            print(3)
+                print('Возникла ошибка при парсинге папки с работами.')
+                if Settings().show_warnings:
+                    print(f'Ошибка:{e}')
 
+            dtb = Database()
+            dtb.connect()
+            work_id = dtb.save_work(work_name, date, class_name, answers_string, grades_string, 'raw')
+            dtb.add_students_from_list(class_name, students_list)
+            dtb.add_submissions_from_answers(class_name, work_id, dict_with_student_answers)
+
+            absents_ids = set()
+
+            if validator.absents_file is not None and validator.absents_file != "auto":
+                absent_names = parser.parse_absents_file()
+                absents_ids = set(absent_names)
+
+            elif validator.absents_file == "auto":
+                all_students = dtb.get_students_of_class(class_name)
+                submitted_students = dtb.get_students_with_submission(work_id)
+                absents_ids = all_students - submitted_students
+            class_name = parser.parse_class_name()
+            dtb.set_absents_for_work(work_id, class_name, absents_ids)
+
+
+
+
+            dtb.close()
+            save_sys_json(data)
             self.show()
             return
 
         self.handle_errors(errors)
+
 
     def handle_errors(self, errors):
         self.rewrite_window.hide()
@@ -156,9 +182,6 @@ class MainMenu(QWidget):
         print("\nОбнаружены ошибки:\n")
         for err in errors:
             print(err)
-        if Settings.take_data_from_previous_load:
-            print('Корректные данные сохранены, потому что включена эта опция.')
-        input("\nНажмите Enter, чтобы вернуться в меню...\n")
 
         self.show()
 
@@ -166,11 +189,13 @@ class MainMenu(QWidget):
     def on_settings_finished(self):
         self.show()
 
+
     def run_rewrite(self):
         self.hide()
         self.rewrite_window = WindowForRewrite()
         self.rewrite_window.finished.connect(self.on_rewrite_finished)
         self.rewrite_window.show()
+
 
     def run_settings(self):
         self.hide()
@@ -180,5 +205,9 @@ class MainMenu(QWidget):
 
 
 
-
+    def run_check_works(self):
+        self.hide()
+        database_for_func = Database()
+        cdb = DatabaseChecking(database_for_func)
+        print_menu(rcdb.get_works_by_class())
 
