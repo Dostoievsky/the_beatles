@@ -63,6 +63,8 @@ class MainMenu(QWidget):
 
         self.rewrite_button.clicked.connect(self.run_rewrite)
         self.settings_button.clicked.connect(self.run_settings)
+        self.check_works_button.clicked.connect(self.run_check_works)
+
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -170,6 +172,7 @@ class MainMenu(QWidget):
 
             dtb.close()
             save_sys_json(data)
+            print('Данные успешно сохранены.')
             self.show()
             return
 
@@ -206,8 +209,28 @@ class MainMenu(QWidget):
 
 
     def run_check_works(self):
-        self.hide()
-        database_for_func = Database()
-        cdb = DatabaseChecking(database_for_func)
-        print_menu(rcdb.get_works_by_class())
+        try:
+            self.hide()
+            database_for_func = Database()
+            cdb = DatabaseChecking(database_for_func)
+            database_for_func.connect()
+            chosen_class_name, _ = print_menu(cdb.get_classes(), 'Выберите класс:', 'У вас нет добавленных классов. Используйте режим перезаписи, чтобы добавить классы')
+            if chosen_class_name is None:
+                self.show()
+                return
+
+            works = cdb.get_works_by_class(chosen_class_name)
+            parsed = cdb.parse_names(works)
+
+            if not parsed:
+                self.show()
+                return
+            chosen_work, _ = print_menu(cdb.parse_names(cdb.get_works_by_class(chosen_class_name)), 'Выберите работу:', 'У вас нет непроверенных работ.')
+
+            database_for_func.close()
+
+
+        except Exception as e:
+            print(e)
+
 

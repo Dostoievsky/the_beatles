@@ -13,17 +13,23 @@ list_of_json_files = [
     'settings.json'
 ]
 
-def print_menu(strings):
+def print_menu(strings, text=None, message='Папка пуста.'):
+    if not strings:
+        print(message)
+        print()
+        return None, None
+    if text:
+        print(text)
     dct = {}
     for i, string in enumerate(strings, 1):
         print(f"{string}[{i}]")
         dct[i] = string
     chose = input('Введите номер: ')
+    print()
     try:
         return dct[int(chose)], chose
     except:
         print('Такого значения не существует.')
-
 
 def is_first_launch():
     if not os.path.exists(SYSTEM_DIR):
@@ -124,7 +130,6 @@ class Database:
         return self.cursor.lastrowid
 
     def save_work(self, work_name, work_date, class_name, answer_data, grades_data, status):
-        print('save_work')
         class_id = self.get_or_create_class(class_name)
 
         self.cursor.execute("""
@@ -141,7 +146,6 @@ class Database:
             grades_data,
             status
         ))
-        print('сработала save_work')
         self.conn.commit()
         return self.cursor.lastrowid
 
@@ -246,7 +250,6 @@ class Database:
             row = self.cursor.fetchone()
 
             if row is None:
-                # ученика нет — добавляем
                 self.cursor.execute("""
                     INSERT INTO students (class_id, name, surname)
                     VALUES (?, ?, ?)
@@ -315,26 +318,96 @@ class DatabaseChecking:
     def __init__(self, root_db):
         self.root_db = root_db
 
-    def get_works_by_class(self, class_name):
+    def get_classes(self):
+        self.root_db.cursor.execute('''
+            SELECT * FROM classes
+        ''')
+        data_class = self.root_db.cursor.fetchall()
+        if data_class:
+            return list(map(lambda x: x[1], data_class))
+        return
+
+    def get_works_by_class(self, class_name, status='raw'):
         self.root_db.cursor.execute('''
             SELECT *
             FROM classes JOIN works ON classes.id = works.class_id
-            WHERE classes.class_name = ?
-        ''', (class_name,))
+            WHERE classes.class_name = ? and works.status = ?
+        ''', (class_name, status))
         return self.root_db.cursor.fetchall()
 
     @staticmethod
     def parse_names(data_tuple):
         lst = []
-        for row in data_tuple:
-            lst.append(f'{row[3]} за {row[4]}')
+        for row_tpl in data_tuple:
+            lst.append(f'{row_tpl[3]} за {row_tpl[4]}')
         return lst
+
+    def get_all_data(self, class_name, work_name_entered, status='raw'):
+        # 1. Получаем id класса
+        self.root_db.cursor.execute('''
+            SELECT id
+            FROM classes
+            WHERE class_name = ?
+        ''', (class_name,))
+        class_id = self.root_db.cursor.fetchone()[0]
+
+        # 2. Получаем все данные по работе + ответы учеников + ФИО
+        self.root_db.cursor.execute('''
+            SELECT *
+            FROM works
+            JOIN submissions ON works.id = submissions.work_id
+            JOIN students ON submissions.student_id = students.id
+            WHERE works.class_id = ?
+              AND works.work_name = ?
+              AND works.status = ?
+        ''', (class_id, work_name_entered, status))
+
+        rows = self.root_db.cursor.fetchall()
+
+        # 3. Получаем absents из works
+        self.root_db.cursor.execute('''
+            SELECT absents
+            FROM works
+            WHERE class_id = ?
+              AND work_name = ?
+              AND status = ?
+        ''', (class_id, work_name_entered, status))
+
+        absents_raw = self.root_db.cursor.fetchone()[0]
+
+        # 4. Обрабатываем отсутствующих
+        if absents_raw is None:
+            absents = None
+        else:
+            absent_ids = list(map(int, absents_raw.split(',')))
+
+            placeholders = ','.join('?' * len(absent_ids))
+            self.root_db.cursor.execute(f'''
+                SELECT id, name, surname
+                FROM students
+                WHERE id IN ({placeholders})
+            ''', absent_ids)
+
+            absents = self.root_db.cursor.fetchall()
+
+        return rows, absents
 
 
 db = Database()
 db.connect()
 
 dbc = DatabaseChecking(db)
-print(dbc.parse_names(()))
-
+print(dbc.parse_names(dbc.get_works_by_class('9в')))
+print(dbc.get_classes())
+data, absents = dbc.get_all_data('9в', 'Тканая работа 2')
+for row in data:
+    work_name = row[1]
+    date = row[2]
+    right_answers = row[4]
+    grades = row[5]
+    puple_answers = row[11]
+    name = row[14]
+    surname = row[15]
+    tg_id = row[16]
+    print(work_name, date, right_answers, grades, absents, puple_answers, name, surname, tg_id)
 db.close()
