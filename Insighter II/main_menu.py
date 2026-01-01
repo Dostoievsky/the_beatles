@@ -6,6 +6,7 @@ from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
 from Parser_Validator_classes import *
 from Database_Settings_classes import *
+from checking import *
 import json
 
 def save_sys_json(data: dict):
@@ -225,10 +226,49 @@ class MainMenu(QWidget):
             if not parsed:
                 self.show()
                 return
+
             chosen_work, _ = print_menu(cdb.parse_names(cdb.get_works_by_class(chosen_class_name)), 'Выберите работу:', 'У вас нет непроверенных работ.')
+            if not chosen_work:
+                self.show()
+                return
+
+            print(chosen_work)
+            big_data = cdb.get_all_data(chosen_class_name, chosen_work.split(' за ')[0])
+            print(*big_data, sep='\n')
+            chck = Checking(big_data)
+            chck.parse_big_data()
+            parsed_data = chck.checking_works()
+            print(parsed_data)
+            chck.absents = '30,31,37'
+            sdb = Database()
+            list_of_absents_names = chck.get_absents(sdb)
+            print(list_of_absents_names)
+            final_dict = chck.get_grades(parsed_data)
+            dict_for_write = {}
+            absents_dict = {}
+            for student_data in final_dict.values():
+                key = f'{student_data['surname']} {student_data['name']}'
+                dict_for_write[key] = student_data['grade']
+            for student in list_of_absents_names:
+                key = f'{student[2]} {student[1]}'
+                absents_dict[key] = 'отсутствовал(а)'
+            dict_for_write.update(absents_dict)
+            print(dict_for_write)
+            print('Работы успешно проверены.')
+            lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
+            _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
+            wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
+
+            # if Settings().format_by_default == 'спрашивать каждый раз':
+            #     chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
+            #
+            # if Settings().saving_all_files_in_one_folder:
+
+
 
             database_for_func.close()
 
+            self.show()
 
         except Exception as e:
             print(e)

@@ -2,6 +2,7 @@ import sqlite3
 import os
 from pathlib import Path
 import json
+from checking import *
 
 SYSTEM_DIR = 'system_files'
 DB_PATH = os.path.join(SYSTEM_DIR, 'insighter.db')
@@ -30,6 +31,7 @@ def print_menu(strings, text=None, message='Папка пуста.'):
         return dct[int(chose)], chose
     except:
         print('Такого значения не существует.')
+        return None, None
 
 def is_first_launch():
     if not os.path.exists(SYSTEM_DIR):
@@ -343,15 +345,15 @@ class DatabaseChecking:
         return lst
 
     def get_all_data(self, class_name, work_name_entered, status='raw'):
-        # 1. Получаем id класса
         self.root_db.cursor.execute('''
             SELECT id
             FROM classes
             WHERE class_name = ?
         ''', (class_name,))
-        class_id = self.root_db.cursor.fetchone()[0]
+        row = self.root_db.cursor.fetchone()
+        print('CLASS ROW:', row)
+        class_id = row[0]
 
-        # 2. Получаем все данные по работе + ответы учеников + ФИО
         self.root_db.cursor.execute('''
             SELECT *
             FROM works
@@ -364,7 +366,6 @@ class DatabaseChecking:
 
         rows = self.root_db.cursor.fetchall()
 
-        # 3. Получаем absents из works
         self.root_db.cursor.execute('''
             SELECT absents
             FROM works
@@ -373,41 +374,45 @@ class DatabaseChecking:
               AND status = ?
         ''', (class_id, work_name_entered, status))
 
-        absents_raw = self.root_db.cursor.fetchone()[0]
+        # row = self.root_db.cursor.fetchone()
+        # print('ABSENTS ROW:', row)
+        #
+        #
+        # if row is None:
+        #     absents = None
+        # else:
+        #     absents_raw = row[0]
+        #     absent_ids = list(map(int, absents_raw.split(',')))
+        #
+        #     placeholders = ','.join('?' * len(absent_ids))
+        #     self.root_db.cursor.execute(f'''
+        #         SELECT id, name, surname
+        #         FROM students
+        #         WHERE id IN ({placeholders})
+        #     ''', absent_ids)
+        #
+        #     absents = self.root_db.cursor.fetchall()
 
-        # 4. Обрабатываем отсутствующих
-        if absents_raw is None:
-            absents = None
-        else:
-            absent_ids = list(map(int, absents_raw.split(',')))
-
-            placeholders = ','.join('?' * len(absent_ids))
-            self.root_db.cursor.execute(f'''
-                SELECT id, name, surname
-                FROM students
-                WHERE id IN ({placeholders})
-            ''', absent_ids)
-
-            absents = self.root_db.cursor.fetchall()
-
-        return rows, absents
+        return rows
 
 
-db = Database()
-db.connect()
-
-dbc = DatabaseChecking(db)
-print(dbc.parse_names(dbc.get_works_by_class('9в')))
-print(dbc.get_classes())
-data, absents = dbc.get_all_data('9в', 'Тканая работа 2')
-for row in data:
-    work_name = row[1]
-    date = row[2]
-    right_answers = row[4]
-    grades = row[5]
-    puple_answers = row[11]
-    name = row[14]
-    surname = row[15]
-    tg_id = row[16]
-    print(work_name, date, right_answers, grades, absents, puple_answers, name, surname, tg_id)
-db.close()
+# db = Database()
+# db.connect()
+#
+# dbc = DatabaseChecking(db)
+# print(dbc.parse_names(dbc.get_works_by_class('9в')))
+# print(dbc.get_classes())
+# data, absents = dbc.get_all_data('9в', 'Тканая работа 2')
+# print(data)
+# checking = Checking(data, absents)
+# checking.parse_big_data()
+# print(checking.students_dct)
+# print(checking.date_work_name)
+# print(checking.absents)
+# print(checking.right_answers)
+# print(checking.grades)
+# print(checking.checking_works())
+# dct = {'Муратова Аиша': (6, None), 'Беляева Александра': (7, None), 'Большакова Алина': (7, None), 'Герасимова Анна': (7, None), 'Еремин Владимир': (7, None), 'Басов Григорий': (9, None), 'Иванов Даниил': (8, None), 'Кондратов Даниил': (9, None), 'Королева Дарья': (8, None), 'Никонова Ева': (6, None), 'Федорова Елизавета': (9, None), 'Воробьева Кира': (6, None), 'Максимова Ксения': (4, None), 'Никифорова Ксения': (8, None), 'Калинин Лев': (7, None), 'Назаров Леонид': (6, None), 'Евдокимов Максим': (9, None), 'Кузнецов Максим': (7, None), 'Белова Мария': (8, None), 'Соколова Мария': (10, None), 'Лебедева Марьям': (10, None), 'Литвинова Милана': (8, None), 'Савельева Мирослава': (6, None), 'Смирнов Михаил': (8, None), 'Второй Николай': (9, None), 'Сергеева Таисия': (4, None), 'Аксенов Тимур': (8, None), 'Филатов Фёдор': (9, None), 'Яковлев Фёдор': (7, None)}
+# checking.absents = 'Муратова Аиша,Вася Пупкин'
+# print(checking.add_absents(dct, db, '9в'))
+# db.close()
