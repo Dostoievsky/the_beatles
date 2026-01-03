@@ -51,7 +51,7 @@ class SettingsWindow(QWidget):
         self.saving_all_files_in_one_folder.stateChanged.connect(self.handle_one_folder_checkbox)
 
         self.format_by_default = QComboBox()
-        self.format_by_default.addItems(["спрашивать каждый раз", "csv", "txt"])
+        self.format_by_default.addItems(["спрашивать каждый раз", ".csv", ".txt"])
 
         self.encoding_txt = QLineEdit()
         self.encoding_csv = QLineEdit()

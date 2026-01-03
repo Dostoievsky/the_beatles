@@ -113,6 +113,8 @@ class Database:
         self.create_tables()
         self.close()
 
+
+
     def get_or_create_class(self, class_name):
         self.cursor.execute(
             "SELECT id FROM classes WHERE class_name = ?",
@@ -337,6 +339,23 @@ class DatabaseChecking:
         ''', (class_name, status))
         return self.root_db.cursor.fetchall()
 
+    def set_work_status_by_name(self, class_name, work_name, status):
+        class_id = self.get_class_id(class_name)
+        if class_id is None:
+            raise ValueError(f"Класс '{class_name}' не найден")
+
+        work_id = self.get_work_id(class_id, work_name)
+        if work_id is None:
+            raise ValueError(f"Работа '{work_name}' не найдена")
+
+        self.root_db.cursor.execute("""
+            UPDATE works
+            SET status = ?
+            WHERE id = ?
+        """, (status, work_id))
+
+        self.root_db.conn.commit()
+
     @staticmethod
     def parse_names(data_tuple):
         lst = []
@@ -374,27 +393,60 @@ class DatabaseChecking:
               AND status = ?
         ''', (class_id, work_name_entered, status))
 
-        # row = self.root_db.cursor.fetchone()
-        # print('ABSENTS ROW:', row)
-        #
-        #
-        # if row is None:
-        #     absents = None
-        # else:
-        #     absents_raw = row[0]
-        #     absent_ids = list(map(int, absents_raw.split(',')))
-        #
-        #     placeholders = ','.join('?' * len(absent_ids))
-        #     self.root_db.cursor.execute(f'''
-        #         SELECT id, name, surname
-        #         FROM students
-        #         WHERE id IN ({placeholders})
-        #     ''', absent_ids)
-        #
-        #     absents = self.root_db.cursor.fetchall()
-
         return rows
 
+    def get_class_id(self, class_name):
+        self.root_db.cursor.execute("""
+            SELECT id
+            FROM classes
+            WHERE class_name = ?
+        """, (class_name,))
+        row = self.root_db.cursor.fetchone()
+        return row[0] if row else None
+
+    def get_work_id(self, class_id: int, work_name: str) -> int | None:
+        self.root_db.cursor.execute("""
+            SELECT id
+            FROM works
+            WHERE class_id = ? AND work_name = ?
+        """, (class_id, work_name))
+        row = self.root_db.cursor.fetchone()
+        return row[0] if row else None
+
+    def save_final_results(self, class_name: str, work_name: str, final_dict: dict):
+        # 1. получаем class_id
+        class_id = self.get_class_id(class_name)
+        if class_id is None:
+            raise ValueError(f"Класс '{class_name}' не найден")
+
+        # 2. получаем work_id
+        work_id = self.get_work_id(class_id, work_name)
+        if work_id is None:
+            raise ValueError(f"Работа '{work_name}' не найдена для класса '{class_name}'")
+
+        # 3. пишем результаты
+        for student_id, info in final_dict.items():
+            grade = info.get('grade')
+
+            self.root_db.cursor.execute("""
+                SELECT id
+                FROM submissions
+                WHERE work_id = ? AND student_id = ?
+            """, (work_id, student_id))
+
+            row = self.root_db.cursor.fetchone()
+            if row is None:
+                print(f"⚠ Нет submission для student_id={student_id}")
+                continue
+
+            submission_id = row[0]
+
+            self.root_db.cursor.execute("""
+                INSERT OR REPLACE INTO results (submission_id, grade)
+                VALUES (?, ?)
+            """, (submission_id, grade))
+
+        self.root_db.conn.commit()
 
 # db = Database()
 # db.connect()

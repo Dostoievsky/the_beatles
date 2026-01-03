@@ -108,3 +108,16 @@ class Checking:
             return dict(sorted(dict_for_write.items(), key=self.sort_key_asc))
         else:
             return dict(sorted(dict_for_write.items(), key=lambda item: item[0]))
+
+    def save_file_txt(self, path, sorted_dict_for_write):
+        with open(path, 'w', encoding='utf-8') as file:
+            print(self.date_work_name, file=file)
+            for k, v in sorted_dict_for_write.items():
+                print(f'{k} - {v}', file=file)
+
+    def save_file_csv(self, path, sorted_dict_for_write):
+        with open(path, 'w', encoding='utf-8', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([self.date_work_name])
+            for k, v in sorted_dict_for_write.items():
+                writer.writerow([k, v])

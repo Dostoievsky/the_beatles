@@ -1,3 +1,4 @@
+import os.path
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QComboBox, QDateEdit,
                              QFileDialog, QGridLayout, QSizePolicy)
@@ -239,11 +240,11 @@ class MainMenu(QWidget):
             chck.parse_big_data()
             parsed_data = chck.checking_works()
             print(parsed_data)
-            chck.absents = '30,31,37'
             sdb = Database()
             list_of_absents_names = chck.get_absents(sdb)
             print(list_of_absents_names)
             final_dict = chck.get_grades(parsed_data)
+
             dict_for_write = {}
             absents_dict = {}
             for student_data in final_dict.values():
@@ -252,22 +253,48 @@ class MainMenu(QWidget):
             for student in list_of_absents_names:
                 key = f'{student[2]} {student[1]}'
                 absents_dict[key] = 'отсутствовал(а)'
+                final_dict[student[0]] = {'score': None, 'tg_id': student[3], 'name': student[1], 'surname': student[2], 'grade': None}
             dict_for_write.update(absents_dict)
+            print('Final dict:', final_dict)
+            #final_dict - словарь для записи в БД и для tg-бота, dict_for_write - словарь для записи в файл, wonderful_sorted_dict - отсортированный словарь для записи в файл
+            cdb.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
+            cdb.set_work_status_by_name(chosen_class_name, chosen_work.split(' за ')[0].strip(), 'checked')
             print(dict_for_write)
-            print('Работы успешно проверены.')
+            print('Работы проверены и результат успешно записан в базу данных.')
             lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
             _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
             wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
+            if Settings().format_by_default == 'спрашивать каждый раз':
+                chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
+            else:
+                chosed_format = Settings().format_by_default
 
-            # if Settings().format_by_default == 'спрашивать каждый раз':
-            #     chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
-            #
-            # if Settings().saving_all_files_in_one_folder:
+            if not chosed_format:
+                self.show()
+                return
 
+            work_filename = f'{chosen_work} класса {chosen_class_name}{chosed_format}'
+            full_path = os.path.join(os.getcwd(), work_filename)
+            if Settings().saving_all_files_in_one_folder:
+                full_path = os.path.join(Settings().saving_all_files_in_one_folder, work_filename)
+
+            if chosed_format == '.txt':
+                chck.save_file_txt(full_path, wonderful_sorted_dict)
+            elif chosed_format == '.csv':
+                chck.save_file_csv(full_path, wonderful_sorted_dict)
+            else:
+                if Settings().show_warnings:
+                    print('Неправильный формат файла.')
+                self.show()
+                return
+            print(f'Файл успешно сохранен по пути: {full_path}.')
+            if Settings().automatically_file_opening:
+                os.startfile(full_path)
+            elif input(f'Открыть файл {full_path}?').lower().strip() in ('lf', 'да', '1'):
+                os.startfile(full_path)
 
 
             database_for_func.close()
-
             self.show()
 
         except Exception as e:
