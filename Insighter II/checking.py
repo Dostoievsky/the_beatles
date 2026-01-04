@@ -1,3 +1,5 @@
+import csv
+
 class Checking:
     def __init__(self, big_data):
         self.big_data = big_data
@@ -112,6 +114,7 @@ class Checking:
     def save_file_txt(self, path, sorted_dict_for_write):
         with open(path, 'w', encoding='utf-8') as file:
             print(self.date_work_name, file=file)
+            print(file=file)
             for k, v in sorted_dict_for_write.items():
                 print(f'{k} - {v}', file=file)
 

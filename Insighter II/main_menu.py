@@ -170,8 +170,6 @@ class MainMenu(QWidget):
             dtb.set_absents_for_work(work_id, class_name, absents_ids)
 
 
-
-
             dtb.close()
             save_sys_json(data)
             print('Данные успешно сохранены.')
@@ -217,18 +215,18 @@ class MainMenu(QWidget):
             cdb = DatabaseChecking(database_for_func)
             database_for_func.connect()
             chosen_class_name, _ = print_menu(cdb.get_classes(), 'Выберите класс:', 'У вас нет добавленных классов. Используйте режим перезаписи, чтобы добавить классы')
-            if chosen_class_name is None:
+            if not chosen_class_name:
                 self.show()
                 return
 
             works = cdb.get_works_by_class(chosen_class_name)
+            print(works)
             parsed = cdb.parse_names(works)
+            print(parsed)
+            print(bool(parsed))
 
-            if not parsed:
-                self.show()
-                return
 
-            chosen_work, _ = print_menu(cdb.parse_names(cdb.get_works_by_class(chosen_class_name)), 'Выберите работу:', 'У вас нет непроверенных работ.')
+            chosen_work, _ = print_menu(parsed, 'Выберите работу:', 'У вас нет непроверенных работ.')
             if not chosen_work:
                 self.show()
                 return
@@ -240,15 +238,14 @@ class MainMenu(QWidget):
             chck.parse_big_data()
             parsed_data = chck.checking_works()
             print(parsed_data)
-            sdb = Database()
-            list_of_absents_names = chck.get_absents(sdb)
+            list_of_absents_names = chck.get_absents(database_for_func)
             print(list_of_absents_names)
             final_dict = chck.get_grades(parsed_data)
 
             dict_for_write = {}
             absents_dict = {}
             for student_data in final_dict.values():
-                key = f'{student_data['surname']} {student_data['name']}'
+                key = f"{student_data['surname']} {student_data['name']}" #если нужно помнять местами имя и фамилию
                 dict_for_write[key] = student_data['grade']
             for student in list_of_absents_names:
                 key = f'{student[2]} {student[1]}'
@@ -264,7 +261,7 @@ class MainMenu(QWidget):
             lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
             _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
             wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
-            if Settings().format_by_default == 'спрашивать каждый раз':
+            if Settings().format_by_default == 'ask' or Settings().format_by_default == 'спрашивать каждый раз':
                 chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
             else:
                 chosed_format = Settings().format_by_default
@@ -290,7 +287,7 @@ class MainMenu(QWidget):
             print(f'Файл успешно сохранен по пути: {full_path}.')
             if Settings().automatically_file_opening:
                 os.startfile(full_path)
-            elif input(f'Открыть файл {full_path}?').lower().strip() in ('lf', 'да', '1'):
+            elif input(f'Открыть файл {full_path}? ').lower().strip() in ('lf', 'да', '1'):
                 os.startfile(full_path)
 
 
