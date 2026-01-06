@@ -53,6 +53,7 @@ class Database:
     def connect(self):
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        self.cursor.execute("PRAGMA foreign_keys = ON")
 
     def close(self):
         if self.conn:
@@ -62,47 +63,62 @@ class Database:
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS classes (
                 id INTEGER PRIMARY KEY,
-                class_name TEXT
+                class_name TEXT NOT NULL
             )
         """)
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS students (
                 id INTEGER PRIMARY KEY,
-                class_id INTEGER,
+                class_id INTEGER NOT NULL,
                 name TEXT,
                 surname TEXT,
-                telegram_id INTEGER
+                telegram_id INTEGER,
+                FOREIGN KEY (class_id)
+                    REFERENCES classes(id)
+                    ON DELETE CASCADE
             )
         """)
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS works (
-            id INTEGER PRIMARY KEY,
-            work_name TEXT,
-            work_date TEXT,
-            class_id INTEGER,
-            answer_data TEXT,
-            grades_data TEXT,
-            status TEXT,
-            absents TEXT
-            )
-        """)
-
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS results (
                 id INTEGER PRIMARY KEY,
-                submission_id INTEGER,
-                grade INTEGER
+                work_name TEXT,
+                work_date TEXT,
+                class_id INTEGER NOT NULL,
+                answer_data TEXT,
+                grades_data TEXT,
+                status TEXT,
+                absents TEXT,
+                FOREIGN KEY (class_id)
+                    REFERENCES classes(id)
+                    ON DELETE CASCADE
             )
         """)
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS submissions (
                 id INTEGER PRIMARY KEY,
-                work_id INTEGER,
-                student_id INTEGER,
-                student_answer TEXT
+                work_id INTEGER NOT NULL,
+                student_id INTEGER NOT NULL,
+                student_answer TEXT,
+                FOREIGN KEY (work_id)
+                    REFERENCES works(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (student_id)
+                    REFERENCES students(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS results (
+                id INTEGER PRIMARY KEY,
+                submission_id INTEGER NOT NULL,
+                grade INTEGER,
+                FOREIGN KEY (submission_id)
+                    REFERENCES submissions(id)
+                    ON DELETE CASCADE
             )
         """)
 

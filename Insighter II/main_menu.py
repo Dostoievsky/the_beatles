@@ -8,6 +8,7 @@ from settings import SettingsWindow
 from Parser_Validator_classes import *
 from Database_Settings_classes import *
 from checking import *
+from random_file_for_testing import *
 import json
 
 def save_sys_json(data: dict):
@@ -128,31 +129,43 @@ class MainMenu(QWidget):
 
 
     def on_rewrite_finished(self):
-
+        log = Logger(Settings.developer_mode)
+        log.log_date('start_function_on_rewrite_finished')
         input_data = self.rewrite_window.result_data
+        log.log('input_data', input_data)
         sys_data = load_sys_json()
+        log.log('sys_data', sys_data)
         data = merge_with_sys_json(input_data, sys_data)
+        log.log('data', data)
 
         validator = Validator(data)
         ok, errors = validator.validate()
+        log.log('ok', ok)
+        log.log('errors', errors)
 
         if ok:
             parser = Parser(validator.validate_answers_file(), validator.validate_grades_file(), validator.absents_file,
                 validator.works_folder, validator.date, validator.class_name)
             class_name = parser.parse_class_name()
+            log.log('class_name', class_name)
             date = parser.parse_date()
+            log.log('date', date)
             answers_string = parser.parse_answers_dict()
+            log.log('answers_string', answers_string)
             grades_string = parser.parse_grades_dict()
+            log.log('grades_string', grades_string)
             try:
                 work_name, dict_with_student_answers, students_list = parser.parse_works_folder()
             except Exception as e:
                 print('Возникла ошибка при парсинге папки с работами.')
                 if Settings().show_warnings:
                     print(f'Ошибка:{e}')
+                    log.log('error_parse_folder', e)
 
             dtb = Database()
             dtb.connect()
             work_id = dtb.save_work(work_name, date, class_name, answers_string, grades_string, 'raw')
+            log.log('work_id', work_id)
             dtb.add_students_from_list(class_name, students_list)
             dtb.add_submissions_from_answers(class_name, work_id, dict_with_student_answers)
 
@@ -160,19 +173,25 @@ class MainMenu(QWidget):
 
             if validator.absents_file is not None and validator.absents_file != "auto":
                 absent_names = parser.parse_absents_file()
+                log.log('absent_names', absent_names)
                 absents_ids = set(absent_names)
 
             elif validator.absents_file == "auto":
                 all_students = dtb.get_students_of_class(class_name)
+                log.log('all_students', all_students)
                 submitted_students = dtb.get_students_with_submission(work_id)
+                log.log('submitted_students', submitted_students)
                 absents_ids = all_students - submitted_students
+                log.log('absents_ids', absents_ids)
             class_name = parser.parse_class_name()
+            log.log('class_name', class_name)
             dtb.set_absents_for_work(work_id, class_name, absents_ids)
 
 
             dtb.close()
             save_sys_json(data)
             print('Данные успешно сохранены.')
+            log.log_date('end_function_on_rewrite_finished')
             self.show()
             return
 
@@ -180,28 +199,34 @@ class MainMenu(QWidget):
 
 
     def handle_errors(self, errors):
+        log = Logger(Settings().developer_mode)
         self.rewrite_window.hide()
-
+        log.log_date('start_function_handle_errors')
         print("\nОбнаружены ошибки:\n")
         for err in errors:
             print(err)
 
         self.show()
-
+        log.log_date('end_function_handle_errors')
+        return
 
     def on_settings_finished(self):
         self.show()
 
 
     def run_rewrite(self):
+        log = Logger(Settings().developer_mode)
         self.hide()
+        log.log_date('start_function_run_rewrite')
         self.rewrite_window = WindowForRewrite()
         self.rewrite_window.finished.connect(self.on_rewrite_finished)
         self.rewrite_window.show()
 
 
     def run_settings(self):
+        log = Logger(Settings().developer_mode)
         self.hide()
+        log.log_date('start_function_run_settings')
         self.settings_window = SettingsWindow()
         self.settings_window.finished.connect(self.on_settings_finished)
         self.settings_window.show()
@@ -209,92 +234,108 @@ class MainMenu(QWidget):
 
 
     def run_check_works(self):
-        try:
-            self.hide()
-            database_for_func = Database()
-            cdb = DatabaseChecking(database_for_func)
-            database_for_func.connect()
-            chosen_class_name, _ = print_menu(cdb.get_classes(), 'Выберите класс:', 'У вас нет добавленных классов. Используйте режим перезаписи, чтобы добавить классы')
-            if not chosen_class_name:
-                self.show()
-                return
-
-            works = cdb.get_works_by_class(chosen_class_name)
-            print(works)
-            parsed = cdb.parse_names(works)
-            print(parsed)
-            print(bool(parsed))
-
-
-            chosen_work, _ = print_menu(parsed, 'Выберите работу:', 'У вас нет непроверенных работ.')
-            if not chosen_work:
-                self.show()
-                return
-
-            print(chosen_work)
-            big_data = cdb.get_all_data(chosen_class_name, chosen_work.split(' за ')[0])
-            print(*big_data, sep='\n')
-            chck = Checking(big_data)
-            chck.parse_big_data()
-            parsed_data = chck.checking_works()
-            print(parsed_data)
-            list_of_absents_names = chck.get_absents(database_for_func)
-            print(list_of_absents_names)
-            final_dict = chck.get_grades(parsed_data)
-
-            dict_for_write = {}
-            absents_dict = {}
-            for student_data in final_dict.values():
-                key = f"{student_data['surname']} {student_data['name']}" #если нужно помнять местами имя и фамилию
-                dict_for_write[key] = student_data['grade']
-            for student in list_of_absents_names:
-                key = f'{student[2]} {student[1]}'
-                absents_dict[key] = 'отсутствовал(а)'
-                final_dict[student[0]] = {'score': None, 'tg_id': student[3], 'name': student[1], 'surname': student[2], 'grade': None}
-            dict_for_write.update(absents_dict)
-            print('Final dict:', final_dict)
-            #final_dict - словарь для записи в БД и для tg-бота, dict_for_write - словарь для записи в файл, wonderful_sorted_dict - отсортированный словарь для записи в файл
-            cdb.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
-            cdb.set_work_status_by_name(chosen_class_name, chosen_work.split(' за ')[0].strip(), 'checked')
-            print(dict_for_write)
-            print('Работы проверены и результат успешно записан в базу данных.')
-            lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
-            _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
-            wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
-            if Settings().format_by_default == 'ask' or Settings().format_by_default == 'спрашивать каждый раз':
-                chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
-            else:
-                chosed_format = Settings().format_by_default
-
-            if not chosed_format:
-                self.show()
-                return
-
-            work_filename = f'{chosen_work} класса {chosen_class_name}{chosed_format}'
-            full_path = os.path.join(os.getcwd(), work_filename)
-            if Settings().saving_all_files_in_one_folder:
-                full_path = os.path.join(Settings().saving_all_files_in_one_folder, work_filename)
-
-            if chosed_format == '.txt':
-                chck.save_file_txt(full_path, wonderful_sorted_dict)
-            elif chosed_format == '.csv':
-                chck.save_file_csv(full_path, wonderful_sorted_dict)
-            else:
-                if Settings().show_warnings:
-                    print('Неправильный формат файла.')
-                self.show()
-                return
-            print(f'Файл успешно сохранен по пути: {full_path}.')
-            if Settings().automatically_file_opening:
-                os.startfile(full_path)
-            elif input(f'Открыть файл {full_path}? ').lower().strip() in ('lf', 'да', '1'):
-                os.startfile(full_path)
-
-
-            database_for_func.close()
+        self.hide()
+        log = Logger(Settings().developer_mode)
+        log.log_date('start_function_run_check_works')
+        database_for_func = Database()
+        cdb = DatabaseChecking(database_for_func)
+        database_for_func.connect()
+        chosen_class_name, _ = print_menu(cdb.get_classes(), 'Выберите класс:', 'У вас нет добавленных классов. Используйте режим перезаписи, чтобы добавить классы')
+        log.log('chosen_class_name', chosen_class_name)
+        if not chosen_class_name:
             self.show()
+            log.log_date('there_are_no_classes_error')
+            return
 
-        except Exception as e:
-            print(e)
+        works = cdb.get_works_by_class(chosen_class_name)
+        log.log('works', works)
+        parsed = cdb.parse_names(works)
+        log.log('parsed', parsed)
+
+        chosen_work, _ = print_menu(parsed, 'Выберите работу:', 'У вас нет непроверенных работ.')
+        log.log('chosen_work', chosen_work)
+        if not chosen_work:
+            log.log_date('there_are_no_works_error')
+            self.show()
+            return
+
+        big_data = cdb.get_all_data(chosen_class_name, chosen_work.split(' за ')[0])
+        log.log('big_data', big_data)
+        chck = Checking(big_data)
+        chck.parse_big_data()
+        parsed_data = chck.checking_works()
+        log.log('parsed_data', parsed_data)
+        list_of_absents_names = chck.get_absents(database_for_func)
+        log.log('list_of_absents_names', list_of_absents_names)
+        final_dict = chck.get_grades(parsed_data)
+        log.log('final_dict', final_dict)
+
+        dict_for_write = {}
+        absents_dict = {}
+        for student_data in final_dict.values():
+            key = f"{student_data['surname']} {student_data['name']}" #если нужно помнять местами имя и фамилию
+            dict_for_write[key] = student_data['grade']
+        log.log('dict_for_write', dict_for_write)
+        for student in list_of_absents_names:
+            key = f'{student[2]} {student[1]}'
+            absents_dict[key] = 'отсутствовал(а)'
+            final_dict[student[0]] = {'score': None, 'tg_id': student[3], 'name': student[1], 'surname': student[2], 'grade': None}
+        dict_for_write.update(absents_dict)
+        log.log('updaated_dict_for_write', dict_for_write)
+        cdb.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
+        cdb.set_work_status_by_name(chosen_class_name, chosen_work.split(' за ')[0].strip(), 'checked')
+        print('Работы проверены и результат успешно записан в базу данных.')
+
+        lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
+        _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
+        log.log('chosed_sort_mode', chosed_sort_mode)
+        wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
+        log.log('wonderful_sorted_dict', wonderful_sorted_dict)
+        if Settings().format_by_default == 'ask' or Settings().format_by_default == 'спрашивать каждый раз':
+            chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
+            log.log('chosed_format', chosed_format)
+        else:
+            chosed_format = Settings().format_by_default
+
+        if not chosed_format:
+            log.log_date('format_error')
+            self.show()
+            return
+
+        work_filename = f'{chosen_work} класса {chosen_class_name}{chosed_format}'
+        log.log('work_filename', work_filename)
+        full_path = os.path.join(os.getcwd(), work_filename)
+        if Settings().saving_all_files_in_one_folder:
+            full_path = os.path.join(Settings().saving_all_files_in_one_folder, work_filename)
+        log.log('full_path', full_path)
+        if chosed_format == '.txt':
+            chck.save_file_txt(full_path, wonderful_sorted_dict)
+        elif chosed_format == '.csv':
+            chck.save_file_csv(full_path, wonderful_sorted_dict)
+        else:
+            log.log_date('file_format_error')
+            if Settings().show_warnings:
+                print('Неправильный формат файла.')
+            self.show()
+            return
+        print(f'Файл успешно сохранен по пути: {full_path}.')
+        if Settings().automatically_file_opening:
+            os.startfile(full_path)
+        elif input(f'Открыть файл {full_path}? ').lower().strip() in ('lf', 'да', '1'):
+            os.startfile(full_path)
+
+        log.log_date('end_function_run_check_works')
+        database_for_func.close()
+        self.show()
 
 
+    def run_clear_database(self):
+        self.hide()
+        log = Logger(Settings().developer_mode)
+        log.log_date('start_function_run_clear_database')
+        modes_of_clear = ['Очистка данных таблиц', 'Очистить все данные в базе', 'Сборс до начальной конфигурации']
+        chosen_clear_mode = print_menu(modes_of_clear, 'Выберите режим для очистки. Если вы понятия не имеете, что будет удалено, прочитайте инструкцию, удаленные данные не могут быть восстановлены.')
+        log.log('chosen clear mode', chosen_clear_mode)
+        db = Database()
+        if chosen_clear_mode == 'Очистка данных таблиц':
+            pass
