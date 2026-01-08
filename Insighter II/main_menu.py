@@ -9,7 +9,9 @@ from Parser_Validator_classes import *
 from Database_Settings_classes import *
 from checking import *
 from random_file_for_testing import *
+from clearmodes import *
 import json
+import random
 
 def save_sys_json(data: dict):
     path = r'system_files/sys.json'
@@ -21,6 +23,10 @@ def save_sys_json(data: dict):
 
 
 class MainMenu(QWidget):
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
     def __init__(self):
         super().__init__()
 
@@ -45,10 +51,9 @@ class MainMenu(QWidget):
         self.bot_control_button = QPushButton("Управление телеграм-ботом", self)
         self.random_call_button = QPushButton("Случайный вызов", self)
         self.help_button = QPushButton("Помощь", self)
-        self.close_button = QPushButton("Выход", self)
+        self.clear_button = QPushButton("Очистка", self)
         self.settings_button = QPushButton("Настройки", self)
 
-        self.close_button.clicked.connect(self.close)
 
         self.settings_button.setFixedSize(230, 30)
         self.check_works_button.setFixedSize(230, 60)
@@ -62,12 +67,12 @@ class MainMenu(QWidget):
         self.bot_control_button.setFixedSize(230, 60)
         self.random_call_button.setFixedSize(230, 60)
         self.help_button.setFixedSize(230, 60)
-        self.close_button.setFixedSize(230, 60)
+        self.clear_button.setFixedSize(230, 60)
 
         self.rewrite_button.clicked.connect(self.run_rewrite)
         self.settings_button.clicked.connect(self.run_settings)
         self.check_works_button.clicked.connect(self.run_check_works)
-
+        self.clear_button.clicked.connect(self.run_clear_database)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -79,8 +84,8 @@ class MainMenu(QWidget):
         grid.addWidget(self.export_button, 3, 1)
         grid.addWidget(self.bot_control_button, 3, 2)
         grid.addWidget(self.random_call_button, 4, 0)
-        grid.addWidget(self.help_button, 4, 1)
-        grid.addWidget(self.close_button, 4, 2)
+        grid.addWidget(self.help_button, 4, 2)
+        grid.addWidget(self.clear_button, 4, 1)
         grid.addWidget(self.settings_button, 0, 2)
 
         grid.addWidget(label, 0, 0)
@@ -210,6 +215,7 @@ class MainMenu(QWidget):
         log.log_date('end_function_handle_errors')
         return
 
+
     def on_settings_finished(self):
         self.show()
 
@@ -230,7 +236,6 @@ class MainMenu(QWidget):
         self.settings_window = SettingsWindow()
         self.settings_window.finished.connect(self.on_settings_finished)
         self.settings_window.show()
-
 
 
     def run_check_works(self):
@@ -334,8 +339,85 @@ class MainMenu(QWidget):
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_clear_database')
         modes_of_clear = ['Очистка данных таблиц', 'Очистить все данные в базе', 'Сборс до начальной конфигурации']
-        chosen_clear_mode = print_menu(modes_of_clear, 'Выберите режим для очистки. Если вы понятия не имеете, что будет удалено, прочитайте инструкцию, удаленные данные не могут быть восстановлены.')
+        chosen_clear_mode, _ = print_menu(modes_of_clear, 'Выберите режим для очистки. Если вы понятия не имеете, что будет удалено, прочитайте инструкцию, удаленные данные не могут быть восстановлены.')
         log.log('chosen clear mode', chosen_clear_mode)
+
+        if not chosen_clear_mode:
+            self.show()
+            return
+
         db = Database()
-        if chosen_clear_mode == 'Очистка данных таблиц':
-            pass
+        db.connect()
+        clear = Clear(db)
+        if chosen_clear_mode == 'Очистить все данные в базе':
+            input('Вы в режиме полной очистки базы данных. После удаления данные не могут быть восстановлены. Нажмите Enter, чтобы продолжить. ')
+            missclick_psw = random.randint(1000, 9999)
+            log.log('missclick_psw', missclick_psw)
+            clear.create_delete_file(missclick_psw)
+            user_psw = input('Программа создала файл delete.txt в рабочей директории. Введите пароль оттуда для подтверждения очистки: ')
+            log.log('user_psw', user_psw)
+            if not user_psw == str(missclick_psw):
+                print('Вы ввели неверный пароль. База данных не была очищена.')
+                self.show()
+                return
+            input('Вы уверены? После нажатия Enter база данных будет очищена. ')
+            try:
+                clear.delete_database_file()
+            except Exception as e:
+                log.log('error_clear_db', e)
+                print('Ошибка при удалении базы данных.', end='')
+                if Settings().show_warnings:
+                    print(e)
+            print('База данных успешно удалена. Перезапустите программу.')
+            log.log_date('end_function_run_clear_database')
+            self.close()
+
+        elif chosen_clear_mode == 'Очистка данных таблиц':
+            chosen_table, _ = print_menu(clear.ALLOWED_TABLES, 'Вы в режиме очистки таблиц. Выберите таблицу для очистки.')
+
+            if not chosen_table:
+                self.show()
+                return
+
+            chosen_list_clear = ['Очистить все данные в таблице', 'Очистить конкретные данные в таблице']
+            chosen_clear_second_mode, _ = print_menu(chosen_list_clear, 'Вы хотите очистить таблицу целиком или конкретные данные?')
+
+            if not chosen_list_clear:
+                self.show()
+                return
+
+            if chosen_clear_second_mode == 'Очистить все данные в таблице':
+                user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
+                if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
+                    input('Вы уверены? После нажатия Enter данные будут удалены. ')
+                    clear.delete_by_field(chosen_table)
+                    print('Данные успешно удалены.')
+                    self.show()
+                    return
+                else:
+                    print('Вы ввели неверное число.')
+                    self.show()
+                    return
+
+            elif chosen_clear_second_mode == 'Очистить конкретные данные в таблице':
+                database_clear = DatabaseChecking(db)
+                if chosen_table == 'classes':
+                    all_classes_for_clear = database_clear.get_classes()
+                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс для очистки:')
+
+                    if not chosen_class:
+                        self.show()
+                        return
+
+                    if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
+                        input('Вы уверены? После нажатия Enter данные будут удалены. ')
+                        clear.delete_by_field(chosen_table, 'class_name', chosen_class)
+                        print('Класс успешно удален')
+                        self.show()
+                        return
+                    else:
+                        print('Вы ввели неверное число.')
+                        self.show()
+                        return
+
+

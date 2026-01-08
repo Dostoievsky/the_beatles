@@ -8,13 +8,18 @@ class Clear:
     def __init__(self, db):
         self.db = db
 
-    def delete_by_field(self, table, field, value):
+    def delete_by_field(self, table, field=None, value=None):
         self.db.cursor.execute("""
             SELECT name FROM sqlite_master
             WHERE type='table' AND name=?
         """, (table,))
         if not self.db.cursor.fetchone():
             raise ValueError(f"Таблица '{table}' не найдена")
+
+        if field is None and value is None:
+            self.db.cursor.execute(f"DELETE FROM {table}")
+            self.db.conn.commit()
+            return
 
         self.db.cursor.execute(
             f"SELECT id FROM {table} WHERE {field} = ?",
@@ -60,8 +65,14 @@ class Clear:
 
         shutil.rmtree(folder_path)
 
-db = Database()
-db.connect()
-clear = Clear(db)
-clear.delete_by_field('classes', 'class_name', '9в')
-db.close()
+    @staticmethod
+    def create_delete_file(psw):
+        with open('delete.txt', 'w', encoding='utf-8') as file:
+            print(f'Код для удаления базы данных: {psw}', file=file)
+        return
+
+# db = Database()
+# db.connect()
+# clear = Clear(db)
+# clear.delete_by_field('classes', 'class_name', '9в')
+# db.close()

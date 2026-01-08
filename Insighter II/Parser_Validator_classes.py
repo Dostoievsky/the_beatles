@@ -182,7 +182,6 @@ class Parser:
 
 
 
-
 # data_dict_ = {'class_name': '9в', 'answers_file': 'D:/pythonProject/apotheosis/answers.txt', 'grades_file':
 #     'D:/pythonProject/apotheosis/marks.txt', 'works_folder': 'D:/pythonProject/apotheosis/Провальная работа 4', 'absents_file': 'D:/pythonProject/apotheosis/my_missings.txt', 'date': '18.12.2025'}
 # validator = Validator(data_dict_)
