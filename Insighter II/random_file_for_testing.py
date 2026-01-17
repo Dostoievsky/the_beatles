@@ -1,12 +1,20 @@
 import json
 from datetime import datetime
 import os
+import sys
 
 class Logger:
     def __init__(self, flag):
         self.flag = flag
-        base_dir = os.path.dirname(os.path.abspath(__file__))
+        base_dir = self.get_base_path()
         self.file_path = os.path.join(base_dir, 'system_files', 'log.json')
+
+    @staticmethod
+    def get_base_path():
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(sys.executable)
+        return os.path.dirname(os.path.abspath(__file__))
+
 
     def log(self, key, value):
         if not self.flag:

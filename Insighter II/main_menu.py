@@ -12,6 +12,15 @@ from random_file_for_testing import *
 from clearmodes import *
 import json
 import random
+import traceback
+from usersDialogs import *
+
+
+def excepthook(exc_type, exc_value, exc_tb):
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+sys.excepthook = excepthook
 
 def save_sys_json(data: dict):
     path = r'system_files/sys.json'
@@ -237,102 +246,111 @@ class MainMenu(QWidget):
         self.settings_window.finished.connect(self.on_settings_finished)
         self.settings_window.show()
 
-
     def run_check_works(self):
-        self.hide()
+        self.setEnabled(False)
+
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_check_works')
+
         database_for_func = Database()
         cdb = DatabaseChecking(database_for_func)
         database_for_func.connect()
-        chosen_class_name, _ = print_menu(cdb.get_classes(), 'Выберите класс:', 'У вас нет добавленных классов. Используйте режим перезаписи, чтобы добавить классы')
+
+        dialog = CheckWorksDialog(cdb, parent=self)
+
+        if dialog.exec() != QDialog.Accepted:
+            self.setEnabled(True)
+            self.show()
+            log.log_date('dialog_rejected')
+            return
+
+        chosen_class_name = dialog.data["class"]
+        chosen_work = dialog.data["work"]
+        chosed_sort_mode = dialog.data["sort_mode"]
+
         log.log('chosen_class_name', chosen_class_name)
-        if not chosen_class_name:
-            self.show()
-            log.log_date('there_are_no_classes_error')
-            return
-
-        works = cdb.get_works_by_class(chosen_class_name)
-        log.log('works', works)
-        parsed = cdb.parse_names(works)
-        log.log('parsed', parsed)
-
-        chosen_work, _ = print_menu(parsed, 'Выберите работу:', 'У вас нет непроверенных работ.')
         log.log('chosen_work', chosen_work)
-        if not chosen_work:
-            log.log_date('there_are_no_works_error')
-            self.show()
-            return
+        log.log('chosed_sort_mode', chosed_sort_mode)
 
-        big_data = cdb.get_all_data(chosen_class_name, chosen_work.split(' за ')[0])
-        log.log('big_data', big_data)
+        big_data = cdb.get_all_data(
+            chosen_class_name,
+            chosen_work.split(' за ')[0]
+        )
+
         chck = Checking(big_data)
         chck.parse_big_data()
         parsed_data = chck.checking_works()
-        log.log('parsed_data', parsed_data)
         list_of_absents_names = chck.get_absents(database_for_func)
-        log.log('list_of_absents_names', list_of_absents_names)
         final_dict = chck.get_grades(parsed_data)
-        log.log('final_dict', final_dict)
 
         dict_for_write = {}
         absents_dict = {}
+
         for student_data in final_dict.values():
-            key = f"{student_data['surname']} {student_data['name']}" #если нужно помнять местами имя и фамилию
+            key = f"{student_data['surname']} {student_data['name']}"
             dict_for_write[key] = student_data['grade']
-        log.log('dict_for_write', dict_for_write)
+
         for student in list_of_absents_names:
             key = f'{student[2]} {student[1]}'
             absents_dict[key] = 'отсутствовал(а)'
-            final_dict[student[0]] = {'score': None, 'tg_id': student[3], 'name': student[1], 'surname': student[2], 'grade': None}
+            final_dict[student[0]] = {
+                'score': None,
+                'tg_id': student[3],
+                'name': student[1],
+                'surname': student[2],
+                'grade': None
+            }
+
         dict_for_write.update(absents_dict)
-        log.log('updaated_dict_for_write', dict_for_write)
-        cdb.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
-        cdb.set_work_status_by_name(chosen_class_name, chosen_work.split(' за ')[0].strip(), 'checked')
-        print('Работы проверены и результат успешно записан в базу данных.')
 
-        lst = ['По умолчанию', 'По оценкам, сначала лучшие', 'По оценкам, сначала худшие', 'По фамилиям']
-        _, chosed_sort_mode = print_menu(lst, 'Выберите режим сортировки:')
-        log.log('chosed_sort_mode', chosed_sort_mode)
-        wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
-        log.log('wonderful_sorted_dict', wonderful_sorted_dict)
-        if Settings().format_by_default == 'ask' or Settings().format_by_default == 'спрашивать каждый раз':
-            chosed_format, _ = print_menu(['.txt', '.csv'], 'Выберите формат файла')
-            log.log('chosed_format', chosed_format)
-        else:
-            chosed_format = Settings().format_by_default
+        database_for_func.connect()
+        cdb.save_final_results(
+            chosen_class_name,
+            chosen_work.split(' за ')[0].strip(),
+            final_dict
+        )
+        cdb.set_work_status_by_name(
+            chosen_class_name,
+            chosen_work.split(' за ')[0].strip(),
+            'checked'
+        )
 
-        if not chosed_format:
-            log.log_date('format_error')
-            self.show()
-            return
+        wonderful_sorted_dict = chck.sort_data(
+            dict_for_write,
+            chosed_sort_mode
+        )
+
+        chosed_format = dialog.data["format"]
+        open_file = dialog.data["open_file"]
 
         work_filename = f'{chosen_work} класса {chosen_class_name}{chosed_format}'
         log.log('work_filename', work_filename)
+
         full_path = os.path.join(os.getcwd(), work_filename)
         if Settings().saving_all_files_in_one_folder:
             full_path = os.path.join(Settings().saving_all_files_in_one_folder, work_filename)
+
         log.log('full_path', full_path)
+
         if chosed_format == '.txt':
             chck.save_file_txt(full_path, wonderful_sorted_dict)
         elif chosed_format == '.csv':
             chck.save_file_csv(full_path, wonderful_sorted_dict)
         else:
             log.log_date('file_format_error')
-            if Settings().show_warnings:
-                print('Неправильный формат файла.')
+            print('Неправильный формат файла.')
+            self.setEnabled(True)
             self.show()
             return
+
         print(f'Файл успешно сохранен по пути: {full_path}.')
-        if Settings().automatically_file_opening:
-            os.startfile(full_path)
-        elif input(f'Открыть файл {full_path}? ').lower().strip() in ('lf', 'да', '1'):
+
+        if open_file:
             os.startfile(full_path)
 
-        log.log_date('end_function_run_check_works')
-        database_for_func.close()
+        self.setEnabled(True)
         self.show()
-
+        return
 
     def run_clear_database(self):
         self.hide()
@@ -403,21 +421,55 @@ class MainMenu(QWidget):
                 database_clear = DatabaseChecking(db)
                 if chosen_table == 'classes':
                     all_classes_for_clear = database_clear.get_classes()
-                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс для очистки:')
+                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс для очистки:', 'У вас нет классов.')
 
                     if not chosen_class:
                         self.show()
                         return
 
+                    user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
                     if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
                         input('Вы уверены? После нажатия Enter данные будут удалены. ')
                         clear.delete_by_field(chosen_table, 'class_name', chosen_class)
-                        print('Класс успешно удален')
+                        print('Класс успешно удален.')
                         self.show()
                         return
                     else:
                         print('Вы ввели неверное число.')
                         self.show()
                         return
+
+                elif chosen_table == 'works':
+                    all_classes_for_clear = database_clear.get_classes()
+                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс, работы которого хотите очистить:', 'У вас нет классов.')
+
+                    if not chosen_class:
+                        self.show()
+                        return
+
+                    all_works_of_class = database_clear.get_works_by_class(chosen_class, status='*')
+                    chosen_clear_work, _ = print_menu(all_works_of_class, 'Выберите работу для очистки:', 'Работ нет, удалять нечего.')
+
+                    if not chosen_clear_work:
+                        self.show()
+                        return
+
+                    user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
+                    if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
+                        input('Вы уверены? После нажатия Enter данные будут удалены. ')
+                        clear.delete_by_field(chosen_table, 'class_name', chosen_class)
+                        print('Класс успешно удален.')
+                        self.show()
+                        return
+                    else:
+                        print('Вы ввели неверное число.')
+                        self.show()
+                        return
+
+
+
+
+
+
 
 

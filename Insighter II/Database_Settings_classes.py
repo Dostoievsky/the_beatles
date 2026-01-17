@@ -348,12 +348,36 @@ class DatabaseChecking:
         return
 
     def get_works_by_class(self, class_name, status='raw'):
-        self.root_db.cursor.execute('''
-            SELECT *
-            FROM classes JOIN works ON classes.id = works.class_id
-            WHERE classes.class_name = ? and works.status = ?
-        ''', (class_name, status))
+        if status == '*':
+            self.root_db.cursor.execute('''
+                SELECT *
+                FROM classes JOIN works ON classes.id = works.class_id
+                WHERE classes.class_name = ?
+            ''', (class_name,))
+        else:
+            self.root_db.cursor.execute('''
+                SELECT *
+                FROM classes JOIN works ON classes.id = works.class_id
+                WHERE classes.class_name = ? and works.status = ?
+            ''', (class_name, status))
         return self.root_db.cursor.fetchall()
+
+    def get_work_id_by_class_and_name(self, class_name, work_name):
+        self.root_db.cursor.execute("""
+            SELECT works.id
+            FROM works
+            JOIN classes ON works.class_id = classes.id
+            WHERE classes.class_name = ?
+              AND works.work_name = ?
+        """, (class_name, work_name))
+
+        row = self.root_db.cursor.fetchone()
+        if not row:
+            raise ValueError(
+                f"Работа '{work_name}' не найдена в классе '{class_name}'"
+            )
+
+        return row[0]
 
     def set_work_status_by_name(self, class_name, work_name, status):
         class_id = self.get_class_id(class_name)
