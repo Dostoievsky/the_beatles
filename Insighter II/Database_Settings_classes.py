@@ -258,28 +258,29 @@ class Database:
 
         class_id = self.get_or_create_class(class_name)
         absent_ids = set()
+        if isinstance(list(absents)[0], str):
+            for full_name in absents:
+                name, surname = self.parse_name(full_name)
 
-        for full_name in absents:
-            name, surname = self.parse_name(full_name)
-
-            self.cursor.execute("""
-                SELECT id FROM students
-                WHERE class_id = ? AND name = ? AND surname = ?
-            """, (class_id, name, surname))
-
-            row = self.cursor.fetchone()
-
-            if row is None:
                 self.cursor.execute("""
-                    INSERT INTO students (class_id, name, surname)
-                    VALUES (?, ?, ?)
+                    SELECT id FROM students
+                    WHERE class_id = ? AND name = ? AND surname = ?
                 """, (class_id, name, surname))
-                student_id = self.cursor.lastrowid
-            else:
-                student_id = row[0]
 
-            absent_ids.add(student_id)
+                row = self.cursor.fetchone()
 
+                if row is None:
+                    self.cursor.execute("""
+                        INSERT INTO students (class_id, name, surname)
+                        VALUES (?, ?, ?)
+                    """, (class_id, name, surname))
+                    student_id = self.cursor.lastrowid
+                else:
+                    student_id = row[0]
+
+                absent_ids.add(student_id)
+        else:
+            absent_ids = absents
         absents_value = ",".join(map(str, sorted(absent_ids)))
 
         self.cursor.execute("""
@@ -346,6 +347,15 @@ class DatabaseChecking:
         if data_class:
             return list(map(lambda x: x[1], data_class))
         return
+
+    def get_class_id_by_name(self, class_name: str) -> int | None:
+        cur = self.root_db.conn.cursor()
+        cur.execute(
+            "SELECT id FROM classes WHERE class_name = ?",
+            (class_name,)
+        )
+        row = cur.fetchone()
+        return row[0] if row else None
 
     def get_works_by_class(self, class_name, status='raw'):
         if status == '*':

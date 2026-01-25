@@ -84,7 +84,7 @@ class WelcomeWindow(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_progress)
-        self.timer.start(120)
+        self.timer.start(20)
 
     def update_progress(self):
         value = self.progress.value()

@@ -36,6 +36,7 @@ class MainMenu(QWidget):
         if event.key() == Qt.Key_Escape:
             self.close()
 
+
     def __init__(self):
         super().__init__()
 
@@ -175,6 +176,8 @@ class MainMenu(QWidget):
                 if Settings().show_warnings:
                     print(f'Ошибка:{e}')
                     log.log('error_parse_folder', e)
+                    self.show()
+                    return
 
             dtb = Database()
             dtb.connect()
@@ -203,6 +206,7 @@ class MainMenu(QWidget):
 
 
             dtb.close()
+            data['absents_file'] = 'auto'
             save_sys_json(data)
             print('Данные успешно сохранены.')
             log.log_date('end_function_on_rewrite_finished')
@@ -245,6 +249,7 @@ class MainMenu(QWidget):
         self.settings_window = SettingsWindow()
         self.settings_window.finished.connect(self.on_settings_finished)
         self.settings_window.show()
+
 
     def run_check_works(self):
         self.setEnabled(False)
@@ -356,116 +361,64 @@ class MainMenu(QWidget):
         self.hide()
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_clear_database')
-        modes_of_clear = ['Очистка данных таблиц', 'Очистить все данные в базе', 'Сборс до начальной конфигурации']
-        chosen_clear_mode, _ = print_menu(modes_of_clear, 'Выберите режим для очистки. Если вы понятия не имеете, что будет удалено, прочитайте инструкцию, удаленные данные не могут быть восстановлены.')
-        log.log('chosen clear mode', chosen_clear_mode)
-
-        if not chosen_clear_mode:
-            self.show()
-            return
 
         db = Database()
         db.connect()
+        cdb = DatabaseChecking(db)
+
+        dialog = ClearDatabaseDialog(db, cdb, parent=self)
+
+        if dialog.exec() != QDialog.Accepted:
+            self.show()
+            return
+
+        data = dialog.data
         clear = Clear(db)
-        if chosen_clear_mode == 'Очистить все данные в базе':
-            input('Вы в режиме полной очистки базы данных. После удаления данные не могут быть восстановлены. Нажмите Enter, чтобы продолжить. ')
-            missclick_psw = random.randint(1000, 9999)
-            log.log('missclick_psw', missclick_psw)
-            clear.create_delete_file(missclick_psw)
-            user_psw = input('Программа создала файл delete.txt в рабочей директории. Введите пароль оттуда для подтверждения очистки: ')
-            log.log('user_psw', user_psw)
-            if not user_psw == str(missclick_psw):
-                print('Вы ввели неверный пароль. База данных не была очищена.')
-                self.show()
+
+        try:
+            if data["mode"] == "Сброс до начальной конфигурации":
+                clear.delete_system_files()
+                print('Программа сброшена. Перезапустите программу.')
+                self.close()
                 return
-            input('Вы уверены? После нажатия Enter база данных будет очищена. ')
-            try:
+
+            elif data["mode"] == "Очистить все данные в базе":
                 clear.delete_database_file()
-            except Exception as e:
-                log.log('error_clear_db', e)
-                print('Ошибка при удалении базы данных.', end='')
-                if Settings().show_warnings:
-                    print(e)
-            print('База данных успешно удалена. Перезапустите программу.')
-            log.log_date('end_function_run_clear_database')
-            self.close()
-
-        elif chosen_clear_mode == 'Очистка данных таблиц':
-            chosen_table, _ = print_menu(clear.ALLOWED_TABLES, 'Вы в режиме очистки таблиц. Выберите таблицу для очистки.')
-
-            if not chosen_table:
+                print("База данных полностью очищена.")
                 self.show()
                 return
 
-            chosen_list_clear = ['Очистить все данные в таблице', 'Очистить конкретные данные в таблице']
-            chosen_clear_second_mode, _ = print_menu(chosen_list_clear, 'Вы хотите очистить таблицу целиком или конкретные данные?')
+            table = data["table"]
 
-            if not chosen_list_clear:
-                self.show()
-                return
+            if data["scope"] == "Очистить все данные в таблице":
+                clear.delete_by_field(table)
+                print("Таблица успешно очищена.")
 
-            if chosen_clear_second_mode == 'Очистить все данные в таблице':
-                user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
-                if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
-                    input('Вы уверены? После нажатия Enter данные будут удалены. ')
-                    clear.delete_by_field(chosen_table)
-                    print('Данные успешно удалены.')
-                    self.show()
-                    return
-                else:
-                    print('Вы ввели неверное число.')
-                    self.show()
-                    return
+            else:
+                if table == "classes":
+                    clear.delete_by_field(table, "class_name", data["class"])
+                    print("Класс удалён.")
 
-            elif chosen_clear_second_mode == 'Очистить конкретные данные в таблице':
-                database_clear = DatabaseChecking(db)
-                if chosen_table == 'classes':
-                    all_classes_for_clear = database_clear.get_classes()
-                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс для очистки:', 'У вас нет классов.')
 
-                    if not chosen_class:
+                elif table == "works":
+                    class_name = data["class"]
+                    work_name = data["work"]
+                    class_id = cdb.get_class_id_by_name(class_name)
+                    if class_id is None:
+                        print(f"Класс '{class_name}' не найден")
                         self.show()
                         return
+                    clear.delete_work(class_id, work_name)
+                    print("Работа удалена.")
 
-                    user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
-                    if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
-                        input('Вы уверены? После нажатия Enter данные будут удалены. ')
-                        clear.delete_by_field(chosen_table, 'class_name', chosen_class)
-                        print('Класс успешно удален.')
-                        self.show()
-                        return
-                    else:
-                        print('Вы ввели неверное число.')
-                        self.show()
-                        return
+        except Exception as e:
+            log.log("clear_error", e)
+            print("Ошибка при очистке.")
+            if Settings().show_warnings:
+                raise
 
-                elif chosen_table == 'works':
-                    all_classes_for_clear = database_clear.get_classes()
-                    chosen_class, _ = print_menu(all_classes_for_clear, 'Выберите класс, работы которого хотите очистить:', 'У вас нет классов.')
-
-                    if not chosen_class:
-                        self.show()
-                        return
-
-                    all_works_of_class = database_clear.get_works_by_class(chosen_class, status='*')
-                    chosen_clear_work, _ = print_menu(all_works_of_class, 'Выберите работу для очистки:', 'Работ нет, удалять нечего.')
-
-                    if not chosen_clear_work:
-                        self.show()
-                        return
-
-                    user_input_clear_chck = input('Введите любое натуральное трехзначное число для подтвержения очистки.\n')
-                    if user_input_clear_chck.isdigit() and len(user_input_clear_chck) == 3:
-                        input('Вы уверены? После нажатия Enter данные будут удалены. ')
-                        clear.delete_by_field(chosen_table, 'class_name', chosen_class)
-                        print('Класс успешно удален.')
-                        self.show()
-                        return
-                    else:
-                        print('Вы ввели неверное число.')
-                        self.show()
-                        return
-
+        log.log_date('end_function_run_clear_database')
+        self.show()
 
 
 

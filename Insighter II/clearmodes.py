@@ -8,6 +8,18 @@ class Clear:
     def __init__(self, db):
         self.db = db
 
+    def delete_system_files(self):
+        try:
+            if hasattr(self.db, "conn") and self.db.conn:
+                self.db.conn.close()
+        except Exception:
+            pass
+
+        system_files_path = os.path.join(os.getcwd(), 'system_files')
+
+        if os.path.exists(system_files_path):
+            shutil.rmtree(system_files_path)
+
     def delete_by_field(self, table, field=None, value=None):
         self.db.cursor.execute("""
             SELECT name FROM sqlite_master
@@ -39,18 +51,30 @@ class Clear:
         self.db.conn.commit()
 
     def delete_database_file(self):
+        cur = self.db.conn.cursor()
 
-        db_path = os.path.join('system_files', 'insighter.db')
+        cur.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type='table'
+              AND name NOT LIKE 'sqlite_%'
+        """)
+
+        tables = [row[0] for row in cur.fetchall()]
+        if not tables:
+            return
 
         try:
-            self.db.close()
+            self.db.conn.execute("BEGIN")
+
+            for table in tables:
+                self.db.conn.execute(f'DELETE FROM "{table}"')
+
+            self.db.conn.commit()
+
         except Exception:
-            pass
+            self.db.conn.rollback()
+            raise
 
-        if not os.path.exists(db_path):
-            raise FileNotFoundError(f"Файл базы данных '{db_path}' не найден")
-
-        os.remove(db_path)
 
     def delete_system_files(self):
         folder_path = os.path.join(os.getcwd(), 'system_files')
@@ -65,11 +89,13 @@ class Clear:
 
         shutil.rmtree(folder_path)
 
-    @staticmethod
-    def create_delete_file(psw):
-        with open('delete.txt', 'w', encoding='utf-8') as file:
-            print(f'Код для удаления базы данных: {psw}', file=file)
-        return
+    def delete_work(self, class_id, work_name):
+        cursor = self.db.cursor
+        cursor.execute(
+            "DELETE FROM works WHERE class_id = ? AND work_name = ?",
+            (class_id, work_name)
+        )
+        self.db.conn.commit()
 
 # db = Database()
 # db.connect()

@@ -92,7 +92,7 @@ class WindowForRewrite(QWidget):
         self.answer_choose_line.setPlaceholderText(sys_data_for_lines.get('answers_file', ''))
         self.grade_choose_line.setPlaceholderText(sys_data_for_lines.get('grades_file', ''))
         self.works_folder_line.setPlaceholderText(sys_data_for_lines.get('works_folder', ''))
-        self.absents_choose_line.setPlaceholderText(('auto' if not sys_data_for_lines.get('absents_file', '') else sys_data_for_lines.get('absents_file', '')))
+        self.absents_choose_line.setPlaceholderText('auto')
         self.absents_label = QLabel('Выберите файл с отсутствующими')
 
 
