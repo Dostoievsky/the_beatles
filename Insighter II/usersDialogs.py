@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel,
     QPushButton, QRadioButton, QButtonGroup,
-    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox
+    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import Qt
@@ -337,6 +337,72 @@ class ClearDatabaseDialog(QDialog):
                 font-size: 13px;
             }
         
+            QRadioButton {
+                spacing: 8px;
+                color: #ffffff;
+                font-weight: bold;
+            }
+
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                border: 2px solid #444444;
+                background-color: #303b3d;
+            }
+
+            QRadioButton::indicator:hover {
+                border: 2px solid #557A95;
+            }
+
+            QRadioButton::indicator:checked {
+                background-color: #557A95;
+                border: 2px solid #557A95;
+            }
+
+            QRadioButton::indicator:checked:hover {
+                background-color: #6fa3c6;
+            }
+
+            QRadioButton:disabled {
+                color: #888888;
+            }
+
+            QRadioButton::indicator:disabled {
+                background-color: #222222;
+                border: 2px solid #333333;
+            }
+            
+            
+                    QLabel {
+                color: #ffffff;
+                font-size: 15px;
+            }
+        
+            QCheckBox {
+                color: #ffffff;
+                font-size: 13px;
+            }
+        
+            QPushButton {
+                color: #ffffff;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-weight: bold;
+            }
+        
+            
+                    QMessageBox {
+                background-color: #1e1e1e;
+                color: #ffffff;
+                font-size: 13px;
+            }
+        
+            QMessageBox QLabel {
+                color: #ffffff;
+                font-size: 13px;
+            }
+        
             
         ''')
 
@@ -563,4 +629,381 @@ class ClearDatabaseDialog(QDialog):
                 self.show_step()
             else:
                 self.accept()
+
+
+
+class GenerationDialog(QDialog):
+
+    MODE_MANUAL = "Ручная генерация"
+    MODE_FAST = "Быстрая генерация"
+    MODE_PATTERN = "Генерация по паттерну"
+
+    def __init__(self, classes: list[str], parent=None):
+        super().__init__(parent)
+
+        self.classes = classes.copy()  # чтобы можно было динамически добавлять
+        self.step = 0
+        self.data = {}
+        self.group = None
+
+        self.setWindowTitle("Генерация работы")
+        self.setMinimumSize(520, 350)
+
+        self.main_layout = QVBoxLayout(self)
+        self.content_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.content_layout)
+
+        self.next_button = QPushButton("Далее")
+        self.next_button.setFixedHeight(32)
+        self.next_button.clicked.connect(self.on_next)
+        self.next_button.setEnabled(False)  # кнопка заблокирована до ввода
+        self.main_layout.addWidget(self.next_button, alignment=Qt.AlignRight)
+
+        self.setStyleSheet("""           
+                            QWidget {
+                                background-color: #595e5b;
+                                color: white;
+                                font-size: 14px;
+                                font-weight: bold;
+                                font-family: "Consolas";
+                            }
+
+                            QPushButton {
+                                border-radius: 10px;
+                                background-color: #303b3d;
+                            }
+
+                            QPushButton:hover {
+                                background-color: #557A95;
+                            }
+
+                            QPushButton:pressed {
+                                background-color: #303b3d;
+                            }
+
+                            QLineEdit {
+                                background-color: #262626;
+                                border: 1px solid #444444;
+                                border-radius: 3px;
+                            }
+                        """)
+
+        self.show_step()
+
+    # ----------------- helpers -----------------
+
+    def clear_content(self):
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def rebuild(self):
+        self.adjustSize()
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+
+    def update_next_button_state(self):
+        """Активируем кнопку Далее только если заполнены обязательные поля"""
+        if self.step == 0:  # выбор режима — **не блокируем кнопку**
+            self.next_button.setEnabled(True)
+        elif self.step == 1:  # ученики и работа — **не блокируем кнопку**
+            self.next_button.setEnabled(True)
+        elif self.step == 2:  # ответы
+            if self.answers_cb.isChecked():
+                self.next_button.setEnabled(bool(self.answers_name_input.text().strip())
+                                            and bool(self.answers_lines_input.text().strip()))
+            else:
+                self.next_button.setEnabled(True)
+        elif self.step == 3:  # критерии
+            if self.criteria_cb.isChecked():
+                self.next_button.setEnabled(bool(self.criteria_name_input.text().strip())
+                                            and bool(self.criteria_scale_input.text().strip()))
+            else:
+                self.next_button.setEnabled(True)
+        elif self.step == 4:  # отсутствующие
+            if self.absents_cb.isChecked():
+                self.next_button.setEnabled(bool(self.absents_name_input.text().strip()))
+            else:
+                self.next_button.setEnabled(True)
+
+    # ----------------- steps -----------------
+
+    def step_choose_mode(self):
+        text = QLabel('В скобках у необязательных полей указано, что будет, если оставите поле пустым.\n')
+
+        title = QLabel("Выберите режим генерации")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.content_layout.addWidget(text)
+        self.content_layout.addWidget(title)
+
+
+        self.group = QButtonGroup(self)
+        for mode in [self.MODE_MANUAL, self.MODE_FAST, self.MODE_PATTERN]:
+            rb = QRadioButton(mode, self)
+            self.group.addButton(rb)
+            self.content_layout.addWidget(rb)
+            rb.toggled.connect(self.update_next_button_state)
+
+        self.update_next_button_state()
+
+    def step_students(self):
+        title = QLabel("Ученики и работа")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.content_layout.addWidget(title)
+
+        # Название работы
+        self.content_layout.addWidget(QLabel("Название работы:", self))
+        self.work_name_input = QLineEdit(self)
+        self.content_layout.addWidget(self.work_name_input)
+        self.work_name_input.textChanged.connect(self.update_next_button_state)
+
+        # Класс
+        self.content_layout.addWidget(QLabel("Выберите класс:", self))
+        self.group = QButtonGroup(self)
+        for cls in self.classes:
+            rb = QRadioButton(cls, self)
+            self.group.addButton(rb)
+            self.content_layout.addWidget(rb)
+            rb.toggled.connect(self.update_next_button_state)
+
+        # Кнопка "Добавить класс из файла"
+        add_class_btn = QPushButton("Добавить класс из файла", self)
+        self.content_layout.addWidget(add_class_btn)
+        add_class_btn.clicked.connect(self.add_class_from_file)
+
+        # Заполнить файлы учеников
+        self.fill_students_cb = QCheckBox("Заполнить файлы учеников", self)
+        self.content_layout.addWidget(self.fill_students_cb)
+        self.fill_students_cb.stateChanged.connect(self.update_next_button_state)
+
+        # Количество строк
+        self.content_layout.addWidget(QLabel("Количество строк (если заполнять):", self))
+        self.students_lines_input = QLineEdit(self)
+        self.students_lines_input.setPlaceholderText("Например: 10")
+        self.content_layout.addWidget(self.students_lines_input)
+
+        # Сначала поле скрыто, пока галочка не выбрана
+        self.students_lines_input.setVisible(False)
+        self.content_layout.itemAt(self.content_layout.count() - 2).widget().setVisible(False)
+        self.fill_students_cb.stateChanged.connect(
+            lambda state: self.toggle_widget_visibility(self.students_lines_input, state)
+        )
+
+        self.update_next_button_state()
+
+    def toggle_widget_visibility(self, widget, state):
+        visible = bool(state)
+        widget.setVisible(visible)
+        # label перед widget
+        idx = self.content_layout.indexOf(widget)
+        if idx > 0:
+            self.content_layout.itemAt(idx - 1).widget().setVisible(visible)
+        self.update_next_button_state()
+
+    def add_class_from_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Выберите файл класса")
+        if filename:
+            # Используем имя файла как имя класса для примера
+            new_class_name = filename.split("/")[-1].split(".")[0]
+            if new_class_name in self.classes:
+                QMessageBox.information(self, "Генерация", f"Класс {new_class_name} уже есть")
+                return
+            self.classes.insert(0, new_class_name)  # вставляем в начало списка
+            rb = QRadioButton(new_class_name, self)
+            self.group.addButton(rb)
+
+            # Вставляем виджет **перед всеми существующими радио-кнопками**
+            first_rb_idx = 0
+            for i in range(self.content_layout.count()):
+                item = self.content_layout.itemAt(i)
+                if item.widget() and isinstance(item.widget(), QRadioButton):
+                    first_rb_idx = i
+                    break
+            self.content_layout.insertWidget(first_rb_idx, rb)
+            rb.toggled.connect(self.update_next_button_state)
+
+    def step_answers(self):
+        title = QLabel("Файл с ответами")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.content_layout.addWidget(title)
+
+        self.answers_cb = QCheckBox("Создать файл с ответами", self)
+        self.content_layout.addWidget(self.answers_cb)
+        self.answers_cb.stateChanged.connect(
+            lambda state: self.toggle_widget_visibility_for_answers(state)
+        )
+
+        self.content_layout.addWidget(QLabel("Имя файла:", self))
+        self.answers_name_input = QLineEdit(self)
+        self.content_layout.addWidget(self.answers_name_input)
+
+        self.content_layout.addWidget(QLabel("Количество строк:", self))
+        self.answers_lines_input = QLineEdit(self)
+        self.content_layout.addWidget(self.answers_lines_input)
+
+        # Скрываем поля пока галочка не стоит
+        for w in [self.answers_name_input,
+                  self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
+                  self.answers_lines_input,
+                  self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()]:
+            w.setVisible(False)
+
+        self.answers_name_input.textChanged.connect(self.update_next_button_state)
+        self.answers_lines_input.textChanged.connect(self.update_next_button_state)
+
+        self.update_next_button_state()
+
+    def toggle_widget_visibility_for_answers(self, state):
+        visible = bool(state)
+        for widget in [self.answers_name_input,
+                       self.answers_lines_input,
+                       self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
+                       self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()]:
+            widget.setVisible(visible)
+        self.update_next_button_state()
+
+    def step_criteria(self):
+        title = QLabel("Критерии оценки")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.content_layout.addWidget(title)
+
+        self.criteria_cb = QCheckBox("Создать файл с критериями", self)
+        self.content_layout.addWidget(self.criteria_cb)
+        self.criteria_cb.stateChanged.connect(
+            lambda state: self.toggle_widget_visibility_for_criteria(state)
+        )
+
+        self.content_layout.addWidget(QLabel("Имя файла:", self))
+        self.criteria_name_input = QLineEdit(self)
+        self.content_layout.addWidget(self.criteria_name_input)
+
+        self.content_layout.addWidget(QLabel("Шкала оценки:", self))
+        self.criteria_scale_input = QLineEdit(self)
+        self.criteria_scale_input.setPlaceholderText("Например: 5")
+        self.content_layout.addWidget(self.criteria_scale_input)
+
+        # Скрываем поля пока галочка не стоит
+        for w in [self.criteria_name_input,
+                  self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
+                  self.criteria_scale_input,
+                  self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()]:
+            w.setVisible(False)
+
+        self.criteria_name_input.textChanged.connect(self.update_next_button_state)
+        self.criteria_scale_input.textChanged.connect(self.update_next_button_state)
+
+        self.update_next_button_state()
+
+    def toggle_widget_visibility_for_criteria(self, state):
+        visible = bool(state)
+        for widget in [self.criteria_name_input,
+                       self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
+                       self.criteria_scale_input,
+                       self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()]:
+            widget.setVisible(visible)
+        self.update_next_button_state()
+
+    def step_absents(self):
+        title = QLabel("Отсутствующие")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.content_layout.addWidget(title)
+
+        self.absents_cb = QCheckBox("Создать файл с отсутствующими", self)
+        self.content_layout.addWidget(self.absents_cb)
+        self.absents_cb.stateChanged.connect(
+            lambda state: self.toggle_widget_visibility_for_absents(state)
+        )
+
+        self.content_layout.addWidget(QLabel("Имя файла:", self))
+        self.absents_name_input = QLineEdit(self)
+        self.content_layout.addWidget(self.absents_name_input)
+
+        # Скрываем поле пока галочка не стоит
+        for w in [self.absents_name_input,
+                  self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()]:
+            w.setVisible(False)
+
+        self.absents_name_input.textChanged.connect(self.update_next_button_state)
+        self.update_next_button_state()
+
+        self.next_button.setText("Готово")
+
+    def toggle_widget_visibility_for_absents(self, state):
+        visible = bool(state)
+        for widget in [self.absents_name_input,
+                       self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()]:
+            widget.setVisible(visible)
+        self.update_next_button_state()
+
+    # ----------------- dispatcher -----------------
+
+    def show_step(self):
+        self.clear_content()
+        if self.step == 0:
+            self.step_choose_mode()
+        elif self.step == 1:
+            self.step_students()
+        elif self.step == 2:
+            self.step_answers()
+        elif self.step == 3:
+            self.step_criteria()
+        elif self.step == 4:
+            self.step_absents()
+
+        self.content_layout.addStretch()
+        self.rebuild()
+
+    # ----------------- navigation -----------------
+
+    def on_next(self):
+        # шаг 0 — выбор режима
+        if self.step == 0:
+            checked = self.group.checkedButton()
+            mode = checked.text() if checked else None
+            self.data["mode"] = mode
+            if mode != self.MODE_MANUAL:
+                QMessageBox.information(
+                    self,
+                    "Генерация",
+                    "Этот режим пока не реализован."
+                )
+                return
+            self.step = 1
+            self.show_step()
+            return
+
+        # шаг 1 — ученики и работа
+        if self.step == 1:
+            checked = self.group.checkedButton()
+            self.data["work_name"] = self.work_name_input.text().strip()
+            self.data["class"] = checked.text() if checked else None
+            self.data["fill_students"] = self.fill_students_cb.isChecked()
+            self.data["students_lines"] = self.students_lines_input.text().strip()
+            self.step = 2
+            self.show_step()
+            return
+
+        # шаг 2 — ответы
+        if self.step == 2:
+            self.data["answers"] = self.answers_cb.isChecked()
+            self.data["answers_name"] = self.answers_name_input.text().strip()
+            self.data["answers_lines"] = self.answers_lines_input.text().strip()
+            self.step = 3
+            self.show_step()
+            return
+
+        # шаг 3 — критерии
+        if self.step == 3:
+            self.data["criteria"] = self.criteria_cb.isChecked()
+            self.data["criteria_name"] = self.criteria_name_input.text().strip()
+            self.data["criteria_scale"] = self.criteria_scale_input.text().strip()
+            self.step = 4
+            self.show_step()
+            return
+
+        # шаг 4 — отсутствующие → финал
+        if self.step == 4:
+            self.data["absents"] = self.absents_cb.isChecked()
+            self.data["absents_name"] = self.absents_name_input.text().strip()
+            self.accept()
 

@@ -83,6 +83,7 @@ class MainMenu(QWidget):
         self.settings_button.clicked.connect(self.run_settings)
         self.check_works_button.clicked.connect(self.run_check_works)
         self.clear_button.clicked.connect(self.run_clear_database)
+        self.generation_button.clicked.connect(self.run_generation)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -357,6 +358,7 @@ class MainMenu(QWidget):
         self.show()
         return
 
+
     def run_clear_database(self):
         self.hide()
         log = Logger(Settings().developer_mode)
@@ -421,8 +423,16 @@ class MainMenu(QWidget):
         self.show()
 
 
+    def run_generation(self):
+        self.hide()
+        lst = ['9', '10', '11']
+        dialog = GenerationDialog(parent=self, classes=lst)
 
+        if dialog.exec() != QDialog.Accepted:
+            self.show()
+            return
 
-
+        data = dialog.data
+        print(data)
 
 
