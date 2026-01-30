@@ -422,11 +422,18 @@ class MainMenu(QWidget):
         log.log_date('end_function_run_clear_database')
         self.show()
 
-
     def run_generation(self):
         self.hide()
-        lst = ['9', '10', '11']
-        dialog = GenerationDialog(parent=self, classes=lst)
+        classes = ['9', '10', '11']
+
+        dialog = GenerationModeDialog(
+            classes=classes,
+            manual_dialog_cls=ManualGenerationDialog,
+            fast_dialog_cls=FastGenerationDialog,
+            pattern_dialog_cls=PatternGenerationDialog,
+            patterns={},
+            parent=self
+        )
 
         if dialog.exec() != QDialog.Accepted:
             self.show()

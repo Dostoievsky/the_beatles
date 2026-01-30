@@ -248,3 +248,4 @@ class SettingsWindow(QWidget):
 # window = SettingsWindow()
 # window.show()
 # sys.exit(app.exec_())
+print()

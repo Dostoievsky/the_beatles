@@ -1,13 +1,14 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel,
     QPushButton, QRadioButton, QButtonGroup,
-    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog
+    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog, QSpinBox, QHBoxLayout, QVBoxLayout
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import Qt
 from Database_Settings_classes import Settings
 import random
 from clearmodes import *
+from pathlib import Path
 
 class CheckWorksDialog(QDialog):
     def __init__(self, cdb, parent=None):
@@ -632,19 +633,16 @@ class ClearDatabaseDialog(QDialog):
 
 
 
-class GenerationDialog(QDialog):
+class ManualGenerationDialog(QDialog):
 
     MODE_MANUAL = "Ручная генерация"
-    MODE_FAST = "Быстрая генерация"
-    MODE_PATTERN = "Генерация по паттерну"
 
     def __init__(self, classes: list[str], parent=None):
         super().__init__(parent)
 
-        self.classes = classes.copy()  # чтобы можно было динамически добавлять
+        self.classes = classes.copy()
         self.step = 0
         self.data = {}
-        self.group = None
 
         self.setWindowTitle("Генерация работы")
         self.setMinimumSize(520, 350)
@@ -656,37 +654,37 @@ class GenerationDialog(QDialog):
         self.next_button = QPushButton("Далее")
         self.next_button.setFixedHeight(32)
         self.next_button.clicked.connect(self.on_next)
-        self.next_button.setEnabled(False)  # кнопка заблокирована до ввода
+        self.next_button.setEnabled(True)
         self.main_layout.addWidget(self.next_button, alignment=Qt.AlignRight)
 
-        self.setStyleSheet("""           
-                            QWidget {
-                                background-color: #595e5b;
-                                color: white;
-                                font-size: 14px;
-                                font-weight: bold;
-                                font-family: "Consolas";
-                            }
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #595e5b;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                font-family: "Consolas";
+            }
 
-                            QPushButton {
-                                border-radius: 10px;
-                                background-color: #303b3d;
-                            }
+            QPushButton {
+                border-radius: 10px;
+                background-color: #303b3d;
+            }
 
-                            QPushButton:hover {
-                                background-color: #557A95;
-                            }
+            QPushButton:hover {
+                background-color: #557A95;
+            }
 
-                            QPushButton:pressed {
-                                background-color: #303b3d;
-                            }
+            QPushButton:pressed {
+                background-color: #303b3d;
+            }
 
-                            QLineEdit {
-                                background-color: #262626;
-                                border: 1px solid #444444;
-                                border-radius: 3px;
-                            }
-                        """)
+            QLineEdit {
+                background-color: #262626;
+                border: 1px solid #444444;
+                border-radius: 3px;
+            }
+        """)
 
         self.show_step()
 
@@ -703,163 +701,139 @@ class GenerationDialog(QDialog):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
     def update_next_button_state(self):
-        """Активируем кнопку Далее только если заполнены обязательные поля"""
-        if self.step == 0:  # выбор режима — **не блокируем кнопку**
+        if self.step == 0:
             self.next_button.setEnabled(True)
-        elif self.step == 1:  # ученики и работа — **не блокируем кнопку**
-            self.next_button.setEnabled(True)
-        elif self.step == 2:  # ответы
+
+        elif self.step == 1:
             if self.answers_cb.isChecked():
-                self.next_button.setEnabled(bool(self.answers_name_input.text().strip())
-                                            and bool(self.answers_lines_input.text().strip()))
+                self.next_button.setEnabled(
+                    bool(self.answers_name_input.text().strip()) and
+                    bool(self.answers_lines_input.text().strip())
+                )
             else:
                 self.next_button.setEnabled(True)
-        elif self.step == 3:  # критерии
+
+        elif self.step == 2:
             if self.criteria_cb.isChecked():
-                self.next_button.setEnabled(bool(self.criteria_name_input.text().strip())
-                                            and bool(self.criteria_scale_input.text().strip()))
+                self.next_button.setEnabled(
+                    bool(self.criteria_name_input.text().strip()) and
+                    bool(self.criteria_scale_input.text().strip())
+                )
             else:
                 self.next_button.setEnabled(True)
-        elif self.step == 4:  # отсутствующие
+
+        elif self.step == 3:
             if self.absents_cb.isChecked():
-                self.next_button.setEnabled(bool(self.absents_name_input.text().strip()))
+                self.next_button.setEnabled(
+                    bool(self.absents_name_input.text().strip())
+                )
             else:
                 self.next_button.setEnabled(True)
 
     # ----------------- steps -----------------
 
-    def step_choose_mode(self):
-        text = QLabel('В скобках у необязательных полей указано, что будет, если оставите поле пустым.\n')
+    def add_class_from_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Выберите файл класса")
+        if not filename:
+            return
 
-        title = QLabel("Выберите режим генерации")
-        title.setStyleSheet("font-size: 15px; font-weight: bold;")
-        self.content_layout.addWidget(text)
-        self.content_layout.addWidget(title)
+        # имя ТОЛЬКО для отображения
+        new_class_name = filename.split("/")[-1].split(".")[0]
 
+        # проверяем по отображаемым именам
+        for btn in self.class_group.buttons():
+            if btn.text() == new_class_name:
+                QMessageBox.information(
+                    self,
+                    "Генерация",
+                    f"Класс «{new_class_name}» уже существует"
+                )
+                return
 
-        self.group = QButtonGroup(self)
-        for mode in [self.MODE_MANUAL, self.MODE_FAST, self.MODE_PATTERN]:
-            rb = QRadioButton(mode, self)
-            self.group.addButton(rb)
-            self.content_layout.addWidget(rb)
-            rb.toggled.connect(self.update_next_button_state)
+        rb = QRadioButton(new_class_name)
 
-        self.update_next_button_state()
+        # 🔥 ВАЖНО: сохраняем полный путь
+        rb.setProperty("value", filename)
+        rb.setProperty("source", "file")  # необязательно, но полезно
+
+        self.class_group.addButton(rb)
+
+        # вставляем радио-кнопку первой
+        insert_pos = 0
+        for i in range(self.content_layout.count()):
+            w = self.content_layout.itemAt(i).widget()
+            if isinstance(w, QRadioButton):
+                insert_pos = i
+                break
+
+        self.content_layout.insertWidget(insert_pos, rb)
+
 
     def step_students(self):
         title = QLabel("Ученики и работа")
         title.setStyleSheet("font-size: 15px; font-weight: bold;")
         self.content_layout.addWidget(title)
 
-        # Название работы
-        self.content_layout.addWidget(QLabel("Название работы:", self))
-        self.work_name_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Название работы:"))
+        self.work_name_input = QLineEdit()
         self.content_layout.addWidget(self.work_name_input)
-        self.work_name_input.textChanged.connect(self.update_next_button_state)
 
-        # Класс
-        self.content_layout.addWidget(QLabel("Выберите класс:", self))
-        self.group = QButtonGroup(self)
+        self.content_layout.addWidget(QLabel("Выберите класс:"))
+        self.class_group = QButtonGroup(self)
         for cls in self.classes:
-            rb = QRadioButton(cls, self)
-            self.group.addButton(rb)
+            rb = QRadioButton(cls)
+            self.class_group.addButton(rb)
             self.content_layout.addWidget(rb)
-            rb.toggled.connect(self.update_next_button_state)
 
-        # Кнопка "Добавить класс из файла"
-        add_class_btn = QPushButton("Добавить класс из файла", self)
-        self.content_layout.addWidget(add_class_btn)
+        add_class_btn = QPushButton("Добавить класс из файла")
         add_class_btn.clicked.connect(self.add_class_from_file)
+        self.content_layout.addWidget(add_class_btn)
 
-        # Заполнить файлы учеников
-        self.fill_students_cb = QCheckBox("Заполнить файлы учеников", self)
+        self.fill_students_cb = QCheckBox("Заполнить файлы учеников")
         self.content_layout.addWidget(self.fill_students_cb)
-        self.fill_students_cb.stateChanged.connect(self.update_next_button_state)
 
-        # Количество строк
-        self.content_layout.addWidget(QLabel("Количество строк (если заполнять):", self))
-        self.students_lines_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Количество строк (если заполнять):"))
+        self.students_lines_input = QLineEdit()
         self.students_lines_input.setPlaceholderText("Например: 10")
         self.content_layout.addWidget(self.students_lines_input)
 
-        # Сначала поле скрыто, пока галочка не выбрана
         self.students_lines_input.setVisible(False)
         self.content_layout.itemAt(self.content_layout.count() - 2).widget().setVisible(False)
+
         self.fill_students_cb.stateChanged.connect(
-            lambda state: self.toggle_widget_visibility(self.students_lines_input, state)
+            lambda s: self.toggle_widget_visibility(self.students_lines_input, s)
         )
 
         self.update_next_button_state()
-
-    def toggle_widget_visibility(self, widget, state):
-        visible = bool(state)
-        widget.setVisible(visible)
-        # label перед widget
-        idx = self.content_layout.indexOf(widget)
-        if idx > 0:
-            self.content_layout.itemAt(idx - 1).widget().setVisible(visible)
-        self.update_next_button_state()
-
-    def add_class_from_file(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Выберите файл класса")
-        if filename:
-            # Используем имя файла как имя класса для примера
-            new_class_name = filename.split("/")[-1].split(".")[0]
-            if new_class_name in self.classes:
-                QMessageBox.information(self, "Генерация", f"Класс {new_class_name} уже есть")
-                return
-            self.classes.insert(0, new_class_name)  # вставляем в начало списка
-            rb = QRadioButton(new_class_name, self)
-            self.group.addButton(rb)
-
-            # Вставляем виджет **перед всеми существующими радио-кнопками**
-            first_rb_idx = 0
-            for i in range(self.content_layout.count()):
-                item = self.content_layout.itemAt(i)
-                if item.widget() and isinstance(item.widget(), QRadioButton):
-                    first_rb_idx = i
-                    break
-            self.content_layout.insertWidget(first_rb_idx, rb)
-            rb.toggled.connect(self.update_next_button_state)
 
     def step_answers(self):
         title = QLabel("Файл с ответами")
         title.setStyleSheet("font-size: 15px; font-weight: bold;")
         self.content_layout.addWidget(title)
 
-        self.answers_cb = QCheckBox("Создать файл с ответами", self)
+        self.answers_cb = QCheckBox("Создать файл с ответами")
         self.content_layout.addWidget(self.answers_cb)
-        self.answers_cb.stateChanged.connect(
-            lambda state: self.toggle_widget_visibility_for_answers(state)
-        )
 
-        self.content_layout.addWidget(QLabel("Имя файла:", self))
-        self.answers_name_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Имя файла:"))
+        self.answers_name_input = QLineEdit()
         self.content_layout.addWidget(self.answers_name_input)
 
-        self.content_layout.addWidget(QLabel("Количество строк:", self))
-        self.answers_lines_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Количество строк:"))
+        self.answers_lines_input = QLineEdit()
         self.content_layout.addWidget(self.answers_lines_input)
 
-        # Скрываем поля пока галочка не стоит
-        for w in [self.answers_name_input,
-                  self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
-                  self.answers_lines_input,
-                  self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()]:
+        for w in [
+            self.answers_name_input,
+            self.answers_lines_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
+            self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()
+        ]:
             w.setVisible(False)
 
+        self.answers_cb.stateChanged.connect(self.toggle_answers_visibility)
         self.answers_name_input.textChanged.connect(self.update_next_button_state)
         self.answers_lines_input.textChanged.connect(self.update_next_button_state)
 
-        self.update_next_button_state()
-
-    def toggle_widget_visibility_for_answers(self, state):
-        visible = bool(state)
-        for widget in [self.answers_name_input,
-                       self.answers_lines_input,
-                       self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
-                       self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()]:
-            widget.setVisible(visible)
         self.update_next_button_state()
 
     def step_criteria(self):
@@ -867,40 +841,30 @@ class GenerationDialog(QDialog):
         title.setStyleSheet("font-size: 15px; font-weight: bold;")
         self.content_layout.addWidget(title)
 
-        self.criteria_cb = QCheckBox("Создать файл с критериями", self)
+        self.criteria_cb = QCheckBox("Создать файл с критериями")
         self.content_layout.addWidget(self.criteria_cb)
-        self.criteria_cb.stateChanged.connect(
-            lambda state: self.toggle_widget_visibility_for_criteria(state)
-        )
 
-        self.content_layout.addWidget(QLabel("Имя файла:", self))
-        self.criteria_name_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Имя файла:"))
+        self.criteria_name_input = QLineEdit()
         self.content_layout.addWidget(self.criteria_name_input)
 
-        self.content_layout.addWidget(QLabel("Шкала оценки:", self))
-        self.criteria_scale_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Шкала оценки:"))
+        self.criteria_scale_input = QLineEdit()
         self.criteria_scale_input.setPlaceholderText("Например: 5")
         self.content_layout.addWidget(self.criteria_scale_input)
 
-        # Скрываем поля пока галочка не стоит
-        for w in [self.criteria_name_input,
-                  self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
-                  self.criteria_scale_input,
-                  self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()]:
+        for w in [
+            self.criteria_name_input,
+            self.criteria_scale_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
+            self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()
+        ]:
             w.setVisible(False)
 
+        self.criteria_cb.stateChanged.connect(self.toggle_criteria_visibility)
         self.criteria_name_input.textChanged.connect(self.update_next_button_state)
         self.criteria_scale_input.textChanged.connect(self.update_next_button_state)
 
-        self.update_next_button_state()
-
-    def toggle_widget_visibility_for_criteria(self, state):
-        visible = bool(state)
-        for widget in [self.criteria_name_input,
-                       self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
-                       self.criteria_scale_input,
-                       self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()]:
-            widget.setVisible(visible)
         self.update_next_button_state()
 
     def step_absents(self):
@@ -908,46 +872,75 @@ class GenerationDialog(QDialog):
         title.setStyleSheet("font-size: 15px; font-weight: bold;")
         self.content_layout.addWidget(title)
 
-        self.absents_cb = QCheckBox("Создать файл с отсутствующими", self)
+        self.absents_cb = QCheckBox("Создать файл с отсутствующими")
         self.content_layout.addWidget(self.absents_cb)
-        self.absents_cb.stateChanged.connect(
-            lambda state: self.toggle_widget_visibility_for_absents(state)
-        )
 
-        self.content_layout.addWidget(QLabel("Имя файла:", self))
-        self.absents_name_input = QLineEdit(self)
+        self.content_layout.addWidget(QLabel("Имя файла:"))
+        self.absents_name_input = QLineEdit()
         self.content_layout.addWidget(self.absents_name_input)
 
-        # Скрываем поле пока галочка не стоит
-        for w in [self.absents_name_input,
-                  self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()]:
+        for w in [
+            self.absents_name_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()
+        ]:
             w.setVisible(False)
 
+        self.absents_cb.stateChanged.connect(self.toggle_absents_visibility)
         self.absents_name_input.textChanged.connect(self.update_next_button_state)
-        self.update_next_button_state()
 
         self.next_button.setText("Готово")
+        self.update_next_button_state()
 
-    def toggle_widget_visibility_for_absents(self, state):
+    # ----------------- visibility helpers -----------------
+
+    def toggle_widget_visibility(self, widget, state):
         visible = bool(state)
-        for widget in [self.absents_name_input,
-                       self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()]:
-            widget.setVisible(visible)
+        widget.setVisible(visible)
+        idx = self.content_layout.indexOf(widget)
+        if idx > 0:
+            self.content_layout.itemAt(idx - 1).widget().setVisible(visible)
+        self.update_next_button_state()
+
+    def toggle_answers_visibility(self, state):
+        for w in [
+            self.answers_name_input,
+            self.answers_lines_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.answers_name_input) - 1).widget(),
+            self.content_layout.itemAt(self.content_layout.indexOf(self.answers_lines_input) - 1).widget()
+        ]:
+            w.setVisible(bool(state))
+        self.update_next_button_state()
+
+    def toggle_criteria_visibility(self, state):
+        for w in [
+            self.criteria_name_input,
+            self.criteria_scale_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_name_input) - 1).widget(),
+            self.content_layout.itemAt(self.content_layout.indexOf(self.criteria_scale_input) - 1).widget()
+        ]:
+            w.setVisible(bool(state))
+        self.update_next_button_state()
+
+    def toggle_absents_visibility(self, state):
+        for w in [
+            self.absents_name_input,
+            self.content_layout.itemAt(self.content_layout.indexOf(self.absents_name_input) - 1).widget()
+        ]:
+            w.setVisible(bool(state))
         self.update_next_button_state()
 
     # ----------------- dispatcher -----------------
 
     def show_step(self):
         self.clear_content()
+
         if self.step == 0:
-            self.step_choose_mode()
-        elif self.step == 1:
             self.step_students()
-        elif self.step == 2:
+        elif self.step == 1:
             self.step_answers()
-        elif self.step == 3:
+        elif self.step == 2:
             self.step_criteria()
-        elif self.step == 4:
+        elif self.step == 3:
             self.step_absents()
 
         self.content_layout.addStretch()
@@ -956,54 +949,337 @@ class GenerationDialog(QDialog):
     # ----------------- navigation -----------------
 
     def on_next(self):
-        # шаг 0 — выбор режима
         if self.step == 0:
-            checked = self.group.checkedButton()
-            mode = checked.text() if checked else None
-            self.data["mode"] = mode
-            if mode != self.MODE_MANUAL:
-                QMessageBox.information(
-                    self,
-                    "Генерация",
-                    "Этот режим пока не реализован."
-                )
-                return
-            self.step = 1
-            self.show_step()
-            return
+            checked = self.class_group.checkedButton()
 
-        # шаг 1 — ученики и работа
-        if self.step == 1:
-            checked = self.group.checkedButton()
+            self.data["mode"] = self.MODE_MANUAL
             self.data["work_name"] = self.work_name_input.text().strip()
-            self.data["class"] = checked.text() if checked else None
+            self.data["class"] = checked.property("value") if checked else None
             self.data["fill_students"] = self.fill_students_cb.isChecked()
             self.data["students_lines"] = self.students_lines_input.text().strip()
-            self.step = 2
-            self.show_step()
-            return
 
-        # шаг 2 — ответы
-        if self.step == 2:
+            self.step = 1
+
+        elif self.step == 1:
             self.data["answers"] = self.answers_cb.isChecked()
             self.data["answers_name"] = self.answers_name_input.text().strip()
             self.data["answers_lines"] = self.answers_lines_input.text().strip()
-            self.step = 3
-            self.show_step()
-            return
+            self.step = 2
 
-        # шаг 3 — критерии
-        if self.step == 3:
+        elif self.step == 2:
             self.data["criteria"] = self.criteria_cb.isChecked()
             self.data["criteria_name"] = self.criteria_name_input.text().strip()
             self.data["criteria_scale"] = self.criteria_scale_input.text().strip()
-            self.step = 4
-            self.show_step()
-            return
+            self.step = 3
 
-        # шаг 4 — отсутствующие → финал
-        if self.step == 4:
+        elif self.step == 3:
             self.data["absents"] = self.absents_cb.isChecked()
             self.data["absents_name"] = self.absents_name_input.text().strip()
             self.accept()
+            return
+
+        self.show_step()
+
+
+class FastGenerationDialog(QDialog):
+
+    def __init__(self, classes: list[str], parent=None):
+        super().__init__(parent)
+
+        self.classes = list(classes)
+        self.data = {}
+
+        self.setWindowTitle("Быстрая генерация")
+        self.setMinimumWidth(450)
+        self.setMinimumHeight(360)
+
+        self.main_layout = QVBoxLayout(self)
+
+        # --- Название работы ---
+        self.main_layout.addWidget(QLabel("Название работы:"))
+        self.work_name_input = QLineEdit()
+        self.main_layout.addWidget(self.work_name_input)
+
+        # --- Классы ---
+        self.main_layout.addWidget(QLabel("Выберите класс:"))
+        self.class_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.class_layout)
+
+        self.group = QButtonGroup(self)
+        self._build_class_list()
+
+        self.add_class_btn = QPushButton("Добавить класс из файла")
+        self.add_class_btn.clicked.connect(self.add_class_from_file)
+        self.main_layout.addWidget(self.add_class_btn)
+
+        # --- Ответы ---
+        self.main_layout.addWidget(QLabel("Количество строк в файле ответов:"))
+
+        self.answers_lines = QSpinBox()
+        self.answers_lines.setRange(1, 500)
+        self.answers_lines.setValue(10)
+        self.main_layout.addWidget(self.answers_lines)
+
+        self.answers_lines.valueChanged.connect(self.update_state)
+
+        # --- Кнопки ---
+        self.buttons_layout = QHBoxLayout()
+        self.buttons_layout.addStretch()
+
+        self.ok_button = QPushButton("Готово")
+        self.ok_button.setEnabled(False)
+        self.ok_button.clicked.connect(self.on_accept)
+
+        self.buttons_layout.addWidget(self.ok_button)
+        self.main_layout.addLayout(self.buttons_layout)
+
+        # --- Валидация ---
+        self.work_name_input.textChanged.connect(self.update_state)
+        self.answers_lines.valueChanged.connect(self.update_state)
+
+    def _build_class_list(self):
+        for i in reversed(range(self.class_layout.count())):
+            w = self.class_layout.takeAt(i).widget()
+            if w:
+                w.deleteLater()
+
+        for cls in self.classes:
+            rb = QRadioButton(cls)
+            rb.toggled.connect(self.update_state)
+            self.group.addButton(rb)
+            self.class_layout.addWidget(rb)
+
+    def add_class_from_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Файл с классом")
+        if not filename:
+            return
+
+        name = os.path.splitext(os.path.basename(filename))[0]
+
+        # проверяем по отображаемым именам
+        for btn in self.group.buttons():
+            if btn.text() == name:
+                QMessageBox.information(self, "Генерация", "Такой класс уже есть")
+                return
+
+        rb = QRadioButton(name)
+
+        # 🔥 сохраняем реальное значение
+        rb.setProperty("value", filename)
+        rb.setProperty("source", "file")
+
+        self.group.addButton(rb)
+
+        # вставляем первой
+        self.class_layout.insertWidget(0, rb)
+
+
+    def update_state(self):
+        has_name = bool(self.work_name_input.text().strip())
+        has_class = self.group.checkedButton() is not None
+        has_lines = self.answers_lines.value() > 0
+
+        self.ok_button.setEnabled(has_name and has_class and has_lines)
+
+    def on_accept(self):
+        checked = self.group.checkedButton()
+        class_value = checked.property("value") if checked else None
+
+        self.data = {
+            'mode': 'fast',
+            'work_name': self.work_name_input.text().strip(),
+            'class': class_value,
+
+            'fill_students': True,
+            'students_lines': self.answers_lines.value(),
+
+            'answers': False,
+            'answers_name': None,
+            'answers_lines': self.answers_lines.value(),
+
+            'criteria': False,
+            'criteria_name': None,
+            'criteria_scale': None,
+
+            'absents': False,
+            'absents_name': None
+        }
+
+        self.accept()
+
+
+class PatternGenerationDialog(QDialog):
+    MODE_PATTERN = "Генерация по паттерну"
+
+    def __init__(self, patterns: dict, classes: list[str], manual_dialog_cls, parent=None):
+        super().__init__(parent)
+
+        if not isinstance(classes, (list, tuple)):
+            raise TypeError("classes must be list or tuple")
+
+        self.patterns = patterns          # {name: data_dict}
+        self.classes = list(classes)
+        self.manual_dialog_cls = manual_dialog_cls
+        self.data = None                  # итоговый словарь
+
+        self.setWindowTitle("Генерация по паттерну")
+        self.setMinimumWidth(420)
+
+        self.layout = QVBoxLayout(self)
+        self.group = QButtonGroup(self)
+
+        self._build_ui()
+
+    # ---------- UI ----------
+
+    def _build_ui(self):
+        title = QLabel("Выберите паттерн генерации")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.layout.addWidget(title)
+
+        if not self.patterns:
+            empty = QLabel(
+                "У вас нет сохранённых паттернов.\n"
+                "Создайте новый — он появится здесь."
+            )
+            empty.setWordWrap(True)
+            self.layout.addWidget(empty)
+        else:
+            for name in self.patterns.keys():
+                rb = QRadioButton(name)
+                self.group.addButton(rb)
+                self.layout.addWidget(rb)
+
+        self.rb_new = QRadioButton("Создать новый паттерн")
+        self.group.addButton(self.rb_new)
+        self.layout.addWidget(self.rb_new)
+
+        self.layout.addStretch()
+
+        btn = QPushButton("Готово")
+        btn.setFixedHeight(32)
+        btn.clicked.connect(self.on_accept)
+        self.layout.addWidget(btn, alignment=Qt.AlignRight)
+
+    # ---------- Logic ----------
+
+    def on_accept(self):
+        checked = self.group.checkedButton()
+        if not checked:
+            QMessageBox.information(self, "Паттерны", "Выберите вариант")
+            return
+
+        # --- Новый паттерн ---
+        if checked is self.rb_new:
+            dlg = self.manual_dialog_cls(self.classes, self)
+
+            if dlg.exec():
+                data = dlg.data.copy()
+                data["mode"] = self.MODE_PATTERN
+                self.data = data
+                self.accept()
+            return
+
+        # --- Существующий паттерн ---
+        name = checked.text()
+        data = self.patterns[name].copy()
+        data["mode"] = self.MODE_PATTERN
+        self.data = data
+        self.accept()
+
+
+
+
+
+
+class GenerationModeDialog(QDialog):
+    """
+    Диалог выбора режима генерации.
+    Никакой логики генерации — только выбор и открытие нужного окна.
+    """
+
+    def __init__(self, classes: list, manual_dialog_cls, fast_dialog_cls, pattern_dialog_cls, patterns, parent=None):
+        super().__init__(parent)
+
+        self.classes = list(classes)
+        self.manual_dialog_cls = manual_dialog_cls
+        self.fast_dialog_cls = fast_dialog_cls
+        self.pattern_dialog_cls = pattern_dialog_cls
+        self.patterns = patterns or {}
+
+        self.data = None
+
+        self.setWindowTitle("Выбор режима генерации")
+        self.setMinimumWidth(420)
+
+        self._build_ui()
+
+    # ---------- UI ----------
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+
+        title = QLabel("Выберите режим генерации")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        layout.addWidget(title)
+
+        self.group = QButtonGroup(self)
+
+        self.rb_manual = QRadioButton("Ручная генерация")
+        self.rb_fast = QRadioButton("Быстрая генерация")
+        self.rb_pattern = QRadioButton("Генерация по паттерну")
+
+        self.group.addButton(self.rb_manual)
+        self.group.addButton(self.rb_fast)
+        self.group.addButton(self.rb_pattern)
+
+        layout.addWidget(self.rb_manual)
+        layout.addWidget(self.rb_fast)
+        layout.addWidget(self.rb_pattern)
+
+        layout.addStretch()
+
+        btn = QPushButton("Далее")
+        btn.setFixedHeight(32)
+        btn.clicked.connect(self.on_accept)
+        layout.addWidget(btn, alignment=Qt.AlignRight)
+
+    # ---------- Logic ----------
+
+    def on_accept(self):
+        checked = self.group.checkedButton()
+        if not checked:
+            QMessageBox.information(
+                self,
+                "Генерация",
+                "Выберите режим генерации"
+            )
+            return
+
+        if checked is self.rb_manual:
+            dlg = self.manual_dialog_cls(
+                classes=self.classes,
+                parent=self
+            )
+
+        elif checked is self.rb_fast:
+            dlg = self.fast_dialog_cls(
+                classes=self.classes,
+                parent=self
+            )
+
+        elif checked is self.rb_pattern:
+            dlg = self.pattern_dialog_cls(
+                patterns=self.patterns,
+                classes=self.classes,
+                manual_dialog_cls=self.manual_dialog_cls,
+                parent=self
+            )
+        else:
+            return
+
+        if dlg.exec() == QDialog.Accepted:
+            self.data = dlg.data
+            self.accept()
+
 

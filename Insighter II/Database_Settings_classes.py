@@ -227,15 +227,21 @@ class Database:
 
         self.conn.commit()
 
-    def get_students_of_class(self, class_name):
+    def get_students_of_class(self, class_name, flag='id'):
         class_id = self.get_or_create_class(class_name)
+        if flag == 'id':
+            self.cursor.execute("""
+                SELECT id FROM students
+                WHERE class_id = ?
+            """, (class_id,))
+            return {row[0] for row in self.cursor.fetchall()}
+        elif flag == 'names':
+            self.cursor.execute("""
+                SELECT name, surname FROM students
+                WHERE class_id = ?
+            """, (class_id,))
+            return {f"{row[0]} {row[1]}" for row in self.cursor.fetchall()}
 
-        self.cursor.execute("""
-            SELECT id FROM students
-            WHERE class_id = ?
-        """, (class_id,))
-
-        return {row[0] for row in self.cursor.fetchall()}
 
     def get_students_with_submission(self, work_id):
         self.cursor.execute("""
