@@ -3,7 +3,7 @@ import os
 import json
 import re
 from pathlib import Path
-from Database_Settings_classes import Settings
+from database_and_settings_classes import Settings
 
 
 

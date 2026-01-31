@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from Database_Settings_classes import Database
+from database_and_settings_classes import Database
 
 class Clear:
     ALLOWED_TABLES = {"classes", "works"}

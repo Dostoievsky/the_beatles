@@ -1,11 +1,14 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel,
     QPushButton, QRadioButton, QButtonGroup,
-    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog, QSpinBox, QHBoxLayout, QVBoxLayout
+    QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog, QSpinBox, QHBoxLayout,
+    QVBoxLayout
 )
+from PyQt5.QtCore import Qt, QRegularExpression
+from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import Qt
-from Database_Settings_classes import Settings
+from database_and_settings_classes import Settings
 import random
 from clearmodes import *
 from pathlib import Path
@@ -635,7 +638,7 @@ class ClearDatabaseDialog(QDialog):
 
 class ManualGenerationDialog(QDialog):
 
-    MODE_MANUAL = "Ручная генерация"
+    MODE_MANUAL = "manual"
 
     def __init__(self, classes: list[str], parent=None):
         super().__init__(parent)
@@ -651,12 +654,16 @@ class ManualGenerationDialog(QDialog):
         self.content_layout = QVBoxLayout()
         self.main_layout.addLayout(self.content_layout)
 
+        # --- Кнопка перехода ---
         self.next_button = QPushButton("Далее")
         self.next_button.setFixedHeight(32)
         self.next_button.clicked.connect(self.on_next)
-        self.next_button.setEnabled(True)
         self.main_layout.addWidget(self.next_button, alignment=Qt.AlignRight)
 
+        # --- Валидаторы ---
+        self.int_validator = QIntValidator(1, 10_000, self)
+
+        # --- Общий стиль ---
         self.setStyleSheet("""
             QWidget {
                 background-color: #595e5b;
@@ -683,12 +690,13 @@ class ManualGenerationDialog(QDialog):
                 background-color: #262626;
                 border: 1px solid #444444;
                 border-radius: 3px;
+                padding: 4px;
             }
         """)
 
         self.show_step()
 
-    # ----------------- helpers -----------------
+    # --------------------------------------------------
 
     def clear_content(self):
         while self.content_layout.count():
@@ -699,6 +707,8 @@ class ManualGenerationDialog(QDialog):
     def rebuild(self):
         self.adjustSize()
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+
+    # --------------------------------------------------
 
     def update_next_button_state(self):
         if self.step == 0:
@@ -730,35 +740,27 @@ class ManualGenerationDialog(QDialog):
             else:
                 self.next_button.setEnabled(True)
 
-    # ----------------- steps -----------------
+    # --------------------------------------------------
 
     def add_class_from_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Выберите файл класса")
         if not filename:
             return
 
-        # имя ТОЛЬКО для отображения
-        new_class_name = filename.split("/")[-1].split(".")[0]
+        class_name = filename.split("/")[-1].split(".")[0]
 
-        # проверяем по отображаемым именам
         for btn in self.class_group.buttons():
-            if btn.text() == new_class_name:
+            if btn.text() == class_name:
                 QMessageBox.information(
-                    self,
-                    "Генерация",
-                    f"Класс «{new_class_name}» уже существует"
+                    self, "Генерация",
+                    f"Класс «{class_name}» уже существует"
                 )
                 return
 
-        rb = QRadioButton(new_class_name)
-
-        # 🔥 ВАЖНО: сохраняем полный путь
+        rb = QRadioButton(class_name)
         rb.setProperty("value", filename)
-        rb.setProperty("source", "file")  # необязательно, но полезно
-
         self.class_group.addButton(rb)
 
-        # вставляем радио-кнопку первой
         insert_pos = 0
         for i in range(self.content_layout.count()):
             w = self.content_layout.itemAt(i).widget()
@@ -768,6 +770,9 @@ class ManualGenerationDialog(QDialog):
 
         self.content_layout.insertWidget(insert_pos, rb)
 
+    # --------------------------------------------------
+    # ------------------- ШАГИ -------------------------
+    # --------------------------------------------------
 
     def step_students(self):
         title = QLabel("Ученики и работа")
@@ -776,25 +781,30 @@ class ManualGenerationDialog(QDialog):
 
         self.content_layout.addWidget(QLabel("Название работы:"))
         self.work_name_input = QLineEdit()
+        self.work_name_input.textChanged.connect(self.update_next_button_state)
         self.content_layout.addWidget(self.work_name_input)
 
         self.content_layout.addWidget(QLabel("Выберите класс:"))
         self.class_group = QButtonGroup(self)
+
         for cls in self.classes:
             rb = QRadioButton(cls)
+            rb.setProperty("value", cls)
+            rb.toggled.connect(self.update_next_button_state)
             self.class_group.addButton(rb)
             self.content_layout.addWidget(rb)
 
-        add_class_btn = QPushButton("Добавить класс из файла")
-        add_class_btn.clicked.connect(self.add_class_from_file)
-        self.content_layout.addWidget(add_class_btn)
+        add_btn = QPushButton("Добавить класс из файла")
+        add_btn.clicked.connect(self.add_class_from_file)
+        self.content_layout.addWidget(add_btn)
 
         self.fill_students_cb = QCheckBox("Заполнить файлы учеников")
         self.content_layout.addWidget(self.fill_students_cb)
 
         self.content_layout.addWidget(QLabel("Количество строк (если заполнять):"))
         self.students_lines_input = QLineEdit()
-        self.students_lines_input.setPlaceholderText("Например: 10")
+        self.students_lines_input.setValidator(self.int_validator)
+        self.students_lines_input.textChanged.connect(self.update_next_button_state)
         self.content_layout.addWidget(self.students_lines_input)
 
         self.students_lines_input.setVisible(False)
@@ -820,6 +830,7 @@ class ManualGenerationDialog(QDialog):
 
         self.content_layout.addWidget(QLabel("Количество строк:"))
         self.answers_lines_input = QLineEdit()
+        self.answers_lines_input.setValidator(self.int_validator)
         self.content_layout.addWidget(self.answers_lines_input)
 
         for w in [
@@ -850,7 +861,7 @@ class ManualGenerationDialog(QDialog):
 
         self.content_layout.addWidget(QLabel("Шкала оценки:"))
         self.criteria_scale_input = QLineEdit()
-        self.criteria_scale_input.setPlaceholderText("Например: 5")
+        self.criteria_scale_input.setValidator(self.int_validator)
         self.content_layout.addWidget(self.criteria_scale_input)
 
         for w in [
@@ -891,7 +902,7 @@ class ManualGenerationDialog(QDialog):
         self.next_button.setText("Готово")
         self.update_next_button_state()
 
-    # ----------------- visibility helpers -----------------
+    # --------------------------------------------------
 
     def toggle_widget_visibility(self, widget, state):
         visible = bool(state)
@@ -929,7 +940,7 @@ class ManualGenerationDialog(QDialog):
             w.setVisible(bool(state))
         self.update_next_button_state()
 
-    # ----------------- dispatcher -----------------
+    # --------------------------------------------------
 
     def show_step(self):
         self.clear_content()
@@ -946,7 +957,7 @@ class ManualGenerationDialog(QDialog):
         self.content_layout.addStretch()
         self.rebuild()
 
-    # ----------------- navigation -----------------
+    # --------------------------------------------------
 
     def on_next(self):
         if self.step == 0:
@@ -981,6 +992,7 @@ class ManualGenerationDialog(QDialog):
         self.show_step()
 
 
+
 class FastGenerationDialog(QDialog):
 
     def __init__(self, classes: list[str], parent=None):
@@ -990,18 +1002,28 @@ class FastGenerationDialog(QDialog):
         self.data = {}
 
         self.setWindowTitle("Быстрая генерация")
-        self.setMinimumWidth(450)
-        self.setMinimumHeight(360)
+        self.setMinimumSize(450, 360)
 
         self.main_layout = QVBoxLayout(self)
 
         # --- Название работы ---
         self.main_layout.addWidget(QLabel("Название работы:"))
+
         self.work_name_input = QLineEdit()
+        self.work_name_input.setPlaceholderText("Например: Контрольная №3")
+        self.work_name_input.setMaxLength(60)
+
+        name_regex = QRegularExpression(r"[A-Za-zА-Яа-я0-9 №_\-]+")
+        self.work_name_input.setValidator(
+            QRegularExpressionValidator(name_regex, self)
+        )
+
+        self.work_name_input.textChanged.connect(self.update_state)
         self.main_layout.addWidget(self.work_name_input)
 
         # --- Классы ---
         self.main_layout.addWidget(QLabel("Выберите класс:"))
+
         self.class_layout = QVBoxLayout()
         self.main_layout.addLayout(self.class_layout)
 
@@ -1012,15 +1034,15 @@ class FastGenerationDialog(QDialog):
         self.add_class_btn.clicked.connect(self.add_class_from_file)
         self.main_layout.addWidget(self.add_class_btn)
 
-        # --- Ответы ---
+        # --- Количество строк ---
         self.main_layout.addWidget(QLabel("Количество строк в файле ответов:"))
 
         self.answers_lines = QSpinBox()
         self.answers_lines.setRange(1, 500)
         self.answers_lines.setValue(10)
-        self.main_layout.addWidget(self.answers_lines)
-
         self.answers_lines.valueChanged.connect(self.update_state)
+
+        self.main_layout.addWidget(self.answers_lines)
 
         # --- Кнопки ---
         self.buttons_layout = QHBoxLayout()
@@ -1033,9 +1055,6 @@ class FastGenerationDialog(QDialog):
         self.buttons_layout.addWidget(self.ok_button)
         self.main_layout.addLayout(self.buttons_layout)
 
-        # --- Валидация ---
-        self.work_name_input.textChanged.connect(self.update_state)
-        self.answers_lines.valueChanged.connect(self.update_state)
 
     def _build_class_list(self):
         for i in reversed(range(self.class_layout.count())):
@@ -1056,7 +1075,6 @@ class FastGenerationDialog(QDialog):
 
         name = os.path.splitext(os.path.basename(filename))[0]
 
-        # проверяем по отображаемым именам
         for btn in self.group.buttons():
             if btn.text() == name:
                 QMessageBox.information(self, "Генерация", "Такой класс уже есть")
@@ -1064,13 +1082,11 @@ class FastGenerationDialog(QDialog):
 
         rb = QRadioButton(name)
 
-        # 🔥 сохраняем реальное значение
         rb.setProperty("value", filename)
         rb.setProperty("source", "file")
 
         self.group.addButton(rb)
 
-        # вставляем первой
         self.class_layout.insertWidget(0, rb)
 
 
@@ -1109,7 +1125,7 @@ class FastGenerationDialog(QDialog):
 
 
 class PatternGenerationDialog(QDialog):
-    MODE_PATTERN = "Генерация по паттерну"
+    MODE_PATTERN = "pattern"
 
     def __init__(self, patterns: dict, classes: list[str], manual_dialog_cls, parent=None):
         super().__init__(parent)
@@ -1130,7 +1146,6 @@ class PatternGenerationDialog(QDialog):
 
         self._build_ui()
 
-    # ---------- UI ----------
 
     def _build_ui(self):
         title = QLabel("Выберите паттерн генерации")
@@ -1161,7 +1176,6 @@ class PatternGenerationDialog(QDialog):
         btn.clicked.connect(self.on_accept)
         self.layout.addWidget(btn, alignment=Qt.AlignRight)
 
-    # ---------- Logic ----------
 
     def on_accept(self):
         checked = self.group.checkedButton()
@@ -1169,7 +1183,7 @@ class PatternGenerationDialog(QDialog):
             QMessageBox.information(self, "Паттерны", "Выберите вариант")
             return
 
-        # --- Новый паттерн ---
+        # Логика создания нового паттерна
         if checked is self.rb_new:
             dlg = self.manual_dialog_cls(self.classes, self)
 
@@ -1180,7 +1194,7 @@ class PatternGenerationDialog(QDialog):
                 self.accept()
             return
 
-        # --- Существующий паттерн ---
+        # Если паттерн уже существует
         name = checked.text()
         data = self.patterns[name].copy()
         data["mode"] = self.MODE_PATTERN
@@ -1193,11 +1207,6 @@ class PatternGenerationDialog(QDialog):
 
 
 class GenerationModeDialog(QDialog):
-    """
-    Диалог выбора режима генерации.
-    Никакой логики генерации — только выбор и открытие нужного окна.
-    """
-
     def __init__(self, classes: list, manual_dialog_cls, fast_dialog_cls, pattern_dialog_cls, patterns, parent=None):
         super().__init__(parent)
 
@@ -1214,7 +1223,6 @@ class GenerationModeDialog(QDialog):
 
         self._build_ui()
 
-    # ---------- UI ----------
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -1244,7 +1252,6 @@ class GenerationModeDialog(QDialog):
         btn.clicked.connect(self.on_accept)
         layout.addWidget(btn, alignment=Qt.AlignRight)
 
-    # ---------- Logic ----------
 
     def on_accept(self):
         checked = self.group.checkedButton()

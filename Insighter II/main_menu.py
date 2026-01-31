@@ -5,16 +5,16 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
 from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
-from Parser_Validator_classes import *
-from Database_Settings_classes import *
+from parser_and_validator_classes import *
+from database_and_settings_classes import *
 from checking import *
-from random_file_for_testing import *
+from logger import *
 from clearmodes import *
 import json
 import random
 import traceback
-from usersDialogs import *
-
+from users_dialogs import *
+from generation_classes import *
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -364,18 +364,18 @@ class MainMenu(QWidget):
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_clear_database')
 
-        db = Database()
-        db.connect()
-        cdb = DatabaseChecking(db)
+        dbclr = Database()
+        dbclr.connect()
+        cdb = DatabaseChecking(dbclr)
 
-        dialog = ClearDatabaseDialog(db, cdb, parent=self)
+        dialog = ClearDatabaseDialog(dbclr, cdb, parent=self)
 
         if dialog.exec() != QDialog.Accepted:
             self.show()
             return
 
         data = dialog.data
-        clear = Clear(db)
+        clear = Clear(dbclr)
 
         try:
             if data["mode"] == "Сброс до начальной конфигурации":
@@ -424,14 +424,20 @@ class MainMenu(QWidget):
 
     def run_generation(self):
         self.hide()
-        classes = ['9', '10', '11']
+
+        dbg = Database()
+        dbg.connect()
+        gen_db = DatabaseChecking(dbg)
+        list_of_classes = gen_db.get_classes()
+
+        data_from_patterns = read_pattern()
 
         dialog = GenerationModeDialog(
-            classes=classes,
+            classes=list_of_classes,
             manual_dialog_cls=ManualGenerationDialog,
             fast_dialog_cls=FastGenerationDialog,
             pattern_dialog_cls=PatternGenerationDialog,
-            patterns={},
+            patterns=data_from_patterns,
             parent=self
         )
 
@@ -440,6 +446,20 @@ class MainMenu(QWidget):
             return
 
         data = dialog.data
-        print(data)
+
+        parseui = ParserUIData(data, dbg)
+
+        if parseui.mode == 'manual':
+            parseui.parse_dict_manual()
+        elif parseui.mode == 'fast':
+            parseui.parse_dict_fast()
+
+        parsed_gen_data = parseui.get_data()
+        generator = Generator(parsed_gen_data)
+        generator.run_generation()
+        print(f'Генерация успешно завершена. Все файлы и ппаки сохранены в рабочей директории.')
+
+        if parseui.mode == 'pattern':
+            pass
 
 

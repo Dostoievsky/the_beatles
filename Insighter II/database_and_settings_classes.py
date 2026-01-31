@@ -14,24 +14,6 @@ list_of_json_files = [
     'settings.json'
 ]
 
-def print_menu(strings, text=None, message='Папка пуста.'):
-    if not strings:
-        print(message)
-        print()
-        return None, None
-    if text:
-        print(text)
-    dct = {}
-    for i, string in enumerate(strings, 1):
-        print(f"{string}[{i}]")
-        dct[i] = string
-    chose = input('Введите номер: ')
-    print()
-    try:
-        return dct[int(chose)], chose
-    except:
-        print('Такого значения не существует.')
-        return None, None
 
 def is_first_launch():
     if not os.path.exists(SYSTEM_DIR):
