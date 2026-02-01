@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel,
     QPushButton, QRadioButton, QButtonGroup,
     QScrollArea, QWidget, QSizePolicy, QMessageBox, QCheckBox, QLineEdit, QFileDialog, QSpinBox, QHBoxLayout,
-    QVBoxLayout
+    QVBoxLayout, QInputDialog
 )
 from PyQt5.QtCore import Qt, QRegularExpression
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
@@ -1031,6 +1031,9 @@ class FastGenerationDialog(QDialog):
         self._build_class_list()
 
         self.add_class_btn = QPushButton("Добавить класс из файла")
+        self.add_class_btn.minimumWidth = 200
+        self.add_class_btn.setFixedHeight(30)
+
         self.add_class_btn.clicked.connect(self.add_class_from_file)
         self.main_layout.addWidget(self.add_class_btn)
 
@@ -1125,9 +1128,10 @@ class FastGenerationDialog(QDialog):
 
 
 class PatternGenerationDialog(QDialog):
-    MODE_PATTERN = "pattern"
+    NEW_MODE_PATTERN = "new_pattern"
+    USE_MODE_PATTERN = "use_pattern"
 
-    def __init__(self, patterns: dict, classes: list[str], manual_dialog_cls, parent=None):
+    def __init__(self, patterns, classes, manual_dialog_cls, parent=None):
         super().__init__(parent)
 
         if not isinstance(classes, (list, tuple)):
@@ -1183,21 +1187,51 @@ class PatternGenerationDialog(QDialog):
             QMessageBox.information(self, "Паттерны", "Выберите вариант")
             return
 
-        # Логика создания нового паттерна
+        # --- Создание нового паттерна ---
         if checked is self.rb_new:
             dlg = self.manual_dialog_cls(self.classes, self)
 
-            if dlg.exec():
-                data = dlg.data.copy()
-                data["mode"] = self.MODE_PATTERN
-                self.data = data
-                self.accept()
+            if not dlg.exec():
+                return
+
+            # спрашиваем имя паттерна
+            name, ok = QInputDialog.getText(
+                self,
+                "Новый паттерн",
+                "Введите имя паттерна:"
+            )
+
+            name = name.strip()
+            if not ok or not name:
+                QMessageBox.information(
+                    self,
+                    "Паттерны",
+                    "Имя паттерна не задано"
+                )
+                return
+
+            if name in self.patterns:
+                QMessageBox.information(
+                    self,
+                    "Паттерны",
+                    f"Паттерн «{name}» уже существует"
+                )
+                return
+
+            data = dlg.data.copy()
+            data["mode"] = self.NEW_MODE_PATTERN
+            data["pattern_name"] = name
+
+            self.data = data
+            self.accept()
             return
 
-        # Если паттерн уже существует
+        # --- Использование существующего паттерна ---
         name = checked.text()
         data = self.patterns[name].copy()
-        data["mode"] = self.MODE_PATTERN
+        data["mode"] = self.USE_MODE_PATTERN
+        data["pattern_name"] = name
+
         self.data = data
         self.accept()
 
@@ -1207,7 +1241,7 @@ class PatternGenerationDialog(QDialog):
 
 
 class GenerationModeDialog(QDialog):
-    def __init__(self, classes: list, manual_dialog_cls, fast_dialog_cls, pattern_dialog_cls, patterns, parent=None):
+    def __init__(self, classes, manual_dialog_cls, fast_dialog_cls, pattern_dialog_cls, patterns, parent=None):
         super().__init__(parent)
 
         self.classes = list(classes)

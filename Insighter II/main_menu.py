@@ -126,6 +126,87 @@ class MainMenu(QWidget):
             QPushButton:pressed {
                 background-color: #303b3d;
             }
+            
+            QLineEdit {
+            background-color: #262626;
+            border: 1px solid #444444;
+            border-radius: 3px;
+            }
+            
+            QCheckBox {
+                spacing: 8px;
+                color: #ffffff;
+                font-weight: bold;
+            }
+    
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 2px solid #444444;
+                background-color: #303b3d;
+            }
+    
+            QCheckBox::indicator:hover {
+                border: 2px solid #557A95;
+            }
+    
+            QCheckBox::indicator:checked {
+                background-color: #557A95;
+                border: 2px solid #557A95;
+            }
+    
+            QCheckBox::indicator:checked:hover {
+                background-color: #6fa3c6;
+            }
+    
+            QCheckBox:disabled {
+                color: #888888;
+            }
+    
+            QCheckBox::indicator:disabled {
+                background-color: #222222;
+                border: 2px solid #333333;
+            }
+            
+                QRadioButton {
+            spacing: 8px;
+            color: #ffffff;
+            font-weight: bold;
+            }
+            
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 10px; 
+                border: 2px solid #444444;
+                background-color: #303b3d;
+            }
+            
+            QRadioButton::indicator:hover {
+                border: 2px solid #557A95;
+            }
+            
+            QRadioButton::indicator:checked {
+                background-color: #557A95;
+                border: 2px solid #557A95;
+            }
+            
+            QRadioButton::indicator:checked:hover {
+                background-color: #6fa3c6;
+                border: 2px solid #6fa3c6;
+            }
+            
+            QRadioButton:disabled {
+                color: #888888;
+            }
+            
+            QRadioButton::indicator:disabled {
+                background-color: #222222;
+                border: 2px solid #333333;
+            }
+
+
         """)
 
         self.settings_button.setStyleSheet("""
@@ -446,20 +527,41 @@ class MainMenu(QWidget):
             return
 
         data = dialog.data
+        print(data)
+
+        if data['mode'] == 'use_pattern':
+            generator = Generator(data)
+            generator.run_generation()
+            print(f'Генерация успешно завершена. Все файлы и папки сохранены в рабочей директории.')
+            dbg.close()
+            self.show()
+            return
 
         parseui = ParserUIData(data, dbg)
 
         if parseui.mode == 'manual':
             parseui.parse_dict_manual()
+
         elif parseui.mode == 'fast':
             parseui.parse_dict_fast()
+
+        elif parseui.mode == 'new_pattern':
+            parseui.parse_dict_manual()
+            parsed_gen_data = parseui.get_data()
+            save_pattern(data["pattern_name"], parsed_gen_data)
+            print('Шаблон успешно сохранен, теперь он доступен в меню.')
+            self.show()
+            return
+
+        # не обрабатываем parseui.mode == 'use_pattern', потому что в json данные уже обработаны
 
         parsed_gen_data = parseui.get_data()
         generator = Generator(parsed_gen_data)
         generator.run_generation()
-        print(f'Генерация успешно завершена. Все файлы и ппаки сохранены в рабочей директории.')
+        print(f'Генерация успешно завершена. Все файлы и папки сохранены в рабочей директории.')
+        dbg.close()
+        self.show()
+        return
 
-        if parseui.mode == 'pattern':
-            pass
 
 

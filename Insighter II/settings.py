@@ -95,70 +95,7 @@ class SettingsWindow(QWidget):
 
         self.apply_settings_to_ui()
 
-        self.setStyleSheet("""
-        QWidget {
-            background-color: #595e5b;
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            font-family: "Consolas";
-        }
 
-        QPushButton {
-            border-radius: 10px;
-            background-color: #303b3d;
-        }
-
-        QPushButton:hover {
-            background-color: #557A95;
-        }
-
-        QPushButton:pressed {
-            background-color: #303b3d;
-        }
-        
-        QLineEdit {
-            background-color: #262626;
-            border: 1px solid #444444;
-            border-radius: 3px;
-        }
-        
-        QCheckBox {
-            spacing: 8px;
-            color: #ffffff;
-            font-weight: bold;
-        }
-
-        QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-            border: 2px solid #444444;
-            background-color: #303b3d;
-        }
-
-        QCheckBox::indicator:hover {
-            border: 2px solid #557A95;
-        }
-
-        QCheckBox::indicator:checked {
-            background-color: #557A95;
-            border: 2px solid #557A95;
-        }
-
-        QCheckBox::indicator:checked:hover {
-            background-color: #6fa3c6;
-        }
-
-        QCheckBox:disabled {
-            color: #888888;
-        }
-
-        QCheckBox::indicator:disabled {
-            background-color: #222222;
-            border: 2px solid #333333;
-        }
-        """)
 
     @staticmethod
     def load_settings():
