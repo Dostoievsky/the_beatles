@@ -14,7 +14,8 @@ JSON_FILES = [
     'sys.json',
     'log.json',
     'patterns.json',
-    'settings.json'
+    'settings.json',
+    'config.json'
 ]
 
 DEFAULT_SETTINGS = {
@@ -176,6 +177,9 @@ if is_first_launch():
     settings_path = os.path.join(SYSTEM_DIR, 'settings.json')
     with open(settings_path, 'w', encoding='utf-8') as f:
         json.dump(DEFAULT_SETTINGS, f, indent=4)
+
+    with open(os.path.join(SYSTEM_DIR, 'config.json'), 'w', encoding='utf-8') as f:
+        json.dump({'tg_config': True}, f, indent=4)
 
     window = WelcomeWindow()
 else:

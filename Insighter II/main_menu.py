@@ -1,5 +1,9 @@
+import os
 import os.path
 import sys
+import json
+import random
+import traceback
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QComboBox, QDateEdit,
                              QFileDialog, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt, QDate
@@ -10,11 +14,12 @@ from database_and_settings_classes import *
 from checking import *
 from logger import *
 from clearmodes import *
-import json
-import random
-import traceback
 from users_dialogs import *
 from generation_classes import *
+from tg_bot import *
+from user_dialogs_2 import *
+import threading
+
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -40,6 +45,7 @@ class MainMenu(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.first_run_dialog = None
         self.settings_window = None
         self.rewrite_window = None
         self.setWindowTitle("Main Menu")
@@ -84,6 +90,7 @@ class MainMenu(QWidget):
         self.check_works_button.clicked.connect(self.run_check_works)
         self.clear_button.clicked.connect(self.run_clear_database)
         self.generation_button.clicked.connect(self.run_generation)
+        self.bot_control_button.clicked.connect(self.run_bot_control)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -503,6 +510,7 @@ class MainMenu(QWidget):
         log.log_date('end_function_run_clear_database')
         self.show()
 
+
     def run_generation(self):
         self.hide()
 
@@ -514,7 +522,7 @@ class MainMenu(QWidget):
         data_from_patterns = read_pattern()
 
         dialog = GenerationModeDialog(
-            classes=list_of_classes,
+            classes=([] if not list_of_classes else list_of_classes),
             manual_dialog_cls=ManualGenerationDialog,
             fast_dialog_cls=FastGenerationDialog,
             pattern_dialog_cls=PatternGenerationDialog,
@@ -553,7 +561,6 @@ class MainMenu(QWidget):
             self.show()
             return
 
-        # не обрабатываем parseui.mode == 'use_pattern', потому что в json данные уже обработаны
 
         parsed_gen_data = parseui.get_data()
         generator = Generator(parsed_gen_data)
@@ -562,6 +569,33 @@ class MainMenu(QWidget):
         dbg.close()
         self.show()
         return
+
+
+    def run_bot_control(self):
+        BOT_TOKEN = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
+
+        self.hide()
+
+        if is_tg_first_launch():
+
+            code = str(random.randint(10000, 99999))
+
+            dialog = FirstRunTelegramSetupDialog(code, self)
+            dialog.exec()
+
+            from telegram.bot_service import TelegramBotService
+
+            self.bot_service = TelegramBotService(
+                token=BOT_TOKEN,
+                auth_code=code
+            )
+
+            import threading
+            self.bot_thread = threading.Thread(
+                target=self.bot_service.run,
+                daemon=True
+            )
+            self.bot_thread.start()
 
 
 
