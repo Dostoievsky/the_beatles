@@ -48,6 +48,8 @@ class MainMenu(QWidget):
         self.first_run_dialog = None
         self.settings_window = None
         self.rewrite_window = None
+        self.bot_service = None
+        self.bot_thread = None
         self.setWindowTitle("Main Menu")
         self.resize(550, 340)
 
@@ -574,28 +576,31 @@ class MainMenu(QWidget):
     def run_bot_control(self):
         BOT_TOKEN = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
 
+        if self.bot_thread and self.bot_thread.is_alive():
+            print('Телеграм-бот уже запущен.')
+            self.show()
+            return
+
+
         self.hide()
 
-        if is_tg_first_launch():
 
-            code = str(random.randint(10000, 99999))
+        db = Database()
+        dialog = TelegramControlDialog(db, BOT_TOKEN, parent=self)
+        dialog.exec()
 
-            dialog = FirstRunTelegramSetupDialog(code, self)
-            dialog.exec()
 
-            from telegram.bot_service import TelegramBotService
+        self.bot_service = TelegramBotService(
+            token=BOT_TOKEN,
+            auth_code=""
+        )
 
-            self.bot_service = TelegramBotService(
-                token=BOT_TOKEN,
-                auth_code=code
-            )
-
-            import threading
-            self.bot_thread = threading.Thread(
-                target=self.bot_service.run,
-                daemon=True
-            )
-            self.bot_thread.start()
+        self.bot_thread = threading.Thread(
+            target=self.bot_service.run,
+            daemon=True
+        )
+        self.bot_thread.start()
+        self.show()
 
 
 

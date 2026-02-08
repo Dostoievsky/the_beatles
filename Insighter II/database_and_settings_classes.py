@@ -224,6 +224,15 @@ class Database:
             """, (class_id,))
             return {f"{row[0]} {row[1]}" for row in self.cursor.fetchall()}
 
+    def get_students_with_telegram_ids(self, class_name):
+        class_id = self.get_or_create_class(class_name)
+        self.cursor.execute("""
+            SELECT id, telegram_id
+            FROM students
+            WHERE class_id = ?
+        """, (class_id,))
+        return self.cursor.fetchall()
+
 
     def get_students_with_submission(self, work_id):
         self.cursor.execute("""
