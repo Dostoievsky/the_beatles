@@ -32,6 +32,15 @@ class Database:
         self.conn = None
         self.cursor = None
 
+    def get_class_id(self, class_name):
+        self.cursor.execute("""
+            SELECT id
+            FROM classes
+            WHERE class_name = ?
+        """, (class_name,))
+        row = self.cursor.fetchone()
+        return row[0] if row else None
+
     def connect(self):
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
@@ -158,6 +167,57 @@ class Database:
             return parts[0], parts[1]
         else:
             return parts[0], ""
+
+
+    def find_student_id_by_name(self, class_name, name, surname):
+        class_id = self.get_class_id(class_name)
+        if class_id is None:
+            return None
+
+        name_l = name.strip().lower()
+        surname_l = surname.strip().lower()
+
+        self.cursor.execute("""
+            SELECT id
+            FROM students
+            WHERE class_id = ?
+              AND (
+                (LOWER(TRIM(name)) = ? AND LOWER(TRIM(surname)) = ?)
+                OR (LOWER(TRIM(name)) = ? AND LOWER(TRIM(surname)) = ?)
+              )
+        """, (class_id, name_l, surname_l, surname_l, name_l))
+
+        row = self.cursor.fetchone()
+        return row[0] if row else None
+
+    def upsert_student_telegram_id(self, class_name, name, surname, telegram_id):
+        class_id = self.get_or_create_class(class_name)
+        student_id = self.find_student_id_by_name(class_name, name, surname)
+        if student_id is None:
+            self.cursor.execute("""
+                INSERT INTO students (class_id, name, surname, telegram_id)
+                VALUES (?, ?, ?, ?)
+            """, (class_id, name, surname, telegram_id))
+        else:
+            self.cursor.execute("""
+                UPDATE students
+                SET telegram_id = ?
+                WHERE id = ?
+            """, (telegram_id, student_id))
+        self.conn.commit()
+
+    def delete_student_by_name(self, class_name, name, surname):
+        student_id = self.find_student_id_by_name(class_name, name, surname)
+        if student_id is None:
+            return False
+        self.cursor.execute("""
+            DELETE FROM students
+            WHERE id = ?
+        """, (student_id,))
+        self.conn.commit()
+        return True
+
+
 
     def add_student(self, class_id, name, surname):
         self.cursor.execute("""
