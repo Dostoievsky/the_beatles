@@ -573,8 +573,32 @@ class MainMenu(QWidget):
         return
 
 
+    def run_control_mode(self):
+        db = Database()
+        db.connect()
+        dbc = DatabaseChecking(db)
+        classes = dbc.get_classes() or []
+
+        if not classes:
+            db.close()
+            QMessageBox.information(
+                self,
+                "Нет классов",
+                "У вас нет добавленных классов. Добавьте класс с помощью режима перезаписи"
+            )
+            return
+
+        bot_token = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
+        if self.bot_service is None:
+            self.bot_service = TelegramBotService(token=bot_token, db_path=db.db_path)
+            self.bot_service.start()
+
+        db.close()
+
+        dialog = TelegramControlDialog(classes, self.bot_service, parent=self)
+        dialog.exec()
+
     def run_bot_control(self):
-        BOT_TOKEN = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
-        pass
+        self.run_control_mode()
 
 
