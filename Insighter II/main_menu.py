@@ -93,6 +93,7 @@ class MainMenu(QWidget):
         self.clear_button.clicked.connect(self.run_clear_database)
         self.generation_button.clicked.connect(self.run_generation)
         self.bot_control_button.clicked.connect(self.run_bot_control)
+        self.random_call_button.clicked.connect(self.run_random_call)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -515,14 +516,15 @@ class MainMenu(QWidget):
 
     def run_generation(self):
         self.hide()
-
+        log = Logger(Settings.developer_mode)
+        log.log_date('start_function_run_generation')
         dbg = Database()
         dbg.connect()
         gen_db = DatabaseChecking(dbg)
         list_of_classes = gen_db.get_classes()
-
+        log.log('list_of_classes', list_of_classes)
         data_from_patterns = read_pattern()
-
+        log.log('data_from_patterns', data_from_patterns)
         dialog = GenerationModeDialog(
             classes=([] if not list_of_classes else list_of_classes),
             manual_dialog_cls=ManualGenerationDialog,
@@ -537,9 +539,10 @@ class MainMenu(QWidget):
             return
 
         data = dialog.data
-        print(data)
+        log.log('dialog_data', data)
 
         if data['mode'] == 'use_pattern':
+            log.log('mode', 'use_pattern')
             generator = Generator(data)
             generator.run_generation()
             print(f'Генерация успешно завершена. Все файлы и папки сохранены в рабочей директории.')
@@ -550,12 +553,15 @@ class MainMenu(QWidget):
         parseui = ParserUIData(data, dbg)
 
         if parseui.mode == 'manual':
+            log.log('mode', 'manual')
             parseui.parse_dict_manual()
 
         elif parseui.mode == 'fast':
+            log.log('mode', 'fast')
             parseui.parse_dict_fast()
 
         elif parseui.mode == 'new_pattern':
+            log.log('mode', 'new_pattern')
             parseui.parse_dict_manual()
             parsed_gen_data = parseui.get_data()
             save_pattern(data["pattern_name"], parsed_gen_data)
@@ -570,14 +576,19 @@ class MainMenu(QWidget):
         print(f'Генерация успешно завершена. Все файлы и папки сохранены в рабочей директории.')
         dbg.close()
         self.show()
+        log.log_date('end_function_run_generation')
         return
 
 
-    def run_control_mode(self):
+    def run_bot_control(self):
+        self.hide()
+        log = Logger(Settings().developer_mode)
+        log.log_date('start_function_run_bot_control')
         db = Database()
         db.connect()
         dbc = DatabaseChecking(db)
         classes = dbc.get_classes() or []
+        log.log('classes', classes)
 
         if not classes:
             db.close()
@@ -586,19 +597,26 @@ class MainMenu(QWidget):
                 "Нет классов",
                 "У вас нет добавленных классов. Добавьте класс с помощью режима перезаписи"
             )
+            log.log('no_classes_error', True)
             return
+        try:
+            bot_token = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
+            if self.bot_service is None:
+                self.bot_service = TelegramBotService(token=bot_token, db_path=db.db_path)
+                self.bot_service.start()
 
-        bot_token = '8529361701:AAHNWQ0KZDRHOr2-0GfdmMNhAsrO8bFe_sM'
-        if self.bot_service is None:
-            self.bot_service = TelegramBotService(token=bot_token, db_path=db.db_path)
-            self.bot_service.start()
+            db.close()
 
-        db.close()
+            dialog = TelegramControlDialog(classes, self.bot_service, parent=self)
+            dialog.exec()
+        except Exception as e:
+            print('Вероятно, бот потерял соединение с сервером. Проверьте интернет.')
+            log.log('error', e)
+        finally:
+            log.log_date('end_function_run_bot_control')
+            self.show()
 
-        dialog = TelegramControlDialog(classes, self.bot_service, parent=self)
-        dialog.exec()
-
-    def run_bot_control(self):
-        self.run_control_mode()
+    def run_random_call(self):
+        pass
 
 
