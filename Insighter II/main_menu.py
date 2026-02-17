@@ -17,7 +17,8 @@ from clearmodes import *
 from users_dialogs import *
 from generation_classes import *
 from tg_bot import *
-from user_dialogs_2 import *
+from tg_dialogs import *
+from random_call_dialog import *
 import threading
 
 
@@ -617,6 +618,15 @@ class MainMenu(QWidget):
             self.show()
 
     def run_random_call(self):
-        pass
+        classes_students = {
+            "9в": ['Аиша Муратова', 'Владимир Еремин', 'Фёдор Филатов', 'Александра Беляева', 'Максим Кузнецов',
+                  'Ксения Максимова', 'Елизавета Федорова', 'Мария Соколова', 'Кира Воробьева', 'Тимур Аксенов',
+                   'Лев Калинин', 'Ева Никонова', 'Фёдор Яковлев', 'Ксения Никифорова', 'Максим Евдокимов', 'Таисия Сергеева', 'Алина Большакова', 'Григорий Басов', 'Мария Белова', 'Анна Герасимова', 'Мирослава Савельева', 'Даниил Кондратов', 'Михаил Смирнов', 'Даниил Иванов', 'Леонид Назаров', 'Милана Литвинова', 'Дарья Королева', 'Марьям Лебедева', 'Николай Второй', 'Алексей Семихатов']}
+        if not classes_students:
+            QMessageBox.warning(self, "Нет классов", "У вас нет классов")
+            return
+
+        dialog = RandomCallDialog(classes_students, self)
+        dialog.exec_()
 
 
