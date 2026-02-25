@@ -2,7 +2,7 @@ import os
 import random
 
 
-file_puples = "puples8v.txt"
+file_puples = "students_9v.txt"
 names_of_work = ["Тестовая работа 1", "Контрольная работа 5", "Каторжная работа 3"]
 len_answers = 10
 make_files_bool = True

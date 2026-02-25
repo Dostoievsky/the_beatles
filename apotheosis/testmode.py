@@ -56,7 +56,7 @@ class Generator:
                 file.write(f"{idx}) {answer}\n")
 
 # Пример использования
-gen = Generator('Чтонибудь', 'puples8v.txt', 'answers.txt')
+gen = Generator('Чтонибудь', 'students_9v.txt', 'answers.txt')
 gen.generate_dir()
 gen.generate_student_files()
 

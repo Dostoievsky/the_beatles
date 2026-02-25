@@ -255,12 +255,11 @@ class ClearDatabaseDialog(QDialog):
 
     RESET_MODE = "Сброс до начальной конфигурации"
 
-    def __init__(self, db, cdb, parent=None):
+    def __init__(self, db, parent=None):
         super().__init__(parent)
 
         self.timer_label = None
         self.db = db
-        self.cdb = cdb
 
         self.step = 0
         self.data = {}
@@ -475,7 +474,7 @@ class ClearDatabaseDialog(QDialog):
             self.content_layout.addWidget(rb)
 
     def step_choose_class(self):
-        classes = self.cdb.get_classes()
+        classes = self.db.get_classes()
         if not classes:
             QMessageBox.information(self, "Очистка", "Классов нет.")
             self.reject()
@@ -490,7 +489,7 @@ class ClearDatabaseDialog(QDialog):
             self.content_layout.addWidget(rb)
 
     def step_choose_work(self):
-        works = self.cdb.get_works_by_class(self.data["class"], status='*')
+        works = self.db.get_works_by_class(self.data["class"], status='*')
         if not works:
             QMessageBox.information(self, "Очистка", "Работ нет.")
             self.reject()
@@ -503,6 +502,7 @@ class ClearDatabaseDialog(QDialog):
             rb = QRadioButton(w[3])
             self.group.addButton(rb)
             self.content_layout.addWidget(rb)
+
 
     def step_confirm(self):
         title = QLabel("Подтверждение действия")

@@ -399,6 +399,7 @@ if mainchoose in dct_variants['check_works']: #проверка работ
         marks_dct = m.get_marks()
     except ValueError as e:
         print(e)
+        raise
         sys.exit()
 
     for k, v in puples_dct.items(): #заполнение экземпляров класса Student оценками
@@ -914,7 +915,8 @@ elif mainchoose in dct_variants['generate']:
             g.create_missings_file()
 
 
-        print(f'Генерация файлов прошла успешно. Создана папка {name_of_work} с файлами учеников, файлы marks.txt, missings.txt и answers.txt с шаблонами.')
+        print(f'Генерация файлов прошла успешно.\nСоздана папка {name_of_work} с файлами учеников, файлы marks.txt, '
+              f'missings.txt и answers.txt с шаблонами.')
 
     elif genchoose in ('1', 'генерация с ручной настройкой'):
         print('Вы находитесь в режиме ручной настройки генерации. ')

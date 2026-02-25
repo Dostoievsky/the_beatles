@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
 from parser_and_validator_classes import *
-from database_and_settings_classes import *
+from database_and_settings_classes import Settings, is_first_launch
 from checking import *
 from logger import *
 from clearmodes import *
@@ -20,7 +20,7 @@ from tg_bot import *
 from tg_dialogs import *
 from random_call_dialog import *
 import threading
-
+from test_db import Database
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -350,16 +350,16 @@ class MainMenu(QWidget):
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_check_works')
 
-        database_for_func = Database()
-        cdb = DatabaseChecking(database_for_func)
-        database_for_func.connect()
+        db = Database()
+        db.connect()
 
-        dialog = CheckWorksDialog(cdb, parent=self)
+        dialog = CheckWorksDialog(db, parent=self)
 
         if dialog.exec() != QDialog.Accepted:
             self.setEnabled(True)
             self.show()
             log.log_date('dialog_rejected')
+            db.close()
             return
 
         chosen_class_name = dialog.data["class"]
@@ -370,7 +370,7 @@ class MainMenu(QWidget):
         log.log('chosen_work', chosen_work)
         log.log('chosed_sort_mode', chosed_sort_mode)
 
-        big_data = cdb.get_all_data(
+        big_data = db.get_all_data(
             chosen_class_name,
             chosen_work.split(' за ')[0]
         )
@@ -378,8 +378,11 @@ class MainMenu(QWidget):
         chck = Checking(big_data)
         chck.parse_big_data()
         parsed_data = chck.checking_works()
-        list_of_absents_names = chck.get_absents(database_for_func)
+        log.log('parsed_data', parsed_data)
+
+        list_of_absents_names = chck.get_absents(db)
         final_dict = chck.get_grades(parsed_data)
+        log.log('final_dict', final_dict)
 
         dict_for_write = {}
         absents_dict = {}
@@ -401,13 +404,13 @@ class MainMenu(QWidget):
 
         dict_for_write.update(absents_dict)
 
-        database_for_func.connect()
-        cdb.save_final_results(
+        db.save_final_results(
             chosen_class_name,
             chosen_work.split(' за ')[0].strip(),
             final_dict
         )
-        cdb.set_work_status_by_name(
+
+        db.set_work_status_by_name(
             chosen_class_name,
             chosen_work.split(' за ')[0].strip(),
             'checked'
@@ -439,6 +442,7 @@ class MainMenu(QWidget):
             print('Неправильный формат файла.')
             self.setEnabled(True)
             self.show()
+            db.close()
             return
 
         print(f'Файл успешно сохранен по пути: {full_path}.')
@@ -446,9 +450,9 @@ class MainMenu(QWidget):
         if open_file:
             os.startfile(full_path)
 
+        db.close()
         self.setEnabled(True)
         self.show()
-        return
 
 
     def run_clear_database(self):
@@ -456,18 +460,18 @@ class MainMenu(QWidget):
         log = Logger(Settings().developer_mode)
         log.log_date('start_function_run_clear_database')
 
-        dbclr = Database()
-        dbclr.connect()
-        cdb = DatabaseChecking(dbclr)
+        db = Database()
+        db.connect()
 
-        dialog = ClearDatabaseDialog(dbclr, cdb, parent=self)
+        dialog = ClearDatabaseDialog(db, parent=self)
 
         if dialog.exec() != QDialog.Accepted:
             self.show()
+            db.close()
             return
 
         data = dialog.data
-        clear = Clear(dbclr)
+        clear = Clear(db)
 
         try:
             if data["mode"] == "Сброс до начальной конфигурации":
@@ -493,15 +497,17 @@ class MainMenu(QWidget):
                     clear.delete_by_field(table, "class_name", data["class"])
                     print("Класс удалён.")
 
-
                 elif table == "works":
                     class_name = data["class"]
                     work_name = data["work"]
-                    class_id = cdb.get_class_id_by_name(class_name)
+
+                    class_id = db.get_class_id(class_name)
                     if class_id is None:
                         print(f"Класс '{class_name}' не найден")
                         self.show()
+                        db.close()
                         return
+
                     clear.delete_work(class_id, work_name)
                     print("Работа удалена.")
 
@@ -511,6 +517,7 @@ class MainMenu(QWidget):
             if Settings().show_warnings:
                 raise
 
+        db.close()
         log.log_date('end_function_run_clear_database')
         self.show()
 
@@ -521,8 +528,7 @@ class MainMenu(QWidget):
         log.log_date('start_function_run_generation')
         dbg = Database()
         dbg.connect()
-        gen_db = DatabaseChecking(dbg)
-        list_of_classes = gen_db.get_classes()
+        list_of_classes = dbg.get_classes()
         log.log('list_of_classes', list_of_classes)
         data_from_patterns = read_pattern()
         log.log('data_from_patterns', data_from_patterns)
@@ -587,8 +593,7 @@ class MainMenu(QWidget):
         log.log_date('start_function_run_bot_control')
         db = Database()
         db.connect()
-        dbc = DatabaseChecking(db)
-        classes = dbc.get_classes() or []
+        classes = db.get_classes() or []
         log.log('classes', classes)
 
         if not classes:
@@ -617,16 +622,33 @@ class MainMenu(QWidget):
             log.log_date('end_function_run_bot_control')
             self.show()
 
+
     def run_random_call(self):
-        classes_students = {
-            "9в": ['Аиша Муратова', 'Владимир Еремин', 'Фёдор Филатов', 'Александра Беляева', 'Максим Кузнецов',
-                  'Ксения Максимова', 'Елизавета Федорова', 'Мария Соколова', 'Кира Воробьева', 'Тимур Аксенов',
-                   'Лев Калинин', 'Ева Никонова', 'Фёдор Яковлев', 'Ксения Никифорова', 'Максим Евдокимов', 'Таисия Сергеева', 'Алина Большакова', 'Григорий Басов', 'Мария Белова', 'Анна Герасимова', 'Мирослава Савельева', 'Даниил Кондратов', 'Михаил Смирнов', 'Даниил Иванов', 'Леонид Назаров', 'Милана Литвинова', 'Дарья Королева', 'Марьям Лебедева', 'Николай Второй', 'Алексей Семихатов']}
+        self.hide()
+        log = Logger(Settings().developer_mode)
+        log.log_date('start_function_run_random_call')
+        db = Database()
+        db.connect()
+        all_classes = db.get_classes()
+        log.log('all_classes', all_classes)
+        classes_students = {}
+
+        for class_name in all_classes:
+            students_of_class = db.get_students_of_class(class_name, mode='names')
+            log.log('students_of_class', students_of_class)
+            classes_students[str(class_name)] = list(students_of_class)
+            log.log('classes_students', classes_students)
+
+
         if not classes_students:
             QMessageBox.warning(self, "Нет классов", "У вас нет классов")
+            log.log_date('no_classes_error', True)
             return
 
         dialog = RandomCallDialog(classes_students, self)
         dialog.exec_()
+        log.log_date('end_function_run_random_call')
+
+        self.show()
 
 

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import re
-from database_and_settings_classes import Database
+from test_db import Database
 import json
 
 class ParserUIData:
@@ -26,7 +26,7 @@ class ParserUIData:
         elif Path(str(self.data_dict['class'])).is_file():
             self._class = list(self.parse_class_file(self.data_dict['class']))
         else:
-            self._class = list(self.gen_db.get_students_of_class(self.data_dict['class'], flag='names'))
+            self._class = list(self.gen_db.get_students_of_class(self.data_dict['class'], mode='names'))
         self._student_files_fill = (self.data_dict['students_lines'] if self.data_dict['fill_students'] else False)
         self._answers_file_create = (self.data_dict['answers_name'] if self.data_dict['answers'] else False)
         self._answers_file_fill = (self.data_dict['answers_lines'] if self.data_dict['answers'] else False)
