@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QRegularExpression
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import Qt
-from database_and_settings_classes import Settings
+from settings_class import Settings
 import random
 from clearmodes import *
 from pathlib import Path
@@ -248,7 +248,6 @@ class CheckWorksDialog(QDialog):
 
         self.layout.addWidget(yes)
         self.layout.addWidget(no)
-
 
 
 class ClearDatabaseDialog(QDialog):
@@ -635,7 +634,6 @@ class ClearDatabaseDialog(QDialog):
                 self.accept()
 
 
-
 class ManualGenerationDialog(QDialog):
 
     MODE_MANUAL = "manual"
@@ -643,6 +641,18 @@ class ManualGenerationDialog(QDialog):
     def __init__(self, classes: list[str], parent=None):
         super().__init__(parent)
 
+        self.absents_name_input = None
+        self.absents_cb = None
+        self.criteria_scale_input = None
+        self.criteria_name_input = None
+        self.criteria_cb = None
+        self.answers_lines_input = None
+        self.answers_name_input = None
+        self.answers_cb = None
+        self.students_lines_input = None
+        self.fill_students_cb = None
+        self.class_group = None
+        self.work_name_input = None
         self.classes = classes.copy()
         self.step = 0
         self.data = {}
@@ -696,7 +706,6 @@ class ManualGenerationDialog(QDialog):
 
         self.show_step()
 
-    # --------------------------------------------------
 
     def clear_content(self):
         while self.content_layout.count():
@@ -992,7 +1001,6 @@ class ManualGenerationDialog(QDialog):
         self.show_step()
 
 
-
 class FastGenerationDialog(QDialog):
 
     def __init__(self, classes: list[str], parent=None):
@@ -1102,7 +1110,7 @@ class FastGenerationDialog(QDialog):
 
     def on_accept(self):
         checked = self.group.checkedButton()
-        class_value = checked.property("value") if checked else None
+        class_value = checked.property("value") or checked.text()
 
         self.data = {
             'mode': 'fast',
@@ -1234,10 +1242,6 @@ class PatternGenerationDialog(QDialog):
 
         self.data = data
         self.accept()
-
-
-
-
 
 
 class GenerationModeDialog(QDialog):

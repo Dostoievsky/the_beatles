@@ -1,4 +1,5 @@
 import csv
+from itertools import zip_longest
 
 class Checking:
     def __init__(self, big_data):
@@ -37,15 +38,26 @@ class Checking:
 
         for student_id, data in self.students_dct.items():
             count = 0
-            for a, r in zip(data["answers"].split(','), right):
-                if a.strip() == r.strip():
+            stat_dct = {}
+
+            student_answers = data["answers"].split(',')
+
+            for q_id, (st, rt) in enumerate(zip_longest(student_answers, right, fillvalue=""), 1):
+                st_clean = st.strip()
+                rt_clean = rt.strip()
+
+                if st_clean == rt_clean:
                     count += 1
+                    stat_dct[q_id] = True
+                else:
+                    stat_dct[q_id] = False
 
             result[student_id] = {
                 "score": count,
                 "tg_id": data["tg_id"],
                 "name": data["name"],
-                "surname": data["surname"]
+                "surname": data["surname"],
+                "stat": stat_dct
             }
 
         return result

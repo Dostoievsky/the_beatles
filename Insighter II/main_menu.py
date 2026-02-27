@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt, QDate
 from window_for_rewrite import WindowForRewrite
 from settings import SettingsWindow
 from parser_and_validator_classes import *
-from database_and_settings_classes import Settings, is_first_launch
+from settings_class import Settings, is_first_launch
 from checking import *
 from logger import *
 from clearmodes import *
@@ -20,7 +20,9 @@ from tg_bot import *
 from tg_dialogs import *
 from random_call_dialog import *
 import threading
-from test_db import Database
+from database_class import Database
+from settings_class import Settings
+from statistic_classes import *
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -95,6 +97,7 @@ class MainMenu(QWidget):
         self.generation_button.clicked.connect(self.run_generation)
         self.bot_control_button.clicked.connect(self.run_bot_control)
         self.random_call_button.clicked.connect(self.run_random_call)
+        self.statistics_button.clicked.connect(self.run_statistics)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -382,6 +385,7 @@ class MainMenu(QWidget):
 
         list_of_absents_names = chck.get_absents(db)
         final_dict = chck.get_grades(parsed_data)
+        print(final_dict)
         log.log('final_dict', final_dict)
 
         dict_for_write = {}
@@ -404,22 +408,15 @@ class MainMenu(QWidget):
 
         dict_for_write.update(absents_dict)
 
-        db.save_final_results(
-            chosen_class_name,
-            chosen_work.split(' за ')[0].strip(),
-            final_dict
-        )
+        db.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
 
-        db.set_work_status_by_name(
-            chosen_class_name,
-            chosen_work.split(' за ')[0].strip(),
-            'checked'
-        )
+        work_name = chosen_work.split(' за ')[0].strip()
+        work_id = db.get_work_id_by_class_and_name(chosen_class_name, work_name)
+        db.save_statistics_results(work_id, final_dict)
 
-        wonderful_sorted_dict = chck.sort_data(
-            dict_for_write,
-            chosed_sort_mode
-        )
+        db.set_work_status_by_name(chosen_class_name, chosen_work.split(' за ')[0].strip(),'checked')
+
+        wonderful_sorted_dict = chck.sort_data(dict_for_write, chosed_sort_mode)
 
         chosed_format = dialog.data["format"]
         open_file = dialog.data["open_file"]
@@ -652,3 +649,20 @@ class MainMenu(QWidget):
         self.show()
 
 
+    def run_statistics(self):
+        self.hide()
+
+        classes = ["9А", "10Б", "11В"]
+        works = {
+            "9А": ["Физика: Лаба №1", "Физика: Лаба №2"],
+            "10Б": ["Химия: Опыты"],
+            "11В": ["Математика: Тест"]
+        }
+
+        dialog = SelectionDialog(self, classes, works)
+        if dialog.exec_():
+            data = dialog.get_data()
+            print(f"Результат: {data}")
+
+        self.show()
+        return

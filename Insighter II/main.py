@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from PyQt5.QtWidgets import QApplication
 from start_window import *
-from database_and_settings_classes import *
+from settings_class import *
 from main_menu import *
 
 SYSTEM_DIR = os.path.join(os.getcwd(), 'system_files')

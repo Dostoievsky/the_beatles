@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import re
-from test_db import Database
+from database_class import Database
 import json
 
 class ParserUIData:
@@ -42,7 +42,7 @@ class ParserUIData:
         elif Path(self.data_dict['class']).is_file():
             self._class = list(self.parse_class_file(self.data_dict['class']))
         else:
-            self._class = list(self.gen_db.get_students_of_class(self.data_dict['class'], flag='names'))
+            self._class = list(self.gen_db.get_students_of_class(self.data_dict['class'], mode='names'))
         self._student_files_fill = self.data_dict['students_lines']
         self._answers_file_create = 'answers.txt'
         self._answers_file_fill = self.data_dict['answers_lines']
@@ -112,7 +112,7 @@ class Generator:
         os.makedirs(path, exist_ok=True)
         for student in self.plan_data['_class']:
             name, surname = map(lambda x: x.strip().lower(), student.split(' '))
-            student_file_path = os.path.join(path, f'{name}_{surname}.txt')
+            student_file_path = os.path.join(path, f'{surname}_{name}.txt')
             with open(student_file_path, 'w', encoding='utf_8') as file:
                 if self.plan_data['_student_files_fill']:
                     for i in range(1, int(self.plan_data['_student_files_fill']) + 1):
