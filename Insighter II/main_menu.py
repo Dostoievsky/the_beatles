@@ -22,7 +22,8 @@ from random_call_dialog import *
 import threading
 from database_class import Database
 from settings_class import Settings
-from statistic_classes import *
+from statistics_dialogs import *
+from statistics_class import StatisticsParser
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -65,8 +66,8 @@ class MainMenu(QWidget):
         self.rewrite_button = QPushButton("Перезапись данных", self)
         self.generation_button = QPushButton("Генерация", self)
         self.search_button = QPushButton("Поиск по работам", self)
-        self.statistics_button = QPushButton("Статистика по работам", self)
-        self.comparison_button = QPushButton("Сравнение работ", self)
+        self.statistics_class_button = QPushButton("Статистика по работам", self)
+        self.statistics_student_button = QPushButton("Статистика по ученику", self)
         self.import_button = QPushButton("Импорт данных", self)
         self.export_button = QPushButton("Экспорт данных", self)
         self.bot_control_button = QPushButton("Управление телеграм-ботом", self)
@@ -81,8 +82,8 @@ class MainMenu(QWidget):
         self.rewrite_button.setFixedSize(230, 60)
         self.generation_button.setFixedSize(230, 60)
         self.search_button.setFixedSize(230, 60)
-        self.statistics_button.setFixedSize(230, 60)
-        self.comparison_button.setFixedSize(230, 60)
+        self.statistics_class_button.setFixedSize(230, 60)
+        self.statistics_student_button.setFixedSize(230, 60)
         self.import_button.setFixedSize(230, 60)
         self.export_button.setFixedSize(230, 60)
         self.bot_control_button.setFixedSize(230, 60)
@@ -97,14 +98,14 @@ class MainMenu(QWidget):
         self.generation_button.clicked.connect(self.run_generation)
         self.bot_control_button.clicked.connect(self.run_bot_control)
         self.random_call_button.clicked.connect(self.run_random_call)
-        self.statistics_button.clicked.connect(self.run_statistics)
+        self.statistics_class_button.clicked.connect(self.run_statistics)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
         grid.addWidget(self.generation_button, 1, 2)
         grid.addWidget(self.search_button, 2, 0)
-        grid.addWidget(self.statistics_button, 2, 1)
-        grid.addWidget(self.comparison_button, 2, 2)
+        grid.addWidget(self.statistics_class_button, 2, 1)
+        grid.addWidget(self.statistics_student_button, 2, 2)
         grid.addWidget(self.import_button, 3, 0)
         grid.addWidget(self.export_button, 3, 1)
         grid.addWidget(self.bot_control_button, 3, 2)
@@ -652,17 +653,40 @@ class MainMenu(QWidget):
     def run_statistics(self):
         self.hide()
 
-        classes = ["9А", "10Б", "11В"]
-        works = {
-            "9А": ["Физика: Лаба №1", "Физика: Лаба №2"],
-            "10Б": ["Химия: Опыты"],
-            "11В": ["Математика: Тест"]
-        }
+        db = Database()
+        db.connect()
 
-        dialog = SelectionDialog(self, classes, works)
+        classes = db.get_classes()
+        works_dict = {}
+        for class_name in classes:
+            list_of_works = [l[3] for l in db.get_works_by_class(class_name, status='checked')]
+            dct = {}
+            for work in list_of_works:
+                dct[work] = db.get_date_of_work(class_name, work)
+            works_dict[class_name] = dct
+
+        dialog = SelectionDialog(self, classes, works_dict)
         if dialog.exec_():
-            data = dialog.get_data()
-            print(f"Результат: {data}")
+            dialog_data = dialog.get_data()
+        print(dialog_data)
+
+        klass = dialog_data['class']
+        works = dialog_data['works']
+        flag_format = dialog_data['same_format']
+        flag_plots = dialog_data['build_plots']
+
+        if len(works) == 1:
+            res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+            stats = StatisticsParser(res_dct, grades_dct)
+            print(res_dct, grades_dct)
+
+        # for work in works:
+        #     res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+        #     stats = StatisticsParser(res_dct, grades_dct)
+        #     print(res_dct, grades_dct)
+
+
+        db.close()
 
         self.show()
         return

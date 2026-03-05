@@ -518,6 +518,46 @@ class Database:
         self.conn.commit()
 
 
+    def get_data_for_statistics(self, work_name: str, class_name: str):
+        class_id = self.get_class_id(class_name)
+        work_id = self.get_work_id(class_id, work_name)
+
+        query = """
+            SELECT s.name, s.surname, sub.id, r.grade
+            FROM students s
+            LEFT JOIN submissions sub ON s.id = sub.student_id AND sub.work_id = ?
+            LEFT JOIN results r ON sub.id = r.submission_id
+            WHERE s.class_id = ?
+        """
+
+        self.cursor.execute(query, (work_id, class_id))
+        rows = self.cursor.fetchall()
+
+        res_dct = {}
+        grades_dct = {}
+
+        for name, surname, sub_id, grade in rows:
+            full_name = f"{name} {surname}"
+
+            grades_dct[full_name] = grade
+
+            if sub_id is not None:
+                self.cursor.execute("""
+                    SELECT task_id, is_correct FROM task_results
+                    WHERE submission_id = ?
+                """, (sub_id,))
+                tasks = self.cursor.fetchall()
+                res_dct[full_name] = {t_id: bool(corr) for t_id, corr in tasks}
+            else:
+                res_dct[full_name] = {}
+
+        return res_dct, grades_dct
 
 
-
+    def get_date_of_work(self, class_name, work_name):
+        class_id = self.get_class_id(class_name)
+        self.cursor.execute("""
+            SELECT work_date FROM works
+            WHERE class_id = ? AND work_name = ?
+        """, (class_id, work_name))
+        return self.cursor.fetchone()[0]
