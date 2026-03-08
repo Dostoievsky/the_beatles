@@ -561,3 +561,22 @@ class Database:
             WHERE class_id = ? AND work_name = ?
         """, (class_id, work_name))
         return self.cursor.fetchone()[0]
+
+
+    def get_total_students(self, class_name):
+        class_id = self.get_class_id(class_name)
+        self.cursor.execute("""
+            SELECT COUNT(*) AS total FROM STUDENTS
+            WHERE class_id = ?
+        """, (class_id,))
+        return self.cursor.fetchone()[0]
+
+    def get_absents(self, class_name, work_name):
+        class_id = self.get_class_id(class_name)
+        work_id = self.get_work_id(work_name)
+        self.cursor.execute("""
+            SELECT absents
+            FROM classes JOIN works ON classes.id = works.class_id
+            WHERE classes.id = ? and works.id = ?       
+        """, class_id, work_id)
+        return self.cursor.fetchone()[0]

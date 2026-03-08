@@ -652,11 +652,13 @@ class MainMenu(QWidget):
 
     def run_statistics(self):
         self.hide()
-
+        log = Logger(Settings.developer_mode)
+        log.log_date('start_function_statistics')
         db = Database()
         db.connect()
 
         classes = db.get_classes()
+        log.log('classes', classes)
         works_dict = {}
         for class_name in classes:
             list_of_works = [l[3] for l in db.get_works_by_class(class_name, status='checked')]
@@ -664,26 +666,68 @@ class MainMenu(QWidget):
             for work in list_of_works:
                 dct[work] = db.get_date_of_work(class_name, work)
             works_dict[class_name] = dct
+        log.log('works_dict', works_dict)
+
 
         dialog = SelectionDialog(self, classes, works_dict)
         if dialog.exec_():
             dialog_data = dialog.get_data()
-        print(dialog_data)
+        log.log('dialog_data', dialog_data)
 
         klass = dialog_data['class']
         works = dialog_data['works']
+        file_name = dialog_data['journal_path']
         flag_format = dialog_data['same_format']
         flag_plots = dialog_data['build_plots']
+        total_students = db.get_total_students(klass)
 
-        if len(works) == 1:
+        log.log('klass', klass)
+        log.log('works', works)
+        log.log('file_name', file_name)
+        log.log('flag_format', flag_format)
+        log.log('flag_plots', flag_plots)
+        log.log('total_students', total_students)
+
+        if len(works) == 1 and not file_name:
             res_dct, grades_dct = db.get_data_for_statistics(work, klass)
             stats = StatisticsParser(res_dct, grades_dct)
-            print(res_dct, grades_dct)
+            avg = stats.get_average()
+            median = stats.get_median()
+            grades_distribution = stats.get_grades_distribution()
+            best_students, worst_students = stats.get_the_best_the_worst_students_results()
+            students_distribution = stats.convertage_to_percentages(total_students)
+            recomendations = stats.get_recomdendations_standart()
+            concp1, concp2 = stats.grades_dict, students_distribution
+            conclusion = stats.get_brief_conclusion(concp1, concp2)
+            absents = db
 
-        # for work in works:
-        #     res_dct, grades_dct = db.get_data_for_statistics(work, klass)
-        #     stats = StatisticsParser(res_dct, grades_dct)
-        #     print(res_dct, grades_dct)
+            log.log('res_dct', res_dct)
+            log.log('grades_dct', grades_dct)
+            log.log('avg', avg)
+            log.log('median', median)
+            log.log('grades_distribution', grades_distribution)
+            log.log('best_students', best_students)
+            log.log('worst_students', worst_students)
+            log.log('students_distribution', students_distribution)
+            log.log('recomendations', recomendations)
+            log.log('concp1', concp1)
+            log.log('concp2', concp2)
+            log.log('conclusion', conclusion)
+
+            if Settings.saving_statistics_in_unque_files:
+                file_name = f'Статистика (без журнала) по классу {klass} по работе {work}.txt'
+            else:
+                file_name = 'Статистика.txt'
+            path = os.path.join(os.getcwd(), file_name) if not Settings.saving_all_files_in_one_folder else (os.path.join(Settings.saving_all_files_in_one_folder, file_name))
+            log.log('path', path)
+
+            with open(path, 'w', encoding='utf-8') as stat_file:
+                print(f'Статистика (без журнала) по классу {klass} по работе {work}')
+                print()
+                print(f'Средний балл по классу: {avg}')
+                print(f'Медианный балл по классу: {median}')
+                print(f'Отсутствоваших учеников: ')
+
 
 
         db.close()
