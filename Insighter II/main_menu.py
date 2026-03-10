@@ -302,7 +302,6 @@ class MainMenu(QWidget):
             dtb.set_absents_for_work(work_id, class_name, absents_ids)
 
 
-            dtb.close()
             data['absents_file'] = 'auto'
             save_sys_json(data)
             print('Данные успешно сохранены.')
@@ -408,7 +407,7 @@ class MainMenu(QWidget):
             }
 
         dict_for_write.update(absents_dict)
-
+        db.connect()
         db.save_final_results(chosen_class_name, chosen_work.split(' за ')[0].strip(), final_dict)
 
         work_name = chosen_work.split(' за ')[0].strip()
@@ -688,47 +687,144 @@ class MainMenu(QWidget):
         log.log('flag_plots', flag_plots)
         log.log('total_students', total_students)
 
-        if len(works) == 1 and not file_name:
-            res_dct, grades_dct = db.get_data_for_statistics(work, klass)
-            stats = StatisticsParser(res_dct, grades_dct)
-            avg = stats.get_average()
-            median = stats.get_median()
-            grades_distribution = stats.get_grades_distribution()
-            best_students, worst_students = stats.get_the_best_the_worst_students_results()
-            students_distribution = stats.convertage_to_percentages(total_students)
-            recomendations = stats.get_recomdendations_standart()
-            concp1, concp2 = stats.grades_dict, students_distribution
-            conclusion = stats.get_brief_conclusion(concp1, concp2)
-            absents = db
+        res_dct, grades_dct = db.get_data_for_statistics(work, klass)
 
+
+        if len(works) == 1 and not file_name:
+            stats = StatisticsParser(res_dct, grades_dct)
             log.log('res_dct', res_dct)
             log.log('grades_dct', grades_dct)
+            avg = stats.get_average()
             log.log('avg', avg)
+            median = stats.get_median()
             log.log('median', median)
+            grades_distribution = stats.get_grades_distribution()
             log.log('grades_distribution', grades_distribution)
+            best_students, worst_students = stats.get_the_best_the_worst_students_results()
             log.log('best_students', best_students)
             log.log('worst_students', worst_students)
-            log.log('students_distribution', students_distribution)
+            tasks_distribution = stats.convertage_to_percentages(total_students)
+            log.log('tasks_distribution', tasks_distribution)
+            recomendations = stats.get_recomdendations_standart(tasks_distribution)
             log.log('recomendations', recomendations)
+            concp1, concp2 = stats.grades_dict, tasks_distribution
             log.log('concp1', concp1)
             log.log('concp2', concp2)
+            conclusion = stats.get_brief_conclusion(concp1, concp2)
             log.log('conclusion', conclusion)
+            absents_not_parsed = db.get_absents(klass, work)
+            best_result, worst_results = stats.get_best_worst_results()
+            log.log('best_results', best_result)
+            log.log('worst_results', worst_results)
+            absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+            log.log('absents', absents)
 
             if Settings.saving_statistics_in_unque_files:
                 file_name = f'Статистика (без журнала) по классу {klass} по работе {work}.txt'
             else:
                 file_name = 'Статистика.txt'
-            path = os.path.join(os.getcwd(), file_name) if not Settings.saving_all_files_in_one_folder else (os.path.join(Settings.saving_all_files_in_one_folder, file_name))
+            path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+                os.path.join(Settings().saving_all_files_in_one_folder, file_name))
             log.log('path', path)
 
             with open(path, 'w', encoding='utf-8') as stat_file:
-                print(f'Статистика (без журнала) по классу {klass} по работе {work}')
-                print()
-                print(f'Средний балл по классу: {avg}')
-                print(f'Медианный балл по классу: {median}')
-                print(f'Отсутствоваших учеников: ')
+                print(f'Статистика (без журнала) по классу {klass} по работе "{work}"', file=stat_file)
+                print(file=stat_file)
+                print(f'Средний балл по классу: {avg}', file=stat_file)
+                print(f'Медианный балл по классу: {median}', file=stat_file)
+                print(f'Отсутствоваших учеников: {absents}', file=stat_file)
+                print(file=stat_file)
+                print('Распределение оценок по классу:', file=stat_file)
+                for k, v in grades_distribution.items():
+                    print(f'Оценок {k}: {v}', file=stat_file)
+                print(f'Больше всего оценок: {grades_distribution[max(grades_distribution.keys())]}', file=stat_file)
+                print(file=stat_file)
+                print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
+                print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
+                print(f'Лучший результат по классу: оценка {best_result[1]} за [{best_result[0]}] правильных ответов', file=stat_file)
+                print(f'Худший результат по классу: оценка {worst_results[1]} за [{worst_results[0]}] правильных ответов', file=stat_file)
+                print(file=stat_file)
+                print('Вы не загружали файл журнала, программа дает краткие рекомендации по заданиям, основываясь только на результатах этой работы', file=stat_file)
+                for k, v in tasks_distribution.items():
+                    print(f'В {k} задании {v}% правильных ответов', file=stat_file)
+                print(file=stat_file)
+                for rec in recomendations:
+                    print(rec, file=stat_file)
+                print(file=stat_file)
+                print(conclusion, file=stat_file)
+            print(f'Файл успешно сгенерирован по пути: {path}')
 
 
+        elif len(works) == 1 and file_name:
+            stats = StatisticsParser(res_dct, grades_dct, file_name)
+
+            avg = stats.get_average()
+            log.log('avg', avg)
+            median = stats.get_median()
+            log.log('median', median)
+            grades_distribution = stats.get_grades_distribution()
+            log.log('grades_distribution', grades_distribution)
+            best_students, worst_students = stats.get_the_best_the_worst_students_results()
+            log.log('best_students', best_students)
+            log.log('worst_students', worst_students)
+            tasks_distribution = stats.convertage_to_percentages(total_students)
+            log.log('tasks_distribution', tasks_distribution)
+            absents_not_parsed = db.get_absents(klass, work)
+            log.log('absents_not_parsed', absents_not_parsed)
+            best_result, worst_results = stats.get_best_worst_results()
+            log.log('best_result', best_result)
+            log.log('worst_results', worst_results)
+            absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+            log.log('absents', absents)
+            pr1, pr2 = stats.get_distribution_tasks_strong_weak_students(), stats.get_strong_weak_students()[1]
+            log.log('pr1', pr1)
+            log.log('pr2', pr2)
+            recomedations = stats.get_recomdendations_deep(pr1, pr2)
+            log.log('recomedations', recomedations)
+            p1, p2, p3 = stats.grades_dict, stats.get_distribution_tasks_strong_weak_students(), stats.get_strong_weak_students()[0]
+            log.log('p1', p1)
+            log.log('p2', p2)
+            log.log('p3', p3)
+            p4, p5 = stats.tasks_dict, stats.get_strong_weak_students()[1]
+            log.log('p4', p4)
+            log.log('p5', p5)
+            conclusion = stats.get_extended_analysis(p1, p2, p3, p4, p5)
+            log.log('conclusion', conclusion)
+
+            if Settings.saving_statistics_in_unque_files:
+                file_name = f'Статистика (c журналом) по классу {klass} по работе {work}.txt'
+            else:
+                file_name = 'Статистика.txt'
+            path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+                os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+            log.log('path', path)
+
+            with open(path, 'w', encoding='utf-8') as stat_file:
+                print(f'Статистика (с журналом) по классу {klass} по работе "{work}"', file=stat_file)
+                print(file=stat_file)
+                print(f'Средний балл по классу: {avg}', file=stat_file)
+                print(f'Медианный балл по классу: {median}', file=stat_file)
+                print(f'Отсутствоваших учеников: {absents}', file=stat_file)
+                print(file=stat_file)
+                print('Распределение оценок по классу:', file=stat_file)
+                for k, v in grades_distribution.items():
+                    print(f'Оценок {k}: {v}', file=stat_file)
+                print(f'Больше всего оценок: {grades_distribution[max(grades_distribution.keys())]}', file=stat_file)
+                print(file=stat_file)
+                print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
+                print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
+                print(f'Лучший результат по классу: оценка {best_result[1]} за [{best_result[0]}] правильных ответов', file=stat_file)
+                print(f'Худший результат по классу: оценка {worst_results[1]} за [{worst_results[0]}] правильных ответов', file=stat_file)
+                print(file=stat_file)
+                print('Вы загрузили файл журнала, поэтому программа дает подробные рекомендации по заданиям, основываясь на предыдущей успеваемости учеников', file=stat_file)
+                for k, v in tasks_distribution.items():
+                    print(f'В {k} задании {v}% правильных ответов', file=stat_file)
+                print(file=stat_file)
+                for rec in recomedations:
+                    print(rec, file=stat_file)
+                print(file=stat_file)
+                print(conclusion, file=stat_file)
+            print(f'Файл успешно сгенерирован по пути: {path}')
 
         db.close()
 

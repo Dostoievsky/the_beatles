@@ -573,10 +573,10 @@ class Database:
 
     def get_absents(self, class_name, work_name):
         class_id = self.get_class_id(class_name)
-        work_id = self.get_work_id(work_name)
+        work_id = self.get_work_id(class_id, work_name)
         self.cursor.execute("""
             SELECT absents
             FROM classes JOIN works ON classes.id = works.class_id
             WHERE classes.id = ? and works.id = ?       
-        """, class_id, work_id)
+        """, (class_id, work_id))
         return self.cursor.fetchone()[0]
