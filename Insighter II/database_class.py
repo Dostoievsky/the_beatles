@@ -579,4 +579,7 @@ class Database:
             FROM classes JOIN works ON classes.id = works.class_id
             WHERE classes.id = ? and works.id = ?       
         """, (class_id, work_id))
-        return self.cursor.fetchone()[0]
+        res = self.cursor.fetchone()
+        if not res:
+            return
+        return res[0]

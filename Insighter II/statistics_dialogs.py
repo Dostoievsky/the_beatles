@@ -9,7 +9,9 @@ from PyQt5.QtCore import Qt, QDate
 class SelectionDialog(QDialog):
     def __init__(self, parent, classes_list, works_dict):
         super().__init__(parent)
+        self._syncing = False
         self.btn_file = None
+        self._syncing = False
         self.btn_done = None
         self.cb_plots = None
         self.cb_same = None
@@ -204,34 +206,67 @@ class SelectionDialog(QDialog):
             self.btn_file.setText(f"Файл выбран")
             self.btn_file.setToolTip(file_path)
 
+    # В __init__ добавь:
+
+
+    # Перепиши эти три метода:
+
     def sync_dates(self):
         if self._syncing: return
         self._syncing = True
-        sel = []
+
+        # Блокируем сигналы виджетов дат, чтобы их изменение не вызывало sync_works
+        self.date_start.blockSignals(True)
+        self.date_end.blockSignals(True)
+
+        selected_dates = []
         for i in range(self.work_list_widget.count()):
             it = self.work_list_widget.item(i)
             if it.checkState() == Qt.Checked:
-                sel.append(QDate.fromString(it.data(Qt.UserRole), "yyyy-MM-dd"))
-        if sel:
-            self.date_start.setDate(min(sel))
-            self.date_end.setDate(max(sel))
+                # Принудительно приводим к строке на случай особенностей PyQt
+                date_str = str(it.data(Qt.UserRole))
+                qd = QDate.fromString(date_str, "yyyy-MM-dd")
+                if qd.isValid():
+                    selected_dates.append(qd)
+
+        if selected_dates:
+            self.date_start.setDate(min(selected_dates))
+            self.date_end.setDate(max(selected_dates))
+
+        self.date_start.blockSignals(False)
+        self.date_end.blockSignals(False)
         self._syncing = False
 
     def sync_works(self):
         if self._syncing: return
         self._syncing = True
-        s, e = self.date_start.date(), self.date_end.date()
+
+        # Блокируем сигналы списка, чтобы изменение чекбоксов не вызывало sync_dates
+        self.work_list_widget.blockSignals(True)
+
+        s_date = self.date_start.date()
+        e_date = self.date_end.date()
+
         for i in range(self.work_list_widget.count()):
             it = self.work_list_widget.item(i)
-            dt = QDate.fromString(it.data(Qt.UserRole), "yyyy-MM-dd")
-            it.setCheckState(Qt.Checked if s <= dt <= e else Qt.Unchecked)
+            date_str = str(it.data(Qt.UserRole))
+            dt = QDate.fromString(date_str, "yyyy-MM-dd")
+
+            if dt.isValid():
+                # Если дата работы входит в диапазон — чекаем, если нет — снимаем
+                it.setCheckState(Qt.Checked if s_date <= dt <= e_date else Qt.Unchecked)
+
+        self.work_list_widget.blockSignals(False)
         self._syncing = False
         self.validate_done_button()
 
     def validate_done_button(self):
-        has_selection = any(self.work_list_widget.item(i).checkState() == Qt.Checked
-                            for i in range(self.work_list_widget.count()))
-        self.btn_done.setEnabled(has_selection)
+        # Эта функция простая, её можно оставить, но убедись, что она видит изменения
+        count = 0
+        for i in range(self.work_list_widget.count()):
+            if self.work_list_widget.item(i).checkState() == Qt.Checked:
+                count += 1
+        self.btn_done.setEnabled(count > 0)
 
     def finish(self):
         selected_names = []

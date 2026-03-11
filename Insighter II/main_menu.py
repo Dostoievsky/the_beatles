@@ -694,6 +694,7 @@ class MainMenu(QWidget):
             stats = StatisticsParser(res_dct, grades_dct)
             log.log('res_dct', res_dct)
             log.log('grades_dct', grades_dct)
+
             avg = stats.get_average()
             log.log('avg', avg)
             median = stats.get_median()
@@ -737,7 +738,7 @@ class MainMenu(QWidget):
                 print('Распределение оценок по классу:', file=stat_file)
                 for k, v in grades_distribution.items():
                     print(f'Оценок {k}: {v}', file=stat_file)
-                print(f'Больше всего оценок: {grades_distribution[max(grades_distribution.keys())]}', file=stat_file)
+                print(f'Больше всего оценок: {max(grades_distribution, key=grades_distribution.get)}', file=stat_file)
                 print(file=stat_file)
                 print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
                 print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
@@ -757,7 +758,10 @@ class MainMenu(QWidget):
 
         elif len(works) == 1 and file_name:
             stats = StatisticsParser(res_dct, grades_dct, file_name)
-
+            log.log('res_dct', res_dct)
+            log.log('grades_dct', grades_dct)
+            print(res_dct)
+            print(grades_dct)
             avg = stats.get_average()
             log.log('avg', avg)
             median = stats.get_median()
@@ -776,7 +780,9 @@ class MainMenu(QWidget):
             log.log('worst_results', worst_results)
             absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
             log.log('absents', absents)
-            pr1, pr2 = stats.get_distribution_tasks_strong_weak_students(), stats.get_strong_weak_students()[1]
+            pr1 = {int(k): {int(ik): iv for ik, iv in v.items()} for k, v in stats.get_distribution_tasks_strong_weak_students().items()}
+            pr2 = {int(k): v for k, v in stats.get_strong_weak_students()[1].items()}
+            print(pr1)
             log.log('pr1', pr1)
             log.log('pr2', pr2)
             recomedations = stats.get_recomdendations_deep(pr1, pr2)
@@ -809,7 +815,7 @@ class MainMenu(QWidget):
                 print('Распределение оценок по классу:', file=stat_file)
                 for k, v in grades_distribution.items():
                     print(f'Оценок {k}: {v}', file=stat_file)
-                print(f'Больше всего оценок: {grades_distribution[max(grades_distribution.keys())]}', file=stat_file)
+                print(f'Больше всего оценок: {max(grades_distribution, key=grades_distribution.get)}', file=stat_file)
                 print(file=stat_file)
                 print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
                 print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)

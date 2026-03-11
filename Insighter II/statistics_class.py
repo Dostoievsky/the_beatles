@@ -11,9 +11,14 @@ class StatisticsParser:
         self.file_name = file_name
 
     @staticmethod
-    def fix_fio_spacing(text):
+    def normalize_name(name):
+        parts = name.strip().split()
+        parts.sort()
+        return " ".join(parts)
+
+    def fix_fio_spacing(self, text):
         fixed_text = re.sub(r'([а-яё])(?=[А-ЯЁ])', r'\1 ', text)
-        return fixed_text.strip()
+        return self.normalize_name(fixed_text.strip())
 
     def get_file_results(self):
         if not self.file_name:
@@ -146,13 +151,19 @@ class StatisticsParser:
 
         counts = Counter(dct.values())
         total_distr = {i: counts.get(i, 0) for i in range(6)}
-
+        print()
+        print(dct, total_distr)
         return dct, total_distr
 
 
     def get_distribution_tasks_strong_weak_students(self):
         students_avg_distr = self.get_strong_weak_students()[0]
         task_distr = self.tasks_dict
+        print(task_distr.values())
+        print(f"DEBUG: task_distr type: {type(task_distr)}")
+        if task_distr:
+            first_val = next(iter(task_distr.values()))
+            print(f"DEBUG: first value type: {type(first_val)}, value: {first_val}")
         any_student_tasks = next(iter(task_distr.values())).keys()
 
         result = {}
@@ -163,10 +174,11 @@ class StatisticsParser:
             for student_name, tasks in task_distr.items():
                 if student_name in students_avg_distr:
                     strength_index = students_avg_distr[student_name]
+                    print(f"DEBUG: Looking for {task_id} (type {type(task_id)}) in {tasks.keys()} (types {[type(k) for k in tasks.keys()]})")
                     if tasks.get(task_id):
                         distr[strength_index] += 1
             result[task_id] = distr
-
+        print(result)
         return result
 
 
@@ -222,9 +234,12 @@ class StatisticsParser:
 
         for task_id, stats in tasks_stats.items():
             solved_0 = stats.get(0, 0)
-            solved_weak = sum(stats.get(g, 0) for g in weak_groups)
-            solved_med = sum(stats.get(g, 0) for g in med_groups)
-            solved_strong = sum(stats.get(g, 0) for g in strong_groups)
+            # solved_weak = sum(stats.get(g, 0) for g in weak_groups)
+            # solved_med = sum(stats.get(g, 0) for g in med_groups)
+            # solved_strong = sum(stats.get(g, 0) for g in strong_groups)
+            solved_weak = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in weak_groups)
+            solved_med = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in med_groups)
+            solved_strong = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in strong_groups)
 
             solved_total = solved_0 + solved_weak + solved_med + solved_strong
 
@@ -354,7 +369,7 @@ class StatisticsParser:
 
         for name, grade in grades.items():
             idx = student_indices.get(name, 0)
-            if grade > idx and idx != 0:
+            if grade > idx != 0:
                 better_than_usual.append(name)
             if idx >= 4 and grade <= 3:
                 worse_than_usual.append(name)
@@ -383,7 +398,7 @@ class StatisticsParser:
 
         return res.strip()
 
-
+#
 # tasks_dict1 = {
 #     'Андреева Софья': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: False, 8: True, 9: False, 10: True},
 #     'Афанасов Дмитрий': {1: False, 2: True, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: True, 10: False},
@@ -423,10 +438,17 @@ class StatisticsParser:
 #     'Чернова Василиса': 4  # 6 True
 # }
 #
+# t = {'Софья Андреева': {1: False, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Дмитрий Афанасов': {1: False, 2: True, 3: True, 4: True, 5: False, 6: False, 7: False, 8: True, 9: True, 10: True}, 'Матвей Бокарев': {1: False, 2: False, 3: False, 4: True, 5: False, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Елисей Бугров': {1: True, 2: True, 3: True, 4: True, 5: False, 6: False, 7: True, 8: False, 9: True, 10: True}, 'Маргарита Горовая': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: False, 8: True, 9: False, 10: False}, 'Тимофей Гусев': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Вячеслав Калашников': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Никита Корсаков': {1: False, 2: True, 3: True, 4: True, 5: False, 6: True, 7: True, 8: True, 9: False, 10: False}, 'Варвара Котлячкова': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: False, 9: False, 10: False}, 'Татьяна Левкович': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: True, 9: False, 10: True}, 'Рауль Масимов': {1: False, 2: True, 3: True, 4: False, 5: False, 6: False, 7: False, 8: False, 9: True, 10: True}, 'Виктория Нахина': {1: True, 2: False, 3: True, 4: False, 5: False, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Матвей Некрасов': {1: False, 2: True, 3: True, 4: True, 5: True, 6: False, 7: False, 8: False, 9: True, 10: False}, 'Елизавета Нечаева': {1: False, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: True, 9: False, 10: True}, 'Надежда Попцова': {1: True, 2: False, 3: False, 4: True, 5: True, 6: True, 7: True, 8: True, 9: True, 10: True}, 'Матвей Сироткин': {1: True, 2: True, 3: True, 4: False, 5: True, 6: False, 7: False, 8: True, 9: False, 10: False}, 'Виктория Смирнова': {1: False, 2: True, 3: False, 4: True, 5: False, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Михаил Соколов': {1: True, 2: False, 3: False, 4: True, 5: False, 6: False, 7: True, 8: True, 9: True, 10: True}, 'Дмитрий Стулихин': {1: True, 2: True, 3: True, 4: False, 5: True, 6: False, 7: True, 8: False, 9: True, 10: True}, 'Ксения Сырова': {1: True, 2: True, 3: True, 4: True, 5: True, 6: True, 7: False, 8: False, 9: True, 10: False}, 'Лилия Трофимова': {1: True, 2: True, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: False, 10: False}, 'Анастасия Хромова': {1: False, 2: False, 3: False, 4: True, 5: True, 6: False, 7: False, 8: True, 9: True, 10: False}, 'Андрей Цветков': {1: False, 2: False, 3: True, 4: True, 5: False, 6: False, 7: False, 8: True, 9: False, 10: True}, 'Василиса Чернова': {1: True, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: False, 9: True, 10: True}}
+# t1 = {'Софья Андреева': 3, 'Дмитрий Афанасов': 3, 'Матвей Бокарев': 2, 'Елисей Бугров': 3, 'Маргарита Горовая': 2, 'Тимофей Гусев': 3, 'Вячеслав Калашников': 3, 'Никита Корсаков': 3, 'Варвара Котлячкова': 2, 'Татьяна Левкович': 3, 'Рауль Масимов': 2, 'Виктория Нахина': 3, 'Матвей Некрасов': 2, 'Елизавета Нечаева': 3, 'Надежда Попцова': 4, 'Матвей Сироткин': 2, 'Виктория Смирнова': 3, 'Михаил Соколов': 3, 'Дмитрий Стулихин': 3, 'Ксения Сырова': 3, 'Лилия Трофимова': 2, 'Анастасия Хромова': 2, 'Андрей Цветков': 2, 'Василиса Чернова': 3}
+#
+#
+#
 # path = r'D:\pythonProject\Insighter II\Распечатка КЖ 8а Информатика П1.xlsx'
 # total = 30
 #
 # st = StatisticsParser(tasks_dict1, res_dict, path)
+# st = StatisticsParser(t, t1, path)
+
 # print(st.get_average())
 # print(st.get_median())
 # print(st.get_grades_distribution())
