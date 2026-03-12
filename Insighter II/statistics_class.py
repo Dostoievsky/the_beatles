@@ -129,41 +129,44 @@ class StatisticsParser:
 
 
     def get_strong_weak_students(self):
-        dct = {}
+        journal_indices = {}
         students_avg_dict = self.get_file_results()
-
         for student, data in students_avg_dict.items():
             strong_index = data['avg_score']
             total_grades = data['total_grades'] if data['total_grades'] < 6 else 6
 
             if strong_index >= 4.85 and total_grades == 6:
-                dct[student] = 5
+                journal_indices[student] = 5
             elif strong_index >= 4.5 and total_grades in [3, 4, 5, 6]:
-                dct[student] = 4
+                journal_indices[student] = 4
             elif strong_index >= 3.7 and total_grades in [3, 4, 5, 6]:
-                dct[student] = 3
+                journal_indices[student] = 3
             elif strong_index >= 3.0 and total_grades in [3, 4, 5, 6]:
-                dct[student] = 2
+                journal_indices[student] = 2
             elif strong_index >= 2.0 and total_grades in [3, 4, 5, 6]:
-                dct[student] = 1
+                journal_indices[student] = 1
             else:
-                dct[student] = 0
+                journal_indices[student] = 0
 
-        counts = Counter(dct.values())
+        # Добавляем всех учеников из работы, для неизвестных ставим 0
+        all_indices = {}
+        for student in self.tasks_dict.keys():
+            norm_student = self.fix_fio_spacing(student)  # нормализуем имя для поиска
+            if norm_student in journal_indices:
+                all_indices[student] = journal_indices[norm_student]
+            else:
+                all_indices[student] = 0  # ученик не найден в журнале
+
+        counts = Counter(all_indices.values())
         total_distr = {i: counts.get(i, 0) for i in range(6)}
-        print()
-        print(dct, total_distr)
-        return dct, total_distr
+        return all_indices, total_distr
 
 
     def get_distribution_tasks_strong_weak_students(self):
         students_avg_distr = self.get_strong_weak_students()[0]
         task_distr = self.tasks_dict
-        print(task_distr.values())
-        print(f"DEBUG: task_distr type: {type(task_distr)}")
         if task_distr:
-            first_val = next(iter(task_distr.values()))
-            print(f"DEBUG: first value type: {type(first_val)}, value: {first_val}")
+            _ = next(iter(task_distr.values()))
         any_student_tasks = next(iter(task_distr.values())).keys()
 
         result = {}
@@ -174,11 +177,9 @@ class StatisticsParser:
             for student_name, tasks in task_distr.items():
                 if student_name in students_avg_distr:
                     strength_index = students_avg_distr[student_name]
-                    print(f"DEBUG: Looking for {task_id} (type {type(task_id)}) in {tasks.keys()} (types {[type(k) for k in tasks.keys()]})")
                     if tasks.get(task_id):
                         distr[strength_index] += 1
             result[task_id] = distr
-        print(result)
         return result
 
 
@@ -214,71 +215,87 @@ class StatisticsParser:
 
     @staticmethod
     def get_recomdendations_deep(tasks_stats, group_counts):
+        """
+        :param tasks_stats: dict {номер_задания: {группа: количество_решивших}}
+        :param group_counts: dict {группа: общее_количество_учеников}
+        """
         total_all = sum(group_counts.values())
-
         if total_all == 0:
             return ["Нет данных об учениках"]
-
-        if group_counts.get(0, 0) > total_all / 2:
-            return None
 
         weak_groups = [1, 2]
         med_groups = [3]
         strong_groups = [4, 5]
+        unknown_group = [0]
 
         count_weak = sum(group_counts.get(g, 0) for g in weak_groups)
         count_med = sum(group_counts.get(g, 0) for g in med_groups)
         count_strong = sum(group_counts.get(g, 0) for g in strong_groups)
+        count_unknown = sum(group_counts.get(g, 0) for g in unknown_group)
 
         recommendations = []
 
         for task_id, stats in tasks_stats.items():
-            solved_0 = stats.get(0, 0)
-            # solved_weak = sum(stats.get(g, 0) for g in weak_groups)
-            # solved_med = sum(stats.get(g, 0) for g in med_groups)
-            # solved_strong = sum(stats.get(g, 0) for g in strong_groups)
-            solved_weak = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in weak_groups)
-            solved_med = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in med_groups)
-            solved_strong = sum(stats.get(g, 0) or stats.get(str(g), 0) for g in strong_groups)
+            solved_weak = sum(stats.get(g, 0) for g in weak_groups)
+            solved_med = sum(stats.get(g, 0) for g in med_groups)
+            solved_strong = sum(stats.get(g, 0) for g in strong_groups)
+            solved_unknown = sum(stats.get(g, 0) for g in unknown_group)
 
-            solved_total = solved_0 + solved_weak + solved_med + solved_strong
+            solved_total = solved_weak + solved_med + solved_strong + solved_unknown
+
+            rate_weak = solved_weak / count_weak if count_weak > 0 else 0
+            rate_med = solved_med / count_med if count_med > 0 else 0
+            rate_strong = solved_strong / count_strong if count_strong > 0 else 0
 
             p_total = round((solved_total / total_all) * 100)
-            p_weak_med = round(((solved_weak + solved_med) / total_all) * 100)
+            p_weak = round((solved_weak / total_all) * 100)
+            p_med = round((solved_med / total_all) * 100)
             p_strong = round((solved_strong / total_all) * 100)
+            p_unknown = round((solved_unknown / total_all) * 100)
 
-            stats_str = f"Решили: {p_total}% класса, из которых {p_weak_med}% слабых и средних и {p_strong}% сильных."
+            stats_parts = []
+            if count_weak > 0:
+                stats_parts.append(f"слабые – {solved_weak}/{count_weak} ({p_weak}%)")
+            if count_med > 0:
+                stats_parts.append(f"средние – {solved_med}/{count_med} ({p_med}%)")
+            if count_strong > 0:
+                stats_parts.append(f"сильные – {solved_strong}/{count_strong} ({p_strong}%)")
+            if count_unknown > 0:
+                stats_parts.append(f"мало данных – {solved_unknown}/{count_unknown} ({p_unknown}%)")
 
-            rate_weak = (solved_weak / count_weak) if count_weak > 0 else 0
-            rate_med = (solved_med / count_med) if count_med > 0 else 0
-            rate_strong = (solved_strong / count_strong) if count_strong > 0 else 0
+            stats_str = f"Решили всего: {solved_total}/{total_all} ({p_total}%). " + "Из них: " + ", ".join(stats_parts) + "."
 
-            # 1. Аномалия (Списывание)
-            if rate_weak > rate_strong + 0.3 and rate_weak > 0.5:
-                rec = "Внимание: подозрение на списывание или некорректную формулировку. Сильные ученики справились хуже слабых."
-            # 2. Аномалия (Подвох)
-            elif rate_strong < rate_med - 0.2:
-                rec = "Внимание: задание 'с подвохом'. Самые сильные ученики ошибаются чаще средних. Проверьте формулировку."
-            # 3. Слишком легкое
-            elif (solved_total / total_all) > 0.85:
-                rec = "Задание слишком легкое. Почти все группы справились. Не подходит для дифференциации."
-            # 4. Слишком сложное
-            elif (solved_total / total_all) < 0.1:
-                rec = "Задание практически нерешаемое для текущего состава. Требуется разбор темы с нуля."
-            # 5. Идеальное дифференцирующее
-            elif rate_strong > 0.7 and rate_weak < 0.3:
-                rec = "Отличное задание. Четко разделяет сильных и слабых учеников. Рекомендуется для контрольных."
-            # 6. Сложное, но качественное
-            elif rate_strong > 0.4 and rate_weak < 0.15:
-                rec = "Задание повышенной сложности. Подходит для отбора претендентов на '5'."
-            # 7. Среднее задание
-            elif 0.3 <= (solved_total / total_all) <= 0.75:
+
+            if rate_weak > rate_strong + 0.3 and rate_weak > 0.5 and count_weak > 0 and count_strong > 0:
+                rec = "Подозрение на списывание или некорректную формулировку: слабые ученики справились значительно лучше сильных."
+
+            elif rate_strong < rate_med - 0.2 and count_med > 0 and count_strong > 0:
+                rec = "Задание 'с подвохом': сильные ученики ошибаются чаще средних. Проверьте формулировку."
+
+            elif p_total > 85:
+                rec = "Задание слишком лёгкое: почти все справились. Не подходит для дифференциации."
+
+            elif p_total < 15:
+                rec = "Задание практически нерешаемое: требуется разбор темы с нуля."
+
+            elif rate_strong > 0.7 and rate_weak < 0.3 and rate_med < 0.6:
+                rec = "Отличное задание: чётко разделяет сильных и слабых. Рекомендуется для контрольных."
+
+            elif rate_strong > 0.4 and rate_weak < 0.2 and rate_med < 0.5:
+                rec = "Задание повышенной сложности: подходит для отбора претендентов на '5'."
+
+            elif 30 <= p_total <= 75:
                 rec = "Стандартное задание средней сложности. Хорошо подходит для текущей проверки знаний."
-            # 8. Нет данных
+
+            elif max(rate_weak, rate_med, rate_strong) - min(rate_weak, rate_med, rate_strong) < 0.2:
+                rec = "Задание со слабой дифференциацией: все группы справились примерно одинаково."
+
             elif solved_total == 0:
                 rec = "Данных по решению задания нет."
+
             else:
                 rec = "Задание со специфическим распределением. Требуется ручной просмотр."
+
             recommendations.append(f"Задание {task_id}: {stats_str} {rec}")
 
         return recommendations

@@ -385,7 +385,6 @@ class MainMenu(QWidget):
 
         list_of_absents_names = chck.get_absents(db)
         final_dict = chck.get_grades(parsed_data)
-        print(final_dict)
         log.log('final_dict', final_dict)
 
         dict_for_write = {}
@@ -720,7 +719,7 @@ class MainMenu(QWidget):
             absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
             log.log('absents', absents)
 
-            if Settings.saving_statistics_in_unque_files:
+            if Settings().saving_statistics_in_unque_files:
                 file_name = f'Статистика (без журнала) по классу {klass} по работе {work}.txt'
             else:
                 file_name = 'Статистика.txt'
@@ -755,13 +754,15 @@ class MainMenu(QWidget):
                 print(conclusion, file=stat_file)
             print(f'Файл успешно сгенерирован по пути: {path}')
 
+            if Settings().automatically_file_opening:
+                os.startfile(path)
+
+
 
         elif len(works) == 1 and file_name:
             stats = StatisticsParser(res_dct, grades_dct, file_name)
             log.log('res_dct', res_dct)
             log.log('grades_dct', grades_dct)
-            print(res_dct)
-            print(grades_dct)
             avg = stats.get_average()
             log.log('avg', avg)
             median = stats.get_median()
@@ -782,7 +783,6 @@ class MainMenu(QWidget):
             log.log('absents', absents)
             pr1 = {int(k): {int(ik): iv for ik, iv in v.items()} for k, v in stats.get_distribution_tasks_strong_weak_students().items()}
             pr2 = {int(k): v for k, v in stats.get_strong_weak_students()[1].items()}
-            print(pr1)
             log.log('pr1', pr1)
             log.log('pr2', pr2)
             recomedations = stats.get_recomdendations_deep(pr1, pr2)
@@ -797,7 +797,8 @@ class MainMenu(QWidget):
             conclusion = stats.get_extended_analysis(p1, p2, p3, p4, p5)
             log.log('conclusion', conclusion)
 
-            if Settings.saving_statistics_in_unque_files:
+
+            if Settings().saving_statistics_in_unque_files:
                 file_name = f'Статистика (c журналом) по классу {klass} по работе {work}.txt'
             else:
                 file_name = 'Статистика.txt'
@@ -830,7 +831,16 @@ class MainMenu(QWidget):
                     print(rec, file=stat_file)
                 print(file=stat_file)
                 print(conclusion, file=stat_file)
+                if Settings().developer_mode:
+                    print(file=stat_file)
+                    print('Вы видите распределение ниже, потому что у вас включен режим разработчика.', file=stat_file)
+                    distr_student_strength = stats.get_strong_weak_students()[0]
+                    print('Программа определила такие индексы силы у учеников. 5 - максимальный, 1 - минимальный, 0 - слишком мало данных для корректного оценивания.' , file=stat_file)
+                    for k, v in distr_student_strength.items():
+                        print(f'{k}: {v}', file=stat_file)
             print(f'Файл успешно сгенерирован по пути: {path}')
+            if Settings().automatically_file_opening:
+                os.startfile(path)
 
         db.close()
 

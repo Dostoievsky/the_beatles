@@ -1,7 +1,8 @@
-import json
-from datetime import datetime
 import os
 import sys
+import json
+from datetime import datetime
+
 
 class Logger:
     def __init__(self, flag):
@@ -9,12 +10,20 @@ class Logger:
         base_dir = self.get_base_path()
         self.file_path = os.path.join(base_dir, 'system_files', 'log.json')
 
+        if self.flag:
+            self.clear_log_file()
+
     @staticmethod
     def get_base_path():
         if getattr(sys, 'frozen', False):
             return os.path.dirname(sys.executable)
         return os.path.dirname(os.path.abspath(__file__))
 
+    def clear_log_file(self):
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+
+        with open(self.file_path, 'w', encoding='utf-8') as f:
+            json.dump({}, f, ensure_ascii=False, indent=4)
 
     def log(self, key, value):
         if not self.flag:
@@ -43,13 +52,3 @@ class Logger:
             return
         current_time = datetime.now().strftime('%d.%m.%Y, %H.%M.%S')
         self.log(message, current_time)
-
-
-
-
-
-
-
-
-
-
