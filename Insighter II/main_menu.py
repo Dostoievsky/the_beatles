@@ -2,7 +2,9 @@ import os
 import os.path
 import sys
 import json
+import time
 import random
+from datetime import datetime as dt
 import traceback
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QComboBox, QDateEdit,
                              QFileDialog, QGridLayout, QSizePolicy)
@@ -23,7 +25,8 @@ import threading
 from database_class import Database
 from settings_class import Settings
 from statistics_dialogs import *
-from statistics_class import StatisticsParser
+from statistics_class import StatisticsParser, CompareParser
+from test import GraphBuilder
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -686,10 +689,11 @@ class MainMenu(QWidget):
         log.log('flag_plots', flag_plots)
         log.log('total_students', total_students)
 
-        res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+
 
 
         if len(works) == 1 and not file_name:
+            res_dct, grades_dct = db.get_data_for_statistics(works[0], klass)
             stats = StatisticsParser(res_dct, grades_dct)
             log.log('res_dct', res_dct)
             log.log('grades_dct', grades_dct)
@@ -712,7 +716,7 @@ class MainMenu(QWidget):
             log.log('concp2', concp2)
             conclusion = stats.get_brief_conclusion(concp1, concp2)
             log.log('conclusion', conclusion)
-            absents_not_parsed = db.get_absents(klass, work)
+            absents_not_parsed = db.get_absents(klass, works[0])
             best_result, worst_results = stats.get_best_worst_results()
             log.log('best_results', best_result)
             log.log('worst_results', worst_results)
@@ -720,7 +724,7 @@ class MainMenu(QWidget):
             log.log('absents', absents)
 
             if Settings().saving_statistics_in_unque_files:
-                file_name = f'Статистика (без журнала) по классу {klass} по работе {work}.txt'
+                file_name = f'Статистика (без журнала) по классу {klass} по работе {works[0]}.txt'
             else:
                 file_name = 'Статистика.txt'
             path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
@@ -728,7 +732,7 @@ class MainMenu(QWidget):
             log.log('path', path)
 
             with open(path, 'w', encoding='utf-8') as stat_file:
-                print(f'Статистика (без журнала) по классу {klass} по работе "{work}"', file=stat_file)
+                print(f'Статистика (без журнала) по классу {klass} по работе "{works[0]}"', file=stat_file)
                 print(file=stat_file)
                 print(f'Средний балл по классу: {avg}', file=stat_file)
                 print(f'Медианный балл по классу: {median}', file=stat_file)
@@ -752,14 +756,37 @@ class MainMenu(QWidget):
                     print(rec, file=stat_file)
                 print(file=stat_file)
                 print(conclusion, file=stat_file)
+
             print(f'Файл успешно сгенерирован по пути: {path}')
+
+            if Settings().saving_statistics_in_unque_files:
+                file_name = f'Графики статистики (без журнала) по классу {klass} по работе {works[0]}.pdf'
+            else:
+                file_name = 'Графики статистики.pdf'
+            graph_path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+
+            if Settings().alsways_build_the_graphics or flag_plots:
+                print('Подождите, программа генерирует графики')
+                graph = GraphBuilder()
+                pgr1 = tasks_distribution
+                pgr2 = grades_distribution
+                pgr3 = absents
+                pgr4 = graph_path
+                pgr5 = works[0]
+                graph.build_mode1_pdf(pgr1, pgr2, pgr3, pgr4, pgr5)
+
 
             if Settings().automatically_file_opening:
                 os.startfile(path)
-
+                if Settings().alsways_build_the_graphics or flag_plots:
+                    time.sleep(1)
+                    os.startfile(graph_path)
+                    print(f'Файл с графиками успешно сгенерирован по пути {graph_path}')
 
 
         elif len(works) == 1 and file_name:
+            print(123, works[0])
+            res_dct, grades_dct = db.get_data_for_statistics(works[0], klass)
             stats = StatisticsParser(res_dct, grades_dct, file_name)
             log.log('res_dct', res_dct)
             log.log('grades_dct', grades_dct)
@@ -774,7 +801,7 @@ class MainMenu(QWidget):
             log.log('worst_students', worst_students)
             tasks_distribution = stats.convertage_to_percentages(total_students)
             log.log('tasks_distribution', tasks_distribution)
-            absents_not_parsed = db.get_absents(klass, work)
+            absents_not_parsed = db.get_absents(klass, works[0])
             log.log('absents_not_parsed', absents_not_parsed)
             best_result, worst_results = stats.get_best_worst_results()
             log.log('best_result', best_result)
@@ -799,7 +826,7 @@ class MainMenu(QWidget):
 
 
             if Settings().saving_statistics_in_unque_files:
-                file_name = f'Статистика (c журналом) по классу {klass} по работе {work}.txt'
+                file_name = f'Статистика (c журналом) по классу {klass} по работе {works[0]}.txt'
             else:
                 file_name = 'Статистика.txt'
             path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
@@ -807,7 +834,7 @@ class MainMenu(QWidget):
             log.log('path', path)
 
             with open(path, 'w', encoding='utf-8') as stat_file:
-                print(f'Статистика (с журналом) по классу {klass} по работе "{work}"', file=stat_file)
+                print(f'Статистика (с журналом) по классу {klass} по работе "{works[0]}"', file=stat_file)
                 print(file=stat_file)
                 print(f'Средний балл по классу: {avg}', file=stat_file)
                 print(f'Медианный балл по классу: {median}', file=stat_file)
@@ -839,8 +866,178 @@ class MainMenu(QWidget):
                     for k, v in distr_student_strength.items():
                         print(f'{k}: {v}', file=stat_file)
             print(f'Файл успешно сгенерирован по пути: {path}')
+
+            if Settings().saving_statistics_in_unque_files:
+                file_name = f'Графики статистики (c журналом) по классу {klass} по работе {works[0]}.pdf'
+            else:
+                file_name = 'Графики статистики.pdf'
+            graph_path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+
+            if Settings().alsways_build_the_graphics or flag_plots:
+                print('Подождите, программа генерирует графики')
+                graph = GraphBuilder()
+                pgr1 = tasks_distribution
+                pgr2 = grades_distribution
+                pgr3 = absents
+                pgr4 = p2
+                pgr5 = graph_path
+                pgr6 = works[0]
+                try:
+                    graph.build_mode2_pdf(pgr1, pgr2, pgr3, pgr4, pgr5, pgr6)
+                except Exception as e:
+                    print(f'Ошибка при работе с графиками: {e}')
+
             if Settings().automatically_file_opening:
                 os.startfile(path)
+                if Settings().alsways_build_the_graphics or flag_plots:
+                    time.sleep(1)
+                    os.startfile(graph_path)
+                    print(f'Файл с графиками успешно сгенерирован по пути {graph_path}')
+
+
+        elif len(works) > 1 and not file_name and not flag_format:
+
+            works_date_with_dates = works_dict[klass]
+            parsed_works_date_with_dates = {k: dt.strptime(v, "%d.%m.%Y") for k, v in works_date_with_dates.items()
+                                            if k in works}
+
+            all_stats_work = max(parsed_works_date_with_dates.items(), key=lambda x: x[1])[0]
+            log.log('all_stats_works', all_stats_work)
+
+            res_dct, grades_dct = db.get_data_for_statistics(all_stats_work, klass)
+            stats = StatisticsParser(res_dct, grades_dct)
+            avg = stats.get_average()
+            median = stats.get_median()
+            grades_distribution = stats.get_grades_distribution()
+            best_students, worst_students = stats.get_the_best_the_worst_students_results()
+            tasks_distribution = stats.convertage_to_percentages(total_students)
+            recomendations = stats.get_recomdendations_standart(tasks_distribution)
+            concp1, concp2 = stats.grades_dict, tasks_distribution
+            conclusion = stats.get_brief_conclusion(concp1, concp2)
+            absents_not_parsed = db.get_absents(klass, work)
+            best_results, worst_results = stats.get_best_worst_results()
+            absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+            statistic_for_work = {'avg': avg, 'median': median, 'grades_distribution': grades_distribution,
+                                  'best_students': best_students, 'worst_students': worst_students,
+                                  'recomendations': recomendations, 'conclusion': conclusion, 'best_results': best_results,
+                                  'worst_results': worst_results, 'absents': absents}
+
+            compare_dict = {}
+            graph_dict = {}
+            print(works)
+            for work in works:
+                print(f"Обработка: {repr(work)}")
+                res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+                stats = StatisticsParser(res_dct, grades_dct)
+                avg = stats.get_average()
+                date = parsed_works_date_with_dates[work]
+                print(work)
+                print(all_stats_work)
+                graph_dict[work] = (avg, date)
+
+                if work == all_stats_work:
+                    continue
+
+                grades_distribution = stats.get_grades_distribution()
+                best_students, worst_students = stats.get_the_best_the_worst_students_results()
+                absents_not_parsed = db.get_absents(klass, work)
+                absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+                value = {
+                    'avg': avg,
+                    'grades_distribution': grades_distribution,
+                    'best_students': best_students,
+                    'worst_students': worst_students,
+                    'absents': absents,
+                }
+                compare_dict[work] = value
+                graph_dict[work] = (avg, parsed_works_date_with_dates[work])
+            log.log('graph_dict', graph_dict)
+
+            compare = CompareParser(statistic_for_work, compare_dict)
+            avg_comp = compare.compare_avg()
+            absents_comp = compare.compare_absents()
+            good_grades_comp, bad_grades_comp = compare.compare_grades()
+            good_studetns_comp, bad_students_comp = compare.compare_best_worst()
+
+            if Settings().saving_statistics_in_unque_files:
+                file_name = f'Статистика (без журнала) по классу {klass} по работе {work}.txt'
+            else:
+                file_name = 'Статистика.txt'
+            path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+                os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+            log.log('path', path)
+
+            with open(path, 'w', encoding='utf-8') as stat_file:
+                print(f'Статистика (без журнала) по классу {klass} по работе "{work}"', file=stat_file)
+                print(file=stat_file)
+                print(f'Средний балл по классу: {avg}', file=stat_file)
+                print(avg_comp, file=stat_file)
+                print(f'Медианный балл по классу: {median}', file=stat_file)
+                print(f'Отсутствоваших учеников: {absents}', file=stat_file)
+                print(absents_comp, file=stat_file)
+                print(file=stat_file)
+                print('Распределение оценок по классу:', file=stat_file)
+                for k, v in grades_distribution.items():
+                    print(f'Оценок {k}: {v}', file=stat_file)
+                print(good_grades_comp, file=stat_file)
+                print(bad_grades_comp, file=stat_file)
+                print(f'Больше всего оценок: {max(grades_distribution, key=grades_distribution.get)}', file=stat_file)
+                print(file=stat_file)
+                print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
+                print(good_studetns_comp, file=stat_file)
+                print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
+                print(bad_students_comp, file=stat_file)
+                print(f'Лучший результат по классу: оценка {best_results[1]} за [{best_results[0]}] правильных '
+                      f'ответов', file=stat_file)
+                print(f'Худший результат по классу: оценка {worst_results[1]} за [{worst_results[0]}] правильных ответов', file=stat_file)
+                print(file=stat_file)
+                print('Вы не загружали файл журнала, программа дает краткие рекомендации по заданиям, основываясь только на результатах этой работы', file=stat_file)
+                for k, v in tasks_distribution.items():
+                    print(f'В {k} задании {v}% правильных ответов', file=stat_file)
+                print(file=stat_file)
+                for rec in recomendations:
+                    print(rec, file=stat_file)
+                print(file=stat_file)
+                print(conclusion, file=stat_file)
+            print(f'Файл успешно сгенерирован по пути: {path}')
+
+            if Settings().saving_statistics_in_unque_files:
+                file_name = f'Графики статистики (c журналом) по классу {klass} по работе {works[0]}.pdf'
+            else:
+                file_name = 'Графики статистики.pdf'
+            graph_path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+
+            if Settings().alsways_build_the_graphics or flag_plots:
+                print('Подождите, программа генерирует графики')
+                graph = GraphBuilder()
+                pgr1 = tasks_distribution
+                pgr2 = grades_distribution
+                pgr3 = absents
+                pgr4 = graph_dict
+                pgr5 = graph_path
+                pgr6 = works[0]
+                try:
+                    graph.build_mode3_pdf(pgr1, pgr2, pgr3, pgr4, pgr5, pgr6)
+                except Exception as e:
+                    print(f'Ошибка при работе с графиками: {e}')
+
+            if Settings().automatically_file_opening:
+                os.startfile(path)
+                if Settings().alsways_build_the_graphics or flag_plots:
+                    time.sleep(1)
+                    os.startfile(graph_path)
+                    print(f'Файл с графиками успешно сгенерирован по пути {graph_path}')
+
+            if Settings().automatically_file_opening:
+                os.startfile(path)
+
+
+        elif len(works) > 1 and file_name and not flag_format:
+            pass
+
+
+
+
 
         db.close()
 

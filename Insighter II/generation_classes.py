@@ -46,7 +46,7 @@ class ParserUIData:
         self._student_files_fill = self.data_dict['students_lines']
         self._answers_file_create = 'answers.txt'
         self._answers_file_fill = self.data_dict['answers_lines']
-        self._grade_file_create = 'grades.txt'
+        self._grade_file_create = 'for test data/grades.txt'
         self._grade_file_fill = 5
         self._absents_file_create = 'absents.txt'
 

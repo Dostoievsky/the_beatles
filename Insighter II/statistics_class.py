@@ -30,6 +30,7 @@ class StatisticsParser:
     def get_students_dict(self):
         df = pd.read_excel(self.file_name, header=None, engine='openpyxl')
         students_data = {}
+        print('rfrf')
 
         for _, row in df.iterrows():
             line = [str(val).strip() for val in row.values]
@@ -415,7 +416,170 @@ class StatisticsParser:
 
         return res.strip()
 
+
+class CompareParser:
+    def __init__(self, this_work_dict, comare_work_dict):
+        self.this_work_dict = this_work_dict
+        self.comare_work_dict = comare_work_dict
+
+    def compare_avg(self):
+        this_avg = self.this_work_dict['avg']
+        list_avg = [v['avg'] for v in self.comare_work_dict.values()]
+        other_avg = round(statistics.mean(list_avg), 2)
+
+        diff = this_avg - other_avg
+        rounded_diff = round(abs(diff), 2)
+
+        if this_avg > other_avg:
+            return f"Средняя оценка стала выше на {rounded_diff} по сравнению с предыдущими работами"
+        elif this_avg < other_avg:
+            return f"Средняя оценка стала ниже на {rounded_diff} по сравнению с предыдущими работами"
+        else:
+            return "Средняя оценка не изменилась по сравнению с предыдущими работами"
+
+
+    @staticmethod
+    def get_count(distr, keys):
+        return sum(distr.get(k, 0) for k in keys)
+
+
+    def compare_grades(self):
+        d_this = self.this_work_dict['grades_distribution']
+        total_this = sum(d_this.values())
+        this_bad = self.get_count(d_this, [2, 3])
+        this_good = self.get_count(d_this, [4, 5])
+
+        if total_this == 0:
+            this_bad_percent = 0
+            this_good_percent = 0
+        else:
+            this_bad_percent = (this_bad / total_this) * 100
+            this_good_percent = (this_good / total_this) * 100
+
+        total_bad_other = 0
+        total_good_other = 0
+        total_other_all = 0
+
+        for work in self.comare_work_dict.values():
+            d_other = work['grades_distribution']
+            total_other = sum(d_other.values())
+
+            if total_other > 0:
+                total_bad_other += self.get_count(d_other, [2, 3])
+                total_good_other += self.get_count(d_other, [4, 5])
+                total_other_all += total_other
+
+        if total_other_all == 0:
+            other_bad_percent = 0
+            other_good_percent = 0
+        else:
+            other_bad_percent = (total_bad_other / total_other_all) * 100
+            other_good_percent = (total_good_other / total_other_all) * 100
+
+        if total_this == 0:
+            good_message = "В текущей работе нет оценок для сравнения"
+        else:
+            diff_good = this_good_percent - other_good_percent
+            rounded_diff = round(abs(diff_good))
+
+            if diff_good > 0:
+                good_message = f"Количество хороших оценок в этой работе на {rounded_diff}% больше по сравнению с предыдущими работами"
+            elif diff_good < 0:
+                good_message = f"Количество хороших оценок в этой работе на {rounded_diff}% меньше по сравнению с предыдущими работами"
+            else:
+                good_message = "Количество хороших оценок такое же, какое было в среднем за предыдущие работы"
+
+        if total_this == 0:
+            bad_message = "В текущей работе нет оценок для сравнения"
+        else:
+            diff_bad = this_bad_percent - other_bad_percent
+            rounded_diff = round(abs(diff_bad))
+
+            if diff_bad > 0:
+                bad_message = f"Количество плохих оценок в этой работе на {rounded_diff}% больше по сравнению с предыдущими работами"
+            elif diff_bad < 0:
+                bad_message = f"Количество плохих оценок в этой работе на {rounded_diff}% меньше по сравнению с предыдущими работами"
+            else:
+                bad_message = "Количество плохих оценок такое же, какое было в среднем за предыдущие работы"
+
+        return good_message, bad_message
+
+
+    def compare_absents(self):
+        this_absents = self.this_work_dict['absents']
+        avg_other_absents = statistics.mean(work['absents'] for work in self.comare_work_dict.values())
+        if this_absents > round(avg_other_absents):
+            return 'Отсутствующих больше, чем обычно'
+        elif this_absents < avg_other_absents:
+            return 'Отсутствующих меньше, чем обычно'
+        else:
+            return 'Отсутствущих примерно столько же, сколько и обычно'
+
+
+    def compare_best_worst(self):
+        this_best = set(self.this_work_dict['best_students'].keys())
+        this_worst = set(self.this_work_dict['worst_students'].keys())
+
+        all_previous_best = []
+        all_previous_worst = []
+
+        for work in self.comare_work_dict.values():
+            all_previous_best.extend(work['best_students'].keys())
+            all_previous_worst.extend(work['worst_students'].keys())
+
+        total_previous_works = len(self.comare_work_dict)
+
+        if total_previous_works > 0 and this_best:
+            best_students_count = {}
+            for student in this_best:
+                count = all_previous_best.count(student)
+                best_students_count[student] = count
+
+            consistent_best = [student for student, count in best_students_count.items() if count >= total_previous_works * 0.5]
+
+            if consistent_best:
+                if len(consistent_best) == 1:
+                    best_message = f"Ученик {consistent_best[0]} остается лучшим в большинстве последних работ"
+                else:
+                    students_list = ", ".join(consistent_best)
+                    best_message = f"Ученики {students_list} остаются лучшими в большинстве последних работ"
+            else:
+                best_message = "Нет явно выраженных лучших учеников в предыдущих работах"
+        else:
+            best_message = "Нет явно выраженных лучших учеников в предыдущих работах"
+
+        if total_previous_works > 0 and this_worst:
+            worst_students_count = {}
+            for student in this_worst:
+                count = all_previous_worst.count(student)
+                worst_students_count[student] = count
+
+            consistent_worst = [student for student, count in worst_students_count.items() if count >= total_previous_works * 0.5]
+
+            if consistent_worst:
+                if len(consistent_worst) == 1:
+                    worst_message = f"Ученик {consistent_worst[0]} остается худшим в большинстве последних работ"
+                else:
+                    students_list = ", ".join(consistent_worst)
+                    worst_message = f"Ученики {students_list} остаются худшими в большинстве последних работ"
+            else:
+                worst_message = "Нет явно выраженных худших учеников в предыдущих работах"
+        else:
+            worst_message = "Нет явно выраженных худших учеников в предыдущих работах"
+
+        return best_message, worst_message
+
+
+# others_dict = {'Журнальная работа 0': {'avg': 2.67, 'median': 3.0, 'grades_distribution': {3: 14, 2: 9, 4: 1}, 'best_students': {'Надежда Попцова': 8}, 'worst_students': {'Рауль Масимов': 4, 'Анастасия Хромова': 4, 'Андрей Цветков': 4}, 'absents': 0}, 'Работа имени шишкина-мышкина': {'avg': 3.46, 'median': 3.5, 'grades_distribution': {2: 3, 4: 10, 3: 9, 5: 2}, 'best_students': {'Тимофей Гусев': 10, 'Татьяна Левкович': 10}, 'worst_students': {'Матвей Некрасов': 4}, 'absents': 0}}
+# this_dict = {'avg': 3.17, 'median': 3.0, 'grades_distribution': {3: 8, 4: 10, 2: 6}, 'best_students': {'Дмитрий Афанасов': 9, 'Маргарита Горовая': 9, 'Никита Корсаков': 9, 'Татьяна Левкович': 9, 'Матвей Некрасов': 9, 'Михаил Соколов': 9, 'Анастасия Хромова': 9}, 'worst_students': {'Рауль Масимов': 3}, 'recomendations': ['Задания [1, 3, 4, 5, 6, 7, 8, 9] решены хорошо большинством учеников', 'Задания [2, 10] решены на среднем уровне, стоит закрепить материал'], 'conclusion': 'Работа выполнена на среднем уровне; основные темы усвоены, но есть пространство для роста. Все предложенные задания были решены на достаточном уровне, системных ошибок не выявлено.', 'best_results': (9, 4), 'worst_results': (3, 2), 'absents': 0}
 #
+# compare = CompareParser(this_dict, others_dict)
+# print(compare.compare_avg())
+# print(compare.compare_grades())
+# print(compare.compare_absents())
+# print(compare.compare_best_worst())
+
+
 # tasks_dict1 = {
 #     'Андреева Софья': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: False, 8: True, 9: False, 10: True},
 #     'Афанасов Дмитрий': {1: False, 2: True, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: True, 10: False},
