@@ -24,6 +24,7 @@ class StatisticsParser:
         if not self.file_name:
             return None
         students_dict = self.get_students_dict()
+        print('111', students_dict)
         return {self.fix_fio_spacing(k): v for k, v in students_dict.items()}
 
 

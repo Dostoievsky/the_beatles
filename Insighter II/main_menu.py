@@ -1033,11 +1033,117 @@ class MainMenu(QWidget):
 
 
         elif len(works) > 1 and file_name and not flag_format:
-            pass
+            works_date_with_dates = works_dict[klass]
+            parsed_works_date_with_dates = {k: dt.strptime(v, "%d.%m.%Y") for k, v in works_date_with_dates.items() if k in works}
+
+            all_stats_work = max(parsed_works_date_with_dates.items(), key=lambda x: x[1])[0]
+            log.log('all_stats_works', all_stats_work)
+
+            res_dct, grades_dct = db.get_data_for_statistics(all_stats_work, klass)
+            stats = StatisticsParser(res_dct, grades_dct, file_name)
+            avg = stats.get_average()
+            median = stats.get_median()
+            grades_distribution = stats.get_grades_distribution()
+            best_students, worst_students = stats.get_the_best_the_worst_students_results()
+            tasks_distribution = stats.convertage_to_percentages(total_students)
+            absents_not_parsed = db.get_absents(klass, all_stats_work)
+            best_result, worst_results = stats.get_best_worst_results()
+            absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+            pr1 = {int(k): {int(ik): iv for ik, iv in v.items()} for k, v in stats.get_distribution_tasks_strong_weak_students().items()}
+            pr2 = {int(k): v for k, v in stats.get_strong_weak_students()[1].items()}
+            recomedations = stats.get_recomdendations_deep(pr1, pr2)
+            p1, p2, p3 = stats.grades_dict, stats.get_distribution_tasks_strong_weak_students(), stats.get_strong_weak_students()[0]
+            p4, p5 = stats.tasks_dict, stats.get_strong_weak_students()[1]
+            conclusion = stats.get_extended_analysis(p1, p2, p3, p4, p5)
+            statistics_dict = {'avg': avg, 'median': median, 'grades_distribution': grades_distribution,
+                               'best_students': best_students, 'worst_students': worst_students, 'absents': absents,
+                               'tasks_distribution': tasks_distribution, 'recomedations': recomedations, 'conclusion': conclusion}
+
+            print(statistics_dict)
+
+            compare_dict = {}
+            graph_dict = {}
+            print(works)
+            for work in works:
+                res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+                stats = StatisticsParser(res_dct, grades_dct)
+                avg = stats.get_average()
+                date = parsed_works_date_with_dates[work]
+
+                graph_dict[work] = (avg, date)
+
+                if work == all_stats_work:
+                    continue
+
+                grades_distribution = stats.get_grades_distribution()
+                best_students, worst_students = stats.get_the_best_the_worst_students_results()
+                absents_not_parsed = db.get_absents(klass, work)
+                absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+                value = {
+                    'avg': avg,
+                    'grades_distribution': grades_distribution,
+                    'best_students': best_students,
+                    'worst_students': worst_students,
+                    'absents': absents,
+                }
+                compare_dict[work] = value
+                graph_dict[work] = (avg, parsed_works_date_with_dates[work])
+            log.log('graph_dict', graph_dict)
+
+            compare = CompareParser(statistics_dict, compare_dict)
+            avg_comp = compare.compare_avg()
+            absents_comp = compare.compare_absents()
+            good_grades_comp, bad_grades_comp = compare.compare_grades()
+            good_studetns_comp, bad_students_comp = compare.compare_best_worst()
 
 
+            if Settings().saving_statistics_in_unque_files:
+                file_name = f'Статистика (c журналом) по классу {klass} по работе {work}.txt'
+            else:
+                file_name = 'Статистика.txt'
+            path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+                os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+            log.log('path', path)
 
-
+            with open(path, 'w', encoding='utf-8') as stat_file:
+                print(f'Статистика (с журналом) по классу {klass} по работе "{works[0]}"', file=stat_file)
+                print(file=stat_file)
+                print(f'Средний балл по классу: {avg}', file=stat_file)
+                print(avg_comp, file=stat_file)
+                print(f'Медианный балл по классу: {median}', file=stat_file)
+                print(f'Отсутствоваших учеников: {absents}', file=stat_file)
+                print(absents_comp, file=stat_file)
+                print(file=stat_file)
+                print('Распределение оценок по классу:', file=stat_file)
+                for k, v in grades_distribution.items():
+                    print(f'Оценок {k}: {v}', file=stat_file)
+                print(good_grades_comp, file=stat_file)
+                print(bad_grades_comp, file=stat_file)
+                print(f'Больше всего оценок: {max(grades_distribution, key=grades_distribution.get)}', file=stat_file)
+                print(file=stat_file)
+                print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
+                print(good_studetns_comp, file=stat_file)
+                print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
+                print(bad_students_comp, file=stat_file)
+                print(f'Лучший результат по классу: оценка {best_result[1]} за [{best_result[0]}] правильных ответов', file=stat_file)
+                print(f'Худший результат по классу: оценка {worst_results[1]} за [{worst_results[0]}] правильных ответов', file=stat_file)
+                print(file=stat_file)
+                print('Вы загрузили файл журнала, поэтому программа дает подробные рекомендации по заданиям, основываясь на предыдущей успеваемости учеников', file=stat_file)
+                for k, v in tasks_distribution.items():
+                    print(f'В {k} задании {v}% правильных ответов', file=stat_file)
+                print(file=stat_file)
+                for rec in recomedations:
+                    print(rec, file=stat_file)
+                print(file=stat_file)
+                print(conclusion, file=stat_file)
+                if Settings().developer_mode:
+                    print(file=stat_file)
+                    print('Вы видите распределение ниже, потому что у вас включен режим разработчика.', file=stat_file)
+                    distr_student_strength = stats.get_strong_weak_students()[0]
+                    print('Программа определила такие индексы силы у учеников. 5 - максимальный, 1 - минимальный, 0 - слишком мало данных для корректного оценивания.' , file=stat_file)
+                    for k, v in distr_student_strength.items():
+                        print(f'{k}: {v}', file=stat_file)
+            print(f'Файл успешно сгенерирован по пути: {path}')
 
         db.close()
 
