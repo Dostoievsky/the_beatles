@@ -21,7 +21,6 @@ class GraphBuilder:
         self.dpi = dpi
         self.figsize = figsize
 
-        # цвета для индексов силы (0..5). Можно поменять под стиль.
         self.strength_colors = {
             0: "#d62728",  # красный
             1: "#ff7f0e",  # оранжевый
@@ -318,9 +317,96 @@ class GraphBuilder:
             self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
         return output_pdf_path
 
+    def build_mode4_pdf(
+            self,
+            difficulty: Dict[int, float],
+            grades: Dict[int, int],
+            absent_count: int,
+            strength_data: Dict[int, Dict[int, int]],
+            avg_timeline: Dict[str, Tuple[float, str]],
+            output_pdf_path: str,
+            title_prefix: Optional[str] = None
+    ) -> str:
+        """
+        Режим 4: четыре графика
+        (сложность заданий + распределение оценок + силовой состав решающих + динамика среднего балла).
+        """
+        self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
+        with PdfPages(output_pdf_path) as pdf:
+            self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
+            self.plot_grade_distribution(grades, absent_count, pdf,
+                                         title=f"{title_prefix or ''} — Распределение оценок")
+            self.plot_strength_stacked(strength_data, pdf, title=f"{title_prefix or ''} — Силовой состав решающих")
+            self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
+        return output_pdf_path
+
+    def plot_task_timeline_per_task(
+            self,
+            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
+            pdf_pages: PdfPages,
+            title: Optional[str] = None
+    ) -> None:
+        """
+        Строит отдельный линейный график для каждого задания:
+        динамика процента решивших по работам.
+        :param task_timeline_data: {название_работы: ({номер_задания: процент}, дата)}
+        """
+        if not task_timeline_data:
+            raise ValueError("task_timeline_data пустой")
+
+        sorted_items = sorted(task_timeline_data.items(), key=lambda x: x[1][1])
+        work_names = [item[0] for item in sorted_items]
+        task_distributions = [item[1][0] for item in sorted_items]
+
+        all_tasks = sorted({task_id for distr in task_distributions for task_id in distr.keys()})
+        if not all_tasks:
+            raise ValueError("Нет данных по заданиям для построения динамики")
+
+        for task_id in all_tasks:
+            fig, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
+            x = list(range(len(work_names)))
+            y = [distr.get(task_id, 0) for distr in task_distributions]
+            bars = ax.bar(x, y, color="#1f77b4", edgecolor="black")
+            ax.set_xlabel("Работы в хронологическом порядке")
+            ax.set_ylabel("Процент решивших")
+            base_title = title or "Динамика процента решивших по заданиям"
+            ax.set_title(f"{base_title} — Задание {task_id}")
+            ax.set_xticks(x)
+            ax.set_xticklabels(work_names, rotation=45, ha='right', fontsize=8)
+            ax.set_ylim(0, 100)
+            ax.grid(True, linestyle='--', alpha=0.6)
+
+            for rect, val in zip(bars, y):
+                ax.text(rect.get_x() + rect.get_width() / 2, min(val + 2, 100), f"{val:.1f}%",
+                        ha='center', va='bottom', fontsize=8)
+
+            fig.tight_layout()
+            pdf_pages.savefig(fig)
+            plt.close(fig)
 
 
-
+    def build_mode5_pdf(
+            self,
+            difficulty: Dict[int, float],
+            grades: Dict[int, int],
+            absent_count: int,
+            avg_timeline: Dict[str, Tuple[float, str]],
+            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
+            output_pdf_path: str,
+            title_prefix: Optional[str] = None
+    ) -> str:
+        """
+        Режим 5: четыре графика
+        (сложность заданий + распределение оценок + динамика среднего балла + динамика заданий).
+        """
+        self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
+        with PdfPages(output_pdf_path) as pdf:
+            self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
+            self.plot_grade_distribution(grades, absent_count, pdf,
+                                         title=f"{title_prefix or ''} — Распределение оценок")
+            self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
+            self.plot_task_timeline_per_task(task_timeline_data, pdf, title=f"{title_prefix or ''} — Динамика решаемости по заданиям")
+        return output_pdf_path
 
 
 

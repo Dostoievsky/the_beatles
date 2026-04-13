@@ -571,6 +571,27 @@ class CompareParser:
         return best_message, worst_message
 
 
+    def compare_tasks_with_previous(self):
+        this_tasks = self.this_work_dict.get('tasks_distribution', {})
+        result = {}
+
+        for task_id, this_percent in this_tasks.items():
+            previous_values = []
+            for work in self.comare_work_dict.values():
+                prev_tasks = work.get('tasks_distribution', {})
+                if task_id in prev_tasks:
+                    previous_values.append(prev_tasks[task_id])
+
+            prev_avg = round(statistics.mean(previous_values), 2) if previous_values else 0
+            diff = round(this_percent - prev_avg, 2)
+            result[task_id] = {
+                'this_percent': round(this_percent, 2),
+                'previous_avg_percent': prev_avg,
+                'diff': diff
+            }
+
+        return result
+
 # others_dict = {'Журнальная работа 0': {'avg': 2.67, 'median': 3.0, 'grades_distribution': {3: 14, 2: 9, 4: 1}, 'best_students': {'Надежда Попцова': 8}, 'worst_students': {'Рауль Масимов': 4, 'Анастасия Хромова': 4, 'Андрей Цветков': 4}, 'absents': 0}, 'Работа имени шишкина-мышкина': {'avg': 3.46, 'median': 3.5, 'grades_distribution': {2: 3, 4: 10, 3: 9, 5: 2}, 'best_students': {'Тимофей Гусев': 10, 'Татьяна Левкович': 10}, 'worst_students': {'Матвей Некрасов': 4}, 'absents': 0}}
 # this_dict = {'avg': 3.17, 'median': 3.0, 'grades_distribution': {3: 8, 4: 10, 2: 6}, 'best_students': {'Дмитрий Афанасов': 9, 'Маргарита Горовая': 9, 'Никита Корсаков': 9, 'Татьяна Левкович': 9, 'Матвей Некрасов': 9, 'Михаил Соколов': 9, 'Анастасия Хромова': 9}, 'worst_students': {'Рауль Масимов': 3}, 'recomendations': ['Задания [1, 3, 4, 5, 6, 7, 8, 9] решены хорошо большинством учеников', 'Задания [2, 10] решены на среднем уровне, стоит закрепить материал'], 'conclusion': 'Работа выполнена на среднем уровне; основные темы усвоены, но есть пространство для роста. Все предложенные задания были решены на достаточном уровне, системных ошибок не выявлено.', 'best_results': (9, 4), 'worst_results': (3, 2), 'absents': 0}
 #
