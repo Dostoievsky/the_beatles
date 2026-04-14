@@ -417,6 +417,66 @@ class StatisticsParser:
 
         return res.strip()
 
+    @staticmethod
+    def analyze_tasks_by_strength(task_strength_distribution, strength_group_counts):
+        """
+        Возвращает:
+        1) словарь по заданиям с краткой аналитикой,
+        2) список "опасных" заданий (где не справляется большинство),
+        3) агрегированное распределение категорий для графика.
+        """
+        weak_total = sum(strength_group_counts.get(i, 0) for i in [1, 2])
+        medium_total = strength_group_counts.get(3, 0)
+        strong_total = sum(strength_group_counts.get(i, 0) for i in [4, 5])
+        total_students = sum(strength_group_counts.values())
+
+        def safe_rate(value, total):
+            return (value / total) if total else 0
+
+        insights = {}
+        dangerous_tasks = []
+        category_counts = defaultdict(int)
+
+        for task_id, distr in sorted(task_strength_distribution.items()):
+            weak_solved = sum(distr.get(i, 0) for i in [1, 2])
+            medium_solved = distr.get(3, 0)
+            strong_solved = sum(distr.get(i, 0) for i in [4, 5])
+            total_solved = sum(distr.values())
+
+            weak_rate = safe_rate(weak_solved, weak_total)
+            medium_rate = safe_rate(medium_solved, medium_total)
+            strong_rate = safe_rate(strong_solved, strong_total)
+            total_rate = safe_rate(total_solved, total_students)
+
+            if total_rate < 0.25:
+                summary = "почти никто не решает"
+                category = "Почти никто"
+            elif weak_rate > strong_rate + 0.25 and weak_rate > 0.4:
+                summary = "лучше решают слабые группы (аномально)"
+                category = "Аномалия"
+            elif strong_rate >= 0.6 and weak_rate <= 0.25:
+                summary = "решают в основном сильные"
+                category = "Только сильные"
+            elif total_rate >= 0.85:
+                summary = "решают почти все"
+                category = "Решают почти все"
+            else:
+                summary = "решаемость на среднем уровне"
+                category = "Средний уровень"
+
+            if total_rate < 0.5:
+                dangerous_tasks.append(task_id)
+
+            category_counts[category] += 1
+            insights[task_id] = {
+                'weak': (weak_solved, weak_total),
+                'medium': (medium_solved, medium_total),
+                'strong': (strong_solved, strong_total),
+                'summary': summary
+            }
+
+        return insights, dangerous_tasks, dict(category_counts)
+
 
 class CompareParser:
     def __init__(self, this_work_dict, comare_work_dict):

@@ -408,6 +408,89 @@ class GraphBuilder:
             self.plot_task_timeline_per_task(task_timeline_data, pdf, title=f"{title_prefix or ''} — Динамика решаемости по заданиям")
         return output_pdf_path
 
+    def plot_strength_class_distribution(
+            self,
+            strength_counts: Dict[int, int],
+            pdf_pages: PdfPages,
+            title: Optional[str] = None
+    ) -> None:
+        indices = list(range(6))
+        counts = [strength_counts.get(i, 0) for i in indices]
+        colors = [self.strength_colors.get(i, "#1f77b4") for i in indices]
+
+        fig, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
+        bars = ax.bar(indices, counts, color=colors, edgecolor="black")
+        ax.set_xlabel("Индекс силы")
+        ax.set_ylabel("Количество учеников")
+        ax.set_title(title or "Силовой состав класса")
+        ax.set_xticks(indices)
+        ax.set_xticklabels([str(i) for i in indices])
+
+        for rect, val in zip(bars, counts):
+            ax.text(rect.get_x() + rect.get_width() / 2, val + max(1, int(max(counts) * 0.02)),
+                    str(val), ha="center", va="bottom", fontsize=9)
+
+        fig.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+    def plot_task_status_summary(
+            self,
+            category_counts: Dict[str, int],
+            pdf_pages: PdfPages,
+            title: Optional[str] = None
+    ) -> None:
+        if not category_counts:
+            raise ValueError("category_counts пустой")
+
+        labels = list(category_counts.keys())
+        values = [category_counts[k] for k in labels]
+
+        fig, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
+        bars = ax.bar(range(len(labels)), values, color="#17becf", edgecolor="black")
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=25, ha='right')
+        ax.set_ylabel("Количество заданий")
+        ax.set_title(title or "Сводка по типам заданий")
+
+        for rect, val in zip(bars, values):
+            ax.text(rect.get_x() + rect.get_width() / 2, val + 0.05, str(val),
+                    ha='center', va='bottom', fontsize=9)
+
+        fig.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+    def build_mode6_pdf(
+            self,
+            difficulty: Dict[int, float],
+            grades: Dict[int, int],
+            absent_count: int,
+            strength_data: Dict[int, int],
+            avg_timeline: Dict[str, Tuple[float, str]],
+            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
+            task_status_counts: Dict[str, int],
+            output_pdf_path: str,
+            title_prefix: Optional[str] = None
+    ) -> str:
+        """
+        Режим 6: подробный режим для нескольких работ с журналом и одинаковым форматом.
+        """
+        self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
+        with PdfPages(output_pdf_path) as pdf:
+            self.plot_grade_distribution(grades, absent_count, pdf,
+                                         title=f"{title_prefix or ''} — Распределение оценок")
+            self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Проценты решаемости заданий")
+            self.plot_strength_stacked(strength_data, pdf,  # <- то же имя
+                                       title=f"{title_prefix or ''} — Силовой состав решающих")
+            self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
+            self.plot_task_timeline_per_task(task_timeline_data, pdf,
+                                             title=f"{title_prefix or ''} — Динамика решаемости по заданиям")
+            if task_status_counts:
+                self.plot_task_status_summary(task_status_counts, pdf,
+                                              title=f"{title_prefix or ''} — Типы заданий по общей картине")
+        return output_pdf_path
+
 
 
 # # пример данных

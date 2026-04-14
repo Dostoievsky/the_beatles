@@ -691,7 +691,6 @@ class MainMenu(QWidget):
 
 
 
-
         if len(works) == 1 and not file_name:
             res_dct, grades_dct = db.get_data_for_statistics(works[0], klass)
             stats = StatisticsParser(res_dct, grades_dct)
@@ -1343,6 +1342,305 @@ class MainMenu(QWidget):
                     time.sleep(1)
                     os.startfile(graph_path)
                     print(f'Файл с графиками успешно сгенерирован по пути {graph_path}')
+
+
+
+        elif len(works) > 1 and file_name and flag_format:
+
+            works_date_with_dates = works_dict[klass]
+
+            parsed_works_date_with_dates = {k: dt.strptime(v, "%d.%m.%Y") for k, v in works_date_with_dates.items() if
+                                            k in works}
+
+            task_key_structure_by_work = {}
+
+            for work in works:
+
+                res_dct, _ = db.get_data_for_statistics(work, klass)
+
+                if not res_dct:
+                    print(f'Ошибка: в работе "{work}" нет данных по заданиям. Построение статистики остановлено.')
+
+                    db.close()
+
+                    self.show()
+
+                    return
+
+                first_student_tasks = next(iter(res_dct.values()))
+
+                task_key_structure_by_work[work] = tuple(sorted(first_student_tasks.keys()))
+
+            unique_task_structures = set(task_key_structure_by_work.values())
+
+            if len(unique_task_structures) != 1:
+                print('Ошибка: в выбранных работах разное количество или состав заданий. '
+
+                      'Для режима сравнения одинаковых форматов статистика не будет построена.')
+
+                db.close()
+
+                self.show()
+
+                return
+
+            all_stats_work = max(parsed_works_date_with_dates.items(), key=lambda x: x[1])[0]
+
+            log.log('all_stats_works', all_stats_work)
+
+            res_dct, grades_dct = db.get_data_for_statistics(all_stats_work, klass)
+
+            stats_with_journal = StatisticsParser(res_dct, grades_dct, file_name)
+
+            avg = stats_with_journal.get_average()
+
+            median = stats_with_journal.get_median()
+
+            grades_distribution = stats_with_journal.get_grades_distribution()
+
+            best_students, worst_students = stats_with_journal.get_the_best_the_worst_students_results()
+
+            tasks_distribution = stats_with_journal.convertage_to_percentages(total_students)
+
+            absents_not_parsed = db.get_absents(klass, all_stats_work)
+
+            best_result, worst_results = stats_with_journal.get_best_worst_results()
+
+            absents = 0 if not absents_not_parsed else len(absents_not_parsed.split(','))
+
+            pr1 = {int(k): {int(ik): iv for ik, iv in v.items()} for k, v in
+
+                   stats_with_journal.get_distribution_tasks_strong_weak_students().items()}
+
+            pr2 = {int(k): v for k, v in stats_with_journal.get_strong_weak_students()[1].items()}
+
+            recomedations = stats_with_journal.get_recomdendations_deep(pr1, pr2)
+
+            p1, p2, p3 = stats_with_journal.grades_dict, stats_with_journal.get_distribution_tasks_strong_weak_students(), \
+ \
+                stats_with_journal.get_strong_weak_students()[0]
+
+        p4, p5 = stats_with_journal.tasks_dict, stats_with_journal.get_strong_weak_students()[1]
+
+        conclusion = stats_with_journal.get_extended_analysis(p1, p2, p3, p4, p5)
+
+        task_insights, dangerous_tasks, task_status_counts = stats_with_journal.analyze_tasks_by_strength(p2, p5)
+
+        statistics_dict = {'avg': avg, 'median': median, 'grades_distribution': grades_distribution,
+
+                           'best_students': best_students, 'worst_students': worst_students, 'absents': absents,
+
+                           'tasks_distribution': tasks_distribution, 'recomedations': recomedations,
+
+                           'conclusion': conclusion}
+
+        compare_dict = {}
+
+        graph_dict = {}
+
+        task_graph_dict = {}
+
+        for work in works:
+
+            res_dct, grades_dct = db.get_data_for_statistics(work, klass)
+
+            stats = StatisticsParser(res_dct, grades_dct)
+
+            avg_other = stats.get_average()
+
+            date = parsed_works_date_with_dates[work]
+
+            current_tasks_distribution = stats.convertage_to_percentages(total_students)
+
+            graph_dict[work] = (avg_other, date)
+
+            task_graph_dict[work] = (current_tasks_distribution, date)
+
+            if work == all_stats_work:
+                continue
+
+            grades_distribution_other = stats.get_grades_distribution()
+            best_students_other, worst_students_other = stats.get_the_best_the_worst_students_results()
+            absents_not_parsed_other = db.get_absents(klass, work)
+            absents_other = 0 if not absents_not_parsed_other else len(absents_not_parsed_other.split(','))
+            value = {
+
+                'avg': avg_other,
+
+                'grades_distribution': grades_distribution_other,
+
+                'best_students': best_students_other,
+
+                'worst_students': worst_students_other,
+
+                'absents': absents_other,
+
+                'tasks_distribution': current_tasks_distribution
+
+            }
+
+            compare_dict[work] = value
+        compare = CompareParser(statistics_dict, compare_dict)
+        avg_comp = compare.compare_avg()
+        absents_comp = compare.compare_absents()
+        good_grades_comp, bad_grades_comp = compare.compare_grades()
+        good_studetns_comp, bad_students_comp = compare.compare_best_worst()
+        tasks_comp = compare.compare_tasks_with_previous()
+
+        if Settings().saving_statistics_in_unque_files:
+
+            file_name = f'Статистика (c журналом) по классу {klass} по работе {all_stats_work}.txt'
+        else:
+            file_name = 'Статистика.txt'
+
+        path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+
+            os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+
+        log.log('path', path)
+
+        with open(path, 'w', encoding='utf-8') as stat_file:
+
+            print(f'Статистика (с журналом) по классу {klass} по работе "{all_stats_work}"', file=stat_file)
+            print(file=stat_file)
+            print(f'Средний балл по классу: {avg}', file=stat_file)
+            print(avg_comp, file=stat_file)
+            print(f'Медианный балл по классу: {median}', file=stat_file)
+            print(f'Отсутствоваших учеников: {absents}', file=stat_file)
+            print(absents_comp, file=stat_file)
+
+            print(file=stat_file)
+
+            print('Распределение оценок по классу:', file=stat_file)
+
+            for k, v in grades_distribution.items():
+                print(f'Оценок {k}: {v}', file=stat_file)
+            print(good_grades_comp, file=stat_file)
+
+            print(bad_grades_comp, file=stat_file)
+
+            print(f'Больше всего оценок: {max(grades_distribution, key=grades_distribution.get)}', file=stat_file)
+
+            print(file=stat_file)
+
+            print(f'Лучшие ученики по классу: {", ".join(list(best_students.keys()))}', file=stat_file)
+
+            print(good_studetns_comp, file=stat_file)
+
+            print(f'Худшие ученики по классу: {", ".join(list(worst_students.keys()))}', file=stat_file)
+
+            print(bad_students_comp, file=stat_file)
+
+            print(f'Лучший результат по классу: оценка {best_result[1]} за [{best_result[0]}] правильных ответов',
+
+                  file=stat_file)
+
+            print(f'Худший результат по классу: оценка {worst_results[1]} за [{worst_results[0]}] правильных ответов',
+
+                  file=stat_file)
+
+            print(file=stat_file)
+
+            print(
+                'Вы загрузили файл журнала, поэтому программа дает подробные рекомендации по заданиям, основываясь на предыдущей успеваемости учеников',
+
+                file=stat_file)
+
+            for k, v in tasks_distribution.items():
+
+                task_info = tasks_comp.get(k, {'diff': 0})
+                diff = task_info['diff']
+
+                if diff > 0:
+                    trend = f'больше на {abs(diff):.2f}%'
+                elif diff < 0:
+                    trend = f'меньше на {abs(diff):.2f}%'
+                else:
+                    trend = 'на том же уровне'
+
+                print(f'В {k} задании {v}% правильных ответов, что {trend}, чем в среднем по прошлым работам', file=stat_file)
+            print(file=stat_file)
+
+            print('Распределение по группам силы и вывод по заданиям:', file=stat_file)
+
+            for task_id in sorted(task_insights.keys()):
+                t = task_insights[task_id]
+
+                print(f'Задание {task_id}: слабые {t["weak"][0]}/{t["weak"][1]}, '
+                      f'средние {t["medium"][0]}/{t["medium"][1]}, сильные {t["strong"][0]}/{t["strong"][1]}. '
+                      f'Вывод: {t["summary"]}.', file=stat_file)
+            print(file=stat_file)
+            print('Краткий статус по заданиям:', file=stat_file)
+
+            for task_id in sorted(task_insights.keys()):
+                print(f'Задание {task_id} — {task_insights[task_id]["summary"]}', file=stat_file)
+
+            print(file=stat_file)
+
+            if dangerous_tasks:
+
+                print(f'Опасные задания (большинство класса не справилось): {dangerous_tasks}', file=stat_file)
+
+            else:
+
+                print('Опасные задания не выявлены.', file=stat_file)
+
+            print(file=stat_file)
+
+
+
+            print(file=stat_file)
+
+            print(conclusion, file=stat_file)
+
+            if Settings().developer_mode:
+
+                print(file=stat_file)
+
+                print('Вы видите распределение ниже, потому что у вас включен режим разработчика.', file=stat_file)
+
+                distr_student_strength = stats_with_journal.get_strong_weak_students()[0]
+
+                print('Программа определила такие индексы силы у учеников. 5 - максимальный, 1 - минимальный, 0 - слишком мало данных для корректного оценивания.',
+
+                    file=stat_file)
+
+                for k, v in distr_student_strength.items():
+                    print(f'{k}: {v}', file=stat_file)
+
+        print(f'Файл успешно сгенерирован по пути: {path}')
+
+        if Settings().saving_statistics_in_unque_files:
+            file_name = f'Графики статистики (c журналом) по классу {klass} по работе {all_stats_work}.pdf'
+        else:
+            file_name = 'Графики статистики.pdf'
+        graph_path = os.path.join(os.getcwd(), file_name) if not Settings().saving_all_files_in_one_folder else (
+            os.path.join(Settings().saving_all_files_in_one_folder, file_name))
+
+        if Settings().alsways_build_the_graphics or flag_plots:
+            print('Подождите, программа генерирует графики')
+
+            graph = GraphBuilder()
+            pgr1 = tasks_distribution
+            pgr2 = grades_distribution
+            pgr3 = absents
+            pgr4 = p2
+            pgr5 = graph_dict
+            pgr6 = task_graph_dict
+            pgr7 = task_status_counts
+            pgr8 = graph_path
+            pgr9 = all_stats_work
+            try:
+                graph.build_mode6_pdf(pgr1, pgr2, pgr3, pgr4, pgr5, pgr6, pgr7, pgr8, pgr9)
+            except Exception as e:
+                print(f'Ошибка при работе с графиками: {e}')
+
+        if Settings().automatically_file_opening:
+            os.startfile(path)
+            if Settings().alsways_build_the_graphics or flag_plots:
+                time.sleep(1)
+                os.startfile(graph_path)
+                print(f'Файл с графиками успешно сгенерирован по пути {graph_path}')
 
 
         db.close()
