@@ -1,7 +1,6 @@
 import os
 import time
 from typing import Dict, List, Optional, Tuple
-
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
@@ -30,11 +29,11 @@ class GraphBuilder:
             5: "#9467bd",  # фиолетовый
         }
 
-    # ---------- Helpers ----------
 
     @staticmethod
     def _ensure_dir(path: str) -> None:
         os.makedirs(path, exist_ok=True)
+
 
     @staticmethod
     def _normalize_percent_dict(data: Dict[int, float]) -> Dict[int, float]:
@@ -46,10 +45,10 @@ class GraphBuilder:
         vals = list(data.values())
         maxv = max(vals)
         if maxv > 1.0:
-            # считаем, что это проценты 0..100
             return {k: float(v) / 100.0 for k, v in data.items()}
         else:
             return {k: float(v) for k, v in data.items()}
+
 
     @staticmethod
     def _difficulty_color(p: float) -> str:
@@ -60,14 +59,8 @@ class GraphBuilder:
             return "#ffbb33"  # yellow/orange
         return "#2ca02c"  # green
 
-    # ---------- Основные графики ----------
 
-    def plot_task_difficulty(
-        self,
-        difficulty: Dict[int, float],
-        pdf_pages: PdfPages,
-        title: Optional[str] = None
-    ) -> None:
+    def plot_task_difficulty(self, difficulty, pdf_pages, title=None) -> None:
         """
         Строит bar-chart: по X — номера заданий, по Y — доля решивших (0..1).
         Добавляет страницу в переданный PdfPages.
@@ -75,6 +68,7 @@ class GraphBuilder:
         :param pdf_pages: открытый PdfPages (файл будет записан туда)
         :param title: заголовок (опционально)
         """
+
         if not difficulty:
             raise ValueError("difficulty пустой")
 
@@ -101,22 +95,18 @@ class GraphBuilder:
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-    def plot_grade_distribution(
-        self,
-        grades: Dict[int, int],
-        absent_count: int,
-        pdf_pages: PdfPages,
-        title: Optional[str] = None,
-        include_range: Optional[Tuple[int, int]] = None
-    ) -> None:
+
+    def plot_grade_distribution(self, grades, absent_count, pdf_pages, title=None, include_range=None) -> None:
         """
         Гистограмма распределения оценок. Если какие-то оценки отсутствуют — добавляются с 0.
         В конец добавляется отдельный столбец "Отсутств." с числом отсутствующих.
+        :param title:
         :param grades: {grade_value: count}
         :param absent_count: количество отсутствующих
         :param pdf_pages: PdfPages для записи страницы
         :param include_range: опционально (min_grade, max_grade) — чтобы всегда отображать фиксированный ряд оценок
         """
+
         # определяем диапазон оценок, который хотим показать
         if include_range:
             min_g, max_g = include_range
@@ -154,12 +144,8 @@ class GraphBuilder:
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-    def plot_strength_stacked(
-        self,
-        strength_data: Dict[int, Dict[int, int]],
-        pdf_pages: PdfPages,
-        title: Optional[str] = None
-    ) -> None:
+
+    def plot_strength_stacked(self, strength_data, pdf_pages, title=None) -> None:
         """
         Строит stacked bar chart по заданиям: для каждого задания показываются сегменты,
         соответствующие индексам силы (0..5). Нулевые по всей задаче индексы пропускаются визуально.
@@ -167,6 +153,7 @@ class GraphBuilder:
         :param pdf_pages: PdfPages для записи
         :param title: заголовок
         """
+
         if not strength_data:
             raise ValueError("strength_data пустой")
 
@@ -212,35 +199,21 @@ class GraphBuilder:
         plt.close(fig)
 
 
-    def build_mode1_pdf(
-        self,
-        difficulty: Dict[int, float],
-        grades: Dict[int, int],
-        absent_count: int,
-        output_pdf_path: str,
-        title_prefix: Optional[str] = None
-    ) -> str:
+    def build_mode1_pdf(self, difficulty, grades, absent_count, output_pdf_path, title_prefix=None) -> str:
         """
         Режим 1: два графика (сложность заданий + распределение оценок).
         Сохраняет один PDF файл по пути output_pdf_path.
         :return: путь к сохранённому PDF
         """
+
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
             self.plot_grade_distribution(grades, absent_count, pdf, title=f"{title_prefix or ''} — Распределение оценок")
         return output_pdf_path
 
-    def build_mode2_pdf(
-        self,
-        difficulty: Dict[int, float],
-        grades: Dict[int, int],
-        absent_count: int,
-        strength_data: Dict[int, Dict[int, int]],
-        output_pdf_path: str,
-        title_prefix: Optional[str] = None
-    ) -> str:
 
+    def build_mode2_pdf(self, difficulty, grades, absent_count, strength_data, output_pdf_path, title_prefix=None) -> str:
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
@@ -248,12 +221,8 @@ class GraphBuilder:
             self.plot_strength_stacked(strength_data, pdf, title=f"{title_prefix or ''} — Силовой состав решающих")
         return output_pdf_path
 
-    def plot_avg_timeline(
-            self,
-            avg_data: Dict[str, Tuple[float, str]],  # name -> (avg, date)
-            pdf_pages: PdfPages,
-            title: Optional[str] = None
-    ) -> None:
+
+    def plot_avg_timeline(self, avg_data, pdf_pages, title=None) -> None:
         """
         Строит линейный график изменения среднего балла по работам.
         Ось Y всегда от 2 до 5 (стандартный диапазон школьных оценок).
@@ -261,6 +230,7 @@ class GraphBuilder:
         :param pdf_pages: PdfPages для записи
         :param title: заголовок
         """
+
         if not avg_data:
             raise ValueError("avg_data пустой")
 
@@ -277,7 +247,6 @@ class GraphBuilder:
         ax.set_ylabel("Средний балл")
         ax.set_title(title or "Динамика среднего балла по работам")
 
-        # Фиксируем ось Y от 2 до 5 (стандартный диапазон оценок)
         ax.set_ylim(2, 5)
         ax.set_yticks([2, 2.5, 3, 3.5, 4, 4.5, 5])
         ax.set_yticklabels(['2', '2.5', '3', '3.5', '4', '4.5', '5'])
@@ -287,7 +256,7 @@ class GraphBuilder:
 
         ax.grid(True, linestyle='--', alpha=0.7)
 
-        # Подписи значений над точками
+        # подписи значений над точками
         for i, (avg, name) in enumerate(zip(avgs, names)):
             ax.text(i, avg + 0.1, f"{avg:.2f}", ha='center', va='bottom', fontsize=8)
 
@@ -295,20 +264,14 @@ class GraphBuilder:
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-    def build_mode3_pdf(
-            self,
-            difficulty: Dict[int, float],
-            grades: Dict[int, int],
-            absent_count: int,
-            avg_timeline: Dict[str, Tuple[float, str]],  # данные для динамики
-            output_pdf_path: str,
-            title_prefix: Optional[str] = None
-    ) -> str:
+
+    def build_mode3_pdf(self, difficulty, grades, absent_count, avg_timeline, output_pdf_path, title_prefix=None) -> str:
         """
         Режим 3: три графика (сложность заданий + распределение оценок + динамика среднего балла).
         Сохраняет один PDF файл по пути output_pdf_path.
         :return: путь к сохранённому PDF
         """
+
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
@@ -317,20 +280,13 @@ class GraphBuilder:
             self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
         return output_pdf_path
 
-    def build_mode4_pdf(
-            self,
-            difficulty: Dict[int, float],
-            grades: Dict[int, int],
-            absent_count: int,
-            strength_data: Dict[int, Dict[int, int]],
-            avg_timeline: Dict[str, Tuple[float, str]],
-            output_pdf_path: str,
-            title_prefix: Optional[str] = None
-    ) -> str:
+
+    def build_mode4_pdf(self, difficulty, grades, absent_count, strength_data, avg_timeline, output_pdf_path, title_prefix=None) -> str:
         """
         Режим 4: четыре графика
         (сложность заданий + распределение оценок + силовой состав решающих + динамика среднего балла).
         """
+
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
@@ -340,21 +296,20 @@ class GraphBuilder:
             self.plot_avg_timeline(avg_timeline, pdf, title=f"{title_prefix or ''} — Динамика среднего балла")
         return output_pdf_path
 
-    def plot_task_timeline_per_task(
-            self,
-            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
-            pdf_pages: PdfPages,
-            title: Optional[str] = None
-    ) -> None:
+
+    def plot_task_timeline_per_task(self, task_timeline_data, pdf_pages, title=None) -> None:
         """
         Строит отдельный линейный график для каждого задания:
         динамика процента решивших по работам.
+        :param title:
+        :param pdf_pages:
         :param task_timeline_data: {название_работы: ({номер_задания: процент}, дата)}
         """
+
         if not task_timeline_data:
             raise ValueError("task_timeline_data пустой")
 
-        sorted_items = sorted(task_timeline_data.items(), key=lambda x: x[1][1])
+        sorted_items = sorted(task_timeline_data.items(), key=lambda l: l[1][1])
         work_names = [item[0] for item in sorted_items]
         task_distributions = [item[1][0] for item in sorted_items]
 
@@ -385,20 +340,12 @@ class GraphBuilder:
             plt.close(fig)
 
 
-    def build_mode5_pdf(
-            self,
-            difficulty: Dict[int, float],
-            grades: Dict[int, int],
-            absent_count: int,
-            avg_timeline: Dict[str, Tuple[float, str]],
-            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
-            output_pdf_path: str,
-            title_prefix: Optional[str] = None
-    ) -> str:
+    def build_mode5_pdf(self, difficulty, grades, absent_count, avg_timeline, task_timeline_data, output_pdf_path, title_prefix=None) -> str:
         """
         Режим 5: четыре графика
         (сложность заданий + распределение оценок + динамика среднего балла + динамика заданий).
         """
+
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_task_difficulty(difficulty, pdf, title=f"{title_prefix or ''} — Сложность заданий")
@@ -408,38 +355,16 @@ class GraphBuilder:
             self.plot_task_timeline_per_task(task_timeline_data, pdf, title=f"{title_prefix or ''} — Динамика решаемости по заданиям")
         return output_pdf_path
 
-    def plot_strength_class_distribution(
-            self,
-            strength_counts: Dict[int, int],
-            pdf_pages: PdfPages,
-            title: Optional[str] = None
-    ) -> None:
-        indices = list(range(6))
-        counts = [strength_counts.get(i, 0) for i in indices]
-        colors = [self.strength_colors.get(i, "#1f77b4") for i in indices]
 
-        fig, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
-        bars = ax.bar(indices, counts, color=colors, edgecolor="black")
-        ax.set_xlabel("Индекс силы")
-        ax.set_ylabel("Количество учеников")
-        ax.set_title(title or "Силовой состав класса")
-        ax.set_xticks(indices)
-        ax.set_xticklabels([str(i) for i in indices])
+    def plot_task_status_summary(self, category_counts, pdf_pages, title=None) -> None:
+        """
+        Строит столбчатую диаграмму распределения заданий по категориям.
+        Показывает количество заданий для каждого статуса/типа и сохраняет страницу в PDF.
+        :param category_counts: словарь {название_категории: количество_заданий}
+        :param pdf_pages: объект PdfPages для сохранения графика
+        :param title: заголовок графика (опционально)
+        """
 
-        for rect, val in zip(bars, counts):
-            ax.text(rect.get_x() + rect.get_width() / 2, val + max(1, int(max(counts) * 0.02)),
-                    str(val), ha="center", va="bottom", fontsize=9)
-
-        fig.tight_layout()
-        pdf_pages.savefig(fig)
-        plt.close(fig)
-
-    def plot_task_status_summary(
-            self,
-            category_counts: Dict[str, int],
-            pdf_pages: PdfPages,
-            title: Optional[str] = None
-    ) -> None:
         if not category_counts:
             raise ValueError("category_counts пустой")
 
@@ -461,21 +386,12 @@ class GraphBuilder:
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-    def build_mode6_pdf(
-            self,
-            difficulty: Dict[int, float],
-            grades: Dict[int, int],
-            absent_count: int,
-            strength_data: Dict[int, int],
-            avg_timeline: Dict[str, Tuple[float, str]],
-            task_timeline_data: Dict[str, Tuple[Dict[int, float], str]],
-            task_status_counts: Dict[str, int],
-            output_pdf_path: str,
-            title_prefix: Optional[str] = None
-    ) -> str:
+
+    def build_mode6_pdf(self, difficulty, grades, absent_count, strength_data, avg_timeline, task_timeline_data, task_status_counts, output_pdf_path, title_prefix=None) -> str:
         """
         Режим 6: подробный режим для нескольких работ с журналом и одинаковым форматом.
         """
+
         self._ensure_dir(os.path.dirname(output_pdf_path) or ".")
         with PdfPages(output_pdf_path) as pdf:
             self.plot_grade_distribution(grades, absent_count, pdf,
@@ -493,33 +409,3 @@ class GraphBuilder:
 
 
 
-# # пример данных
-# difficulty = {1: 87, 2: 64, 3: 41, 4: 20, 5: 80}
-# grades = {5: 4, 4: 6, 3: 3, 2: 1}
-# absent_count = 2
-# strength_data = {
-#     1: {0: 2, 1: 3, 2: 4},
-#     2: {1: 5, 3: 2},
-#     3: {0: 1, 2: 3, 5: 1},
-# }
-#
-# gb = GraphBuilder()
-# out1 = gb.build_mode1_pdf(difficulty, grades, absent_count, "graphs/mode1_example.pdf", title_prefix="Работа #123")
-# out2 = gb.build_mode2_pdf(difficulty, grades, absent_count, strength_data, "graphs/mode2_example.pdf")
-# print("Saved:", out1, out2)
-
-avg_timeline_data = {
-    "Контрольная 1": (3.5, "2025-02-01"),
-    "Контрольная 2": (3.8, "2025-02-15"),
-    "Контрольная 3": (3.2, "2025-03-01")
-}
-
-builder = GraphBuilder()
-builder.build_mode3_pdf(
-    difficulty={1: 0.8, 2: 0.45, 3: 0.9},
-    grades={2: 5, 3: 10, 4: 12, 5: 3},
-    absent_count=2,
-    avg_timeline=avg_timeline_data,
-    output_pdf_path="mode3_report.pdf",
-    title_prefix="9А класс"
-)

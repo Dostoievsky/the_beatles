@@ -16,22 +16,22 @@ class StatisticsParser:
         parts.sort()
         return " ".join(parts)
 
+
     def fix_fio_spacing(self, text):
         fixed_text = re.sub(r'([а-яё])(?=[А-ЯЁ])', r'\1 ', text)
         return self.normalize_name(fixed_text.strip())
+
 
     def get_file_results(self):
         if not self.file_name:
             return None
         students_dict = self.get_students_dict()
-        print('111', students_dict)
         return {self.fix_fio_spacing(k): v for k, v in students_dict.items()}
 
 
     def get_students_dict(self):
         df = pd.read_excel(self.file_name, header=None, engine='openpyxl')
         students_data = {}
-        print('rfrf')
 
         for _, row in df.iterrows():
             line = [str(val).strip() for val in row.values]
@@ -114,6 +114,7 @@ class StatisticsParser:
             result_dict[student] = sum(tasks.values())
 
         return result_dict
+
 
     def get_best_worst_results(self):
         best = (max(self.get_student_distribution().values()), max(self.grades_dict.values()))
@@ -417,6 +418,7 @@ class StatisticsParser:
 
         return res.strip()
 
+
     @staticmethod
     def analyze_tasks_by_strength(task_strength_distribution, strength_group_counts):
         """
@@ -444,7 +446,6 @@ class StatisticsParser:
             total_solved = sum(distr.values())
 
             weak_rate = safe_rate(weak_solved, weak_total)
-            medium_rate = safe_rate(medium_solved, medium_total)
             strong_rate = safe_rate(strong_solved, strong_total)
             total_rate = safe_rate(total_solved, total_students)
 
@@ -652,84 +653,4 @@ class CompareParser:
 
         return result
 
-# others_dict = {'Журнальная работа 0': {'avg': 2.67, 'median': 3.0, 'grades_distribution': {3: 14, 2: 9, 4: 1}, 'best_students': {'Надежда Попцова': 8}, 'worst_students': {'Рауль Масимов': 4, 'Анастасия Хромова': 4, 'Андрей Цветков': 4}, 'absents': 0}, 'Работа имени шишкина-мышкина': {'avg': 3.46, 'median': 3.5, 'grades_distribution': {2: 3, 4: 10, 3: 9, 5: 2}, 'best_students': {'Тимофей Гусев': 10, 'Татьяна Левкович': 10}, 'worst_students': {'Матвей Некрасов': 4}, 'absents': 0}}
-# this_dict = {'avg': 3.17, 'median': 3.0, 'grades_distribution': {3: 8, 4: 10, 2: 6}, 'best_students': {'Дмитрий Афанасов': 9, 'Маргарита Горовая': 9, 'Никита Корсаков': 9, 'Татьяна Левкович': 9, 'Матвей Некрасов': 9, 'Михаил Соколов': 9, 'Анастасия Хромова': 9}, 'worst_students': {'Рауль Масимов': 3}, 'recomendations': ['Задания [1, 3, 4, 5, 6, 7, 8, 9] решены хорошо большинством учеников', 'Задания [2, 10] решены на среднем уровне, стоит закрепить материал'], 'conclusion': 'Работа выполнена на среднем уровне; основные темы усвоены, но есть пространство для роста. Все предложенные задания были решены на достаточном уровне, системных ошибок не выявлено.', 'best_results': (9, 4), 'worst_results': (3, 2), 'absents': 0}
-#
-# compare = CompareParser(this_dict, others_dict)
-# print(compare.compare_avg())
-# print(compare.compare_grades())
-# print(compare.compare_absents())
-# print(compare.compare_best_worst())
-
-
-# tasks_dict1 = {
-#     'Андреева Софья': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: False, 8: True, 9: False, 10: True},
-#     'Афанасов Дмитрий': {1: False, 2: True, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: True, 10: False},
-#     'Гусев Тимофей': {1: True, 2: True, 3: False, 4: False, 5: True, 6: True, 7: False, 8: True, 9: False, 10: True},
-#     'Корсаков Никита': {1: False, 2: False, 3: True, 4: True, 5: False, 6: False, 7: True, 8: True, 9: True, 10: False},
-#     'Котлячкова Варвара': {1: True, 2: False, 3: True, 4: False, 5: True, 6: False, 7: True, 8: False, 9: True, 10: True},
-#     'Левкович Татьяна': {1: False, 2: True, 3: True, 4: True, 5: False, 6: True, 7: False, 8: False, 9: True, 10: False},
-#     'Нахина Виктория': {1: True, 2: False, 3: False, 4: True, 5: True, 6: True, 7: False, 8: True, 9: False, 10: True},
-#     'Некрасов Матвей': {1: False, 2: True, 3: True, 4: False, 5: False, 6: True, 7: True, 8: True, 9: False, 10: True},
-#     'Нечаева Елизавета': {1: True, 2: True, 3: False, 4: True, 5: False, 6: False, 7: True, 8: False, 9: True, 10: False},
-#     'Попцова Надежда': {1: False, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: False, 9: False, 10: True},
-#     'Сироткин Матвей': {1: True, 2: True, 3: True, 4: False, 5: False, 6: False, 7: False, 8: True, 9: True, 10: True},
-#     'Смирнова Виктория': {1: False, 2: True, 3: False, 4: True, 5: True, 6: True, 7: False, 8: False, 9: False, 10: False},
-#     'Соколов Михаил': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: True, 8: True, 9: False, 10: True},
-#     'Стулихин Дмитрий': {1: False, 2: True, 3: False, 4: False, 5: True, 6: False, 7: True, 8: True, 9: True, 10: False},
-#     'Сырова Ксения': {1: True, 2: False, 3: True, 4: True, 5: True, 6: False, 7: False, 8: False, 9: True, 10: True},
-#     'Цветков Андрей': {1: False, 2: True, 3: True, 4: False, 5: False, 6: True, 7: True, 8: True, 9: False, 10: False},
-#     'Чернова Василиса': {1: True, 2: False, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: True, 10: True}
-# }
-# res_dict = {
-#     'Андреева Софья': 4,  # 6 True
-#     'Афанасов Дмитрий': 3,  # 5 True
-#     'Гусев Тимофей': 4,  # 6 True
-#     'Корсаков Никита': 3,  # 4 True
-#     'Котлячкова Варвара': 4,  # 6 True
-#     'Левкович Татьяна': 3,  # 4 True
-#     'Нахина Виктория': 4,  # 6 True
-#     'Некрасов Матвей': 3,  # 5 True
-#     'Нечаева Елизавета': 3,  # 4 True
-#     'Попцова Надежда': 3,  # 5 True
-#     'Сироткин Матвей': 4,  # 6 True
-#     'Смирнова Виктория': 3,  # 4 True
-#     'Соколов Михаил': 4,  # 7 True
-#     'Стулихин Дмитрий': 3,  # 5 True
-#     'Сырова Ксения': 4,  # 6 True
-#     'Цветков Андрей': 3,  # 5 True
-#     'Чернова Василиса': 4  # 6 True
-# }
-#
-# t = {'Софья Андреева': {1: False, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Дмитрий Афанасов': {1: False, 2: True, 3: True, 4: True, 5: False, 6: False, 7: False, 8: True, 9: True, 10: True}, 'Матвей Бокарев': {1: False, 2: False, 3: False, 4: True, 5: False, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Елисей Бугров': {1: True, 2: True, 3: True, 4: True, 5: False, 6: False, 7: True, 8: False, 9: True, 10: True}, 'Маргарита Горовая': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: False, 8: True, 9: False, 10: False}, 'Тимофей Гусев': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Вячеслав Калашников': {1: True, 2: False, 3: True, 4: True, 5: False, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Никита Корсаков': {1: False, 2: True, 3: True, 4: True, 5: False, 6: True, 7: True, 8: True, 9: False, 10: False}, 'Варвара Котлячкова': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: False, 9: False, 10: False}, 'Татьяна Левкович': {1: False, 2: False, 3: True, 4: True, 5: True, 6: True, 7: True, 8: True, 9: False, 10: True}, 'Рауль Масимов': {1: False, 2: True, 3: True, 4: False, 5: False, 6: False, 7: False, 8: False, 9: True, 10: True}, 'Виктория Нахина': {1: True, 2: False, 3: True, 4: False, 5: False, 6: True, 7: True, 8: False, 9: True, 10: True}, 'Матвей Некрасов': {1: False, 2: True, 3: True, 4: True, 5: True, 6: False, 7: False, 8: False, 9: True, 10: False}, 'Елизавета Нечаева': {1: False, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: True, 9: False, 10: True}, 'Надежда Попцова': {1: True, 2: False, 3: False, 4: True, 5: True, 6: True, 7: True, 8: True, 9: True, 10: True}, 'Матвей Сироткин': {1: True, 2: True, 3: True, 4: False, 5: True, 6: False, 7: False, 8: True, 9: False, 10: False}, 'Виктория Смирнова': {1: False, 2: True, 3: False, 4: True, 5: False, 6: True, 7: True, 8: True, 9: True, 10: False}, 'Михаил Соколов': {1: True, 2: False, 3: False, 4: True, 5: False, 6: False, 7: True, 8: True, 9: True, 10: True}, 'Дмитрий Стулихин': {1: True, 2: True, 3: True, 4: False, 5: True, 6: False, 7: True, 8: False, 9: True, 10: True}, 'Ксения Сырова': {1: True, 2: True, 3: True, 4: True, 5: True, 6: True, 7: False, 8: False, 9: True, 10: False}, 'Лилия Трофимова': {1: True, 2: True, 3: False, 4: True, 5: True, 6: False, 7: True, 8: False, 9: False, 10: False}, 'Анастасия Хромова': {1: False, 2: False, 3: False, 4: True, 5: True, 6: False, 7: False, 8: True, 9: True, 10: False}, 'Андрей Цветков': {1: False, 2: False, 3: True, 4: True, 5: False, 6: False, 7: False, 8: True, 9: False, 10: True}, 'Василиса Чернова': {1: True, 2: False, 3: True, 4: False, 5: True, 6: True, 7: True, 8: False, 9: True, 10: True}}
-# t1 = {'Софья Андреева': 3, 'Дмитрий Афанасов': 3, 'Матвей Бокарев': 2, 'Елисей Бугров': 3, 'Маргарита Горовая': 2, 'Тимофей Гусев': 3, 'Вячеслав Калашников': 3, 'Никита Корсаков': 3, 'Варвара Котлячкова': 2, 'Татьяна Левкович': 3, 'Рауль Масимов': 2, 'Виктория Нахина': 3, 'Матвей Некрасов': 2, 'Елизавета Нечаева': 3, 'Надежда Попцова': 4, 'Матвей Сироткин': 2, 'Виктория Смирнова': 3, 'Михаил Соколов': 3, 'Дмитрий Стулихин': 3, 'Ксения Сырова': 3, 'Лилия Трофимова': 2, 'Анастасия Хромова': 2, 'Андрей Цветков': 2, 'Василиса Чернова': 3}
-#
-#
-#
-# path = r'D:\pythonProject\Insighter II\Распечатка КЖ 8а Информатика П1.xlsx'
-# total = 30
-#
-# st = StatisticsParser(tasks_dict1, res_dict, path)
-# st = StatisticsParser(t, t1, path)
-
-# print(st.get_average())
-# print(st.get_median())
-# print(st.get_grades_distribution())
-# print(st.get_task_distribution())
-# print(st.convertage_to_percentages(total))
-# print(st.get_student_distribution())
-# print(st.get_the_best_the_worst_students_results())
-# print(st.get_file_results())
-# print(st.get_strong_weak_students())
-# print(st.get_distribution_tasks_strong_weak_students())
-# dctjh = {1: 90.0, 2: 40.0, 3: 13.33, 4: 100.00, 5: 30.0, 6: 30.0, 7: 78.33, 8: 30.0, 9: 3.0, 10: 55.33}
-# print(st.get_recomdendations_standart(dctjh))
-# print(*st.get_recomdendations_deep(st.get_distribution_tasks_strong_weak_students(), st.get_strong_weak_students()[1]), sep='\n')
-# print(st.get_brief_conclusion(st.grades_dict, st.convertage_to_percentages(total)))
-# p1 = st.grades_dict
-# p2 = st.get_distribution_tasks_strong_weak_students()
-# p3 = st.get_strong_weak_students()[0]
-# p4 = st.tasks_dict
-# p5 = st.get_strong_weak_students()[1]
-# print(st.get_extended_analysis(p1, p2, p3, p4, p5))
 
