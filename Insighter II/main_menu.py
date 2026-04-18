@@ -27,6 +27,7 @@ from settings_class import Settings
 from statistics_dialogs import *
 from statistics_class import StatisticsParser, CompareParser
 from graph_builder_class import GraphBuilder
+from export_dialogs import ExportDialog
 
 def excepthook(exc_type, exc_value, exc_tb):
     traceback.print_exception(exc_type, exc_value, exc_tb)
@@ -102,6 +103,7 @@ class MainMenu(QWidget):
         self.bot_control_button.clicked.connect(self.run_bot_control)
         self.random_call_button.clicked.connect(self.run_random_call)
         self.statistics_class_button.clicked.connect(self.run_statistics)
+        self.export_button.clicked.connect(self.run_export)
 
         grid.addWidget(self.check_works_button, 1, 0)
         grid.addWidget(self.rewrite_button, 1, 1)
@@ -1539,3 +1541,18 @@ class MainMenu(QWidget):
 
             self.show()
             return
+
+
+    def run_export(self):
+        self.hide()
+        classes = ['9А', '9Б', '9В']
+        tables_list = ['Table 1', 'Table 2', 'Table 3']
+        works_dict = {'9A': ['Работа 1', 'Работа 2'], '9В': ['Работа 4', 'Работа 34'], '9Б': ['Работа 13', 'Работа 21']}
+
+        dialog = ExportDialog(self, classes, tables_list, works_dict)
+
+        if dialog.exec_():
+            dialog_data = dialog.get_results()
+        print(dialog_data)
+        self.show()
+        return

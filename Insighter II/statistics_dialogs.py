@@ -233,6 +233,7 @@ class SelectionDialog(QDialog):
         self.date_end.blockSignals(False)
         self._syncing = False
 
+
     def sync_works(self):
         if self._syncing:
             return
