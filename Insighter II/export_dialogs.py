@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QPushButton, QListWidget,
                              QGroupBox, QLabel, QFileDialog, QStackedWidget, QWidget)
 from PyQt5.QtCore import Qt
 
+from PyQt5.QtWidgets import QMessageBox
 
 class ExportDialog(QDialog):
     def __init__(self, parent, classes_list, table_names_list, works_dict):
@@ -29,7 +30,7 @@ class ExportDialog(QDialog):
             QListWidget::indicator:checked {
                 background-color: #557A95; 
                 border: 1px solid #357abd;
-                image: url(check.png); /* Если есть иконка, если нет - будет просто цвет */
+                image: url(check.png);
             }
             QListWidget::item {
                 padding: 5px;
@@ -67,18 +68,49 @@ class ExportDialog(QDialog):
         return [list_widget.item(i).text() for i in range(list_widget.count())
                 if list_widget.item(i).checkState() == Qt.Checked]
 
-    # --- СТРАНИЦА 0: МЕНЮ ---
+    # --- НОВЫЕ МЕТОДЫ-ОБРАБОТЧИКИ С ПРОВЕРКАМИ ---
+    def on_tables_clicked(self):
+        if not self.table_names_list:
+            QMessageBox.warning(self, "Нет данных", "Список таблиц пуст. Нечего экспортировать.")
+            return
+        self.stack.setCurrentIndex(1)
+
+    def on_classes_clicked(self):
+        if not self.classes_list:
+            QMessageBox.warning(self, "Нет данных", "Список классов пуст. Нечего экспортировать.")
+            return
+        self.stack.setCurrentIndex(2)
+
+    def on_works_clicked(self):
+        if not self.works_dict:
+            QMessageBox.warning(self, "Нет данных", "Словарь работ пуст. Нет доступных классов или работ.")
+            return
+        self.stack.setCurrentIndex(3)
+
+    # --- СТРАНИЦА 0: МЕНЮ (изменённая) ---
     def create_main_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(12)
 
         layout.addStretch()
-        for text, idx in [("📊 Экспорт таблиц", 1), ("📂 Экспорт работ", 3), ("👥 Экспорт классов", 2)]:
-            btn = QPushButton(text)
-            btn.setMinimumHeight(45)
-            btn.clicked.connect(lambda checked, i=idx: self.stack.setCurrentIndex(i))
-            layout.addWidget(btn)
+        # Кнопка таблиц
+        btn_tables = QPushButton("📊 Экспорт таблиц")
+        btn_tables.setMinimumHeight(45)
+        btn_tables.clicked.connect(self.on_tables_clicked)
+        layout.addWidget(btn_tables)
+
+        # Кнопка классов
+        btn_classes = QPushButton("👥 Экспорт классов")
+        btn_classes.setMinimumHeight(45)
+        btn_classes.clicked.connect(self.on_classes_clicked)
+        layout.addWidget(btn_classes)
+
+        # Кнопка работ
+        btn_works = QPushButton("📂 Экспорт работ")
+        btn_works.setMinimumHeight(45)
+        btn_works.clicked.connect(self.on_works_clicked)
+        layout.addWidget(btn_works)
 
         layout.addStretch()
         self.btn_path = QPushButton(f"📁 Папка: ...{os.path.basename(self.export_path)}")
@@ -86,6 +118,7 @@ class ExportDialog(QDialog):
         self.btn_path.clicked.connect(self.select_folder)
         layout.addWidget(self.btn_path)
         self.stack.addWidget(page)
+
 
     # --- СТРАНИЦА 1: ТАБЛИЦЫ ---
     def create_tables_page(self):

@@ -1545,14 +1545,22 @@ class MainMenu(QWidget):
 
     def run_export(self):
         self.hide()
-        classes = ['9А', '9Б', '9В']
-        tables_list = ['Table 1', 'Table 2', 'Table 3']
-        works_dict = {'9A': ['Работа 1', 'Работа 2'], '9В': ['Работа 4', 'Работа 34'], '9Б': ['Работа 13', 'Работа 21']}
+
+        db = Database()
+        db.connect()
+        classes = db.get_classes()
+        tables_list = db.get_tables_names()
+        works_dict = {}
+        for class_name in classes:
+            list_of_works = [l[3] for l in db.get_works_by_class(class_name, status='checked')]
+            works_dict[class_name] = list_of_works
+
 
         dialog = ExportDialog(self, classes, tables_list, works_dict)
 
         if dialog.exec_():
             dialog_data = dialog.get_results()
         print(dialog_data)
+        print(db.get_tables_names())
         self.show()
         return

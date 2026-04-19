@@ -571,6 +571,7 @@ class Database:
         """, (class_id,))
         return self.cursor.fetchone()[0]
 
+
     def get_absents(self, class_name, work_name):
         class_id = self.get_class_id(class_name)
         work_id = self.get_work_id(class_id, work_name)
@@ -583,3 +584,10 @@ class Database:
         if not res:
             return
         return res[0]
+
+
+    def get_tables_names(self):
+        self.cursor.execute("""
+        SELECT name FROM sqlite_master WHERE type='table';
+        """)
+        return [i[0] for i in self.cursor.fetchall()][:-1]
